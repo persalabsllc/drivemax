@@ -13,12 +13,14 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         <header className="topbar">
           <Link href="/" className="brand" aria-label="Drive Max Used Cars home">
-            <span className="drive">Drive</span><span className="max">Max</span><span className="used">USED CARS</span>
+            <img src="/drive-max-logo.svg" alt="Drive Max Used Cars" />
           </Link>
           <nav>
             <Link href="/inventory">Inventory</Link>
             <Link href="/apply">Apply for Credit</Link>
             <Link href="/about">About Us</Link>
+            <Link href="/about/staff">Meet the Staff</Link>
+            <Link href="/about/employment">Employment</Link>
             <Link href="/contact">Contact</Link>
             <Link href="/payments" className="payBtn">Make a Payment</Link>
           </nav>

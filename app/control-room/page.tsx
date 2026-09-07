@@ -220,7 +220,7 @@ export default async function ControlRoom({
             <p className="cr-status-help">
               Email sending & receiving:{" "}
               {emailReady()
-                ? "Configured — verify delivery during activation."
+                ? "Connected."
                 : "Awaiting dealership email connection."}
             </p>
           </div>

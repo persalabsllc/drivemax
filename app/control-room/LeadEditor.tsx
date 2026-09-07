@@ -273,8 +273,7 @@ export default function LeadEditor({
         </div>
         {direction === "outbound" && (
           <p className="cr-muted">
-            To: {lead.email}. Customer replies will appear in this conversation
-            after email receiving is activated.
+            To: {lead.email}. Customer replies appear in this conversation.
           </p>
         )}
       </form>

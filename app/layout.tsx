@@ -101,6 +101,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           </div>
           <div className="container footer-bottom">
             <span>© {new Date().getFullYear()} Drive Max Used Cars LLC</span>
+            <Link href="/control-room">Staff login</Link>
             <span>Vehicle availability, pricing, and financing terms are subject to change.</span>
           </div>
         </footer>

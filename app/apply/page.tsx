@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { BadgeDollarSign, Check, FileText, MessageSquareText } from 'lucide-react';
-import LeadForm from '../_components/LeadForm';
+import LeadForm from '../_components/ConnectedLeadForm';
 
 export const metadata: Metadata = { title: 'Financing', description: 'Start a financing conversation with Drive Max Used Cars in New Bern, NC.', alternates: { canonical: '/apply' } };
 

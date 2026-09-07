@@ -1,5 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import FeaturedInventory from './_components/FeaturedInventory';
+import {publicInventory} from '../lib/backend';
 import {
   ArrowRight,
   BadgeCheck,
@@ -14,7 +16,9 @@ import {
   MessageCircleQuestion,
 } from 'lucide-react';
 
-export default function Home() {
+export const dynamic = 'force-dynamic';
+export default async function Home() {
+  const hasInventory = (await publicInventory('available')).length > 0;
   return (
     <>
       <section className="home-hero">
@@ -77,7 +81,8 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section inventory-intro">
+      <FeaturedInventory />
+      {!hasInventory && <section className="section inventory-intro">
         <div className="container">
           <div className="section-heading section-heading-split">
             <div>
@@ -104,7 +109,7 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </section>
+      </section>}
 
       <section className="section section-muted">
         <div className="container">

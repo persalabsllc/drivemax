@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Mail, MapPin } from 'lucide-react';
-import LeadForm from '../_components/LeadForm';
+import LeadForm from '../_components/ConnectedLeadForm';
 
 export const metadata: Metadata = {
   title: 'Contact',

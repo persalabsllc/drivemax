@@ -49,7 +49,10 @@ function Field({ id, label, name, type = 'text', placeholder, required = false, 
   );
 }
 
-export default function LeadForm({ kind }: { kind: LeadFormKind }) {
+export default function LeadForm({ kind, online = false, vehicleId = '' }: { kind: LeadFormKind; online?: boolean; vehicleId?: string }) {
+  const [busy, setBusy] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const requestId = useRef('');
   const [status, setStatus] = useState<{ type: 'info' | 'error'; message: string } | null>(null);
   const [invalidFields, setInvalidFields] = useState<string[]>([]);
   const statusRef = useRef<HTMLParagraphElement>(null);
@@ -65,7 +68,7 @@ export default function LeadForm({ kind }: { kind: LeadFormKind }) {
     setStatus({ type: 'error', message });
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const email = String(formData.get('email') || '').trim();
@@ -86,6 +89,21 @@ export default function LeadForm({ kind }: { kind: LeadFormKind }) {
     }
 
     setInvalidFields([]);
+    if (online) {
+      if (busy || submitted) return;
+      setBusy(true);
+      requestId.current ||= crypto.randomUUID();
+      try {
+        const response = await fetch('/api/leads', {method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({...Object.fromEntries(formData),kind,vehicleId,requestId:requestId.current})});
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Please try again.');
+        setSubmitted(true);
+        setStatus({type:'info',message:'Thanks! Your inquiry has been received. The Drive Max team will follow up using your preferred contact method.'});
+      } catch (error) { showError(error instanceof Error ? error.message : 'Your inquiry was not confirmed. Please try again.'); }
+      finally { setBusy(false); }
+      return;
+    }
     const details = Array.from(formData.entries())
       .filter(([, value]) => String(value).trim())
       .map(([key, value]) => `${labels[key] || key}: ${String(value).trim()}`);
@@ -106,6 +124,7 @@ export default function LeadForm({ kind }: { kind: LeadFormKind }) {
       encType="text/plain"
       onSubmit={handleSubmit}
     >
+      {online && <div className="lead-honeypot" aria-hidden="true"><label>Website<input name="website" tabIndex={-1} autoComplete="off" /></label></div>}
       <div className="form-grid">
         <p id={contactHintId} className="form-instruction field-full">Provide an email address or phone number. We’ll validate the reply method you select.</p>
         <Field id={`${kind}-name`} label="Your name" name="name" placeholder="First and last name" required autoComplete="name" />
@@ -196,11 +215,11 @@ export default function LeadForm({ kind }: { kind: LeadFormKind }) {
         </div>
       </div>
 
-      <p className="form-consent-note">By emailing this request, you’re asking Drive Max to reply using the contact information you provided.</p>
+      <p className="form-consent-note">By sending this request, you’re asking Drive Max to reply using the contact information you provided.</p>
 
       <div className="form-footer">
-        <p className="form-help">This button opens your email app with the message prepared. Nothing is sent until you review it and press Send.</p>
-        <button className="button button-primary" type="submit">Open email to send <ArrowRight aria-hidden="true" size={18} /></button>
+        <p className="form-help">{online ? 'Your request goes directly to the Drive Max team.' : 'This button opens your email app with the message prepared. Nothing is sent until you review it and press Send.'}</p>
+        <button className="button button-primary" type="submit" disabled={busy || submitted}>{busy ? 'Sending…' : submitted ? 'Inquiry received' : online ? 'Send inquiry' : 'Open email to send'} <ArrowRight aria-hidden="true" size={18} /></button>
       </div>
 
       {status && (

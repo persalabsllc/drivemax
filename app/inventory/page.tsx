@@ -1,55 +1,178 @@
-import type { Metadata } from 'next';
-import Link from 'next/link';
-import { ArrowRight, Camera, CarFront, Check } from 'lucide-react';
-import LeadForm from '../_components/LeadForm';
-
+import type { Metadata } from "next";
+import Link from "next/link";
+import { publicInventory } from "../../lib/backend";
+import { inventoryMatches } from "../../lib/inventory";
+import VehicleCard from "../_components/VehicleCard";
+import LeadForm from "../_components/ConnectedLeadForm";
+export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: 'Inventory',
-  description: 'Get Drive Max Used Cars inventory updates or tell us what kind of used vehicle you are shopping for in New Bern, NC.',
-  alternates: { canonical: '/inventory' },
+  title: "Used Car Inventory in New Bern, NC",
+  description:
+    "Browse available used cars at Drive Max in New Bern. Photos, mileage, pricing, and vehicle details, plus our clearly marked sold archive.",
+  alternates: { canonical: "/inventory" },
 };
-
-export default function InventoryPage() {
+export default async function Inventory({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const all = await publicInventory();
+  const p = await searchParams;
+  const q = typeof p.q === "string" ? p.q.slice(0, 100) : "",
+    body = typeof p.body === "string" ? p.body : "",
+    max = typeof p.max === "string" ? p.max : "";
+  const searching = !!(q || body || max);
+  const active = all.filter((v) => inventoryMatches(v, q, body, max));
+  const sold = all.filter((v) => v.status === "sold");
+  const styles = Array.from(
+    new Set(
+      all
+        .filter((v) => v.status === "available")
+        .map((v) => v.body_style)
+        .filter(Boolean),
+    ),
+  ).sort();
+  const page = Math.max(
+      1,
+      Math.floor(Number(typeof p.page === "string" ? p.page : 1) || 1),
+    ),
+    soldPage = Math.max(
+      1,
+      Math.floor(Number(typeof p.soldPage === "string" ? p.soldPage : 1) || 1),
+    );
+  const href = (next: number) =>
+    `/inventory?${new URLSearchParams({ q, body, max, page: String(next) })}`;
   return (
     <>
       <section className="subpage-hero">
         <div className="container">
           <span className="kicker kicker-on-dark">Drive Max inventory</span>
-          <h1>Inventory worth waiting for.</h1>
-          <p>Drive Max is preparing to reopen. We’ll publish vehicles here only when they are actually available and ready for a closer look.</p>
-          <div className="button-row">
-            <a className="button button-primary" href="#vehicle-request">Tell us what you need <ArrowRight aria-hidden="true" size={18} /></a>
-            <Link className="button button-ghost" href="/contact">Ask a question</Link>
-          </div>
+          <h1>Your next vehicle starts here.</h1>
+          <p>
+            Explore the lot, get to know the details, and find a vehicle that
+            fits your life.
+          </p>
         </div>
       </section>
       <section className="page-section">
         <div className="container">
-          <div className="empty-inventory-card">
-            <div className="empty-inventory-icon"><CarFront aria-hidden="true" size={48} /></div>
-            <div>
-              <span className="availability-pill"><span className="status-dot" /> Inventory is being prepared</span>
-              <h2>New listings are on the way.</h2>
-              <p>Rather than show outdated or made-up inventory, this page will update as vehicles are ready for sale. Send a vehicle request below and let us know what would be a good fit.</p>
-              <div className="button-row">
-                <a className="button button-primary" href="#vehicle-request">Send a vehicle request</a>
-                <a className="button button-secondary" href="mailto:hello@drivemaxusedcars.com">Email the dealership</a>
-              </div>
-            </div>
+          <form className="inventory-filters" action="/inventory">
+            <label>
+              Make, model, or keyword
+              <input
+                name="q"
+                defaultValue={q}
+                placeholder="Try Toyota Camry"
+                maxLength={100}
+              />
+            </label>
+            <label>
+              Body style
+              <select name="body" defaultValue={body}>
+                <option value="">All body styles</option>
+                {styles.map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Maximum price
+              <select name="max" defaultValue={max}>
+                <option value="">Any price</option>
+                {[10000, 15000, 20000, 25000, 35000, 50000].map((n) => (
+                  <option key={n} value={n}>
+                    ${n.toLocaleString()}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button className="button button-primary">
+              Search available cars
+            </button>
+            {searching && (
+              <Link href="/inventory" className="text-link">
+                Clear search
+              </Link>
+            )}
+          </form>
+          <div className="section-heading section-heading-split">
+            <h2>{searching ? "Search results" : "Available now"}</h2>
+            <p>
+              {active.length} available{" "}
+              {active.length === 1 ? "vehicle" : "vehicles"}
+            </p>
           </div>
+          {active.length ? (
+            <>
+              <div className="vehicle-grid">
+                {active.slice((page - 1) * 12, page * 12).map((v) => (
+                  <VehicleCard key={v.id} vehicle={v} />
+                ))}
+              </div>
+              <div className="inventory-pagination">
+                {page > 1 && <Link href={href(page - 1)}>← Previous</Link>}
+                {active.length > page * 12 && (
+                  <Link href={href(page + 1)}>More available vehicles →</Link>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="inventory-empty">
+              <h3>
+                {searching
+                  ? "No available vehicles match that search."
+                  : "New inventory is on the way."}
+              </h3>
+              <p>
+                Tell us what you’re looking for, and we’ll help you find your
+                next vehicle.
+              </p>
+              <a className="button button-primary" href="#vehicle-request">
+                Send a vehicle request
+              </a>
+            </div>
+          )}
+          {!searching && sold.length > 0 && (
+            <section className="sold-archive">
+              <div className="section-heading">
+                <span className="kicker">Previously on our lot</span>
+                <h2>Recently sold.</h2>
+                <p>
+                  These vehicles have found new owners and are no longer
+                  available. See something you like? Ask us about a similar
+                  vehicle.
+                </p>
+              </div>
+              <div className="vehicle-grid">
+                {sold.slice((soldPage - 1) * 9, soldPage * 9).map((v) => (
+                  <VehicleCard key={v.id} vehicle={v} />
+                ))}
+              </div>
+              <div className="inventory-pagination">
+                {soldPage > 1 && (
+                  <Link href={`/inventory?soldPage=${soldPage - 1}`}>
+                    ← Previous sold listings
+                  </Link>
+                )}
+                {sold.length > soldPage * 9 && (
+                  <Link href={`/inventory?soldPage=${soldPage + 1}`}>
+                    More sold listings →
+                  </Link>
+                )}
+              </div>
+            </section>
+          )}
         </div>
       </section>
       <section className="page-section page-section-muted" id="vehicle-request">
         <div className="container content-split">
           <div className="content-intro">
             <span className="kicker">Vehicle request</span>
-            <h2>What are you looking for?</h2>
-            <p>Give us the basics. This is not a commitment to buy—it simply helps us understand what shoppers want to see when inventory arrives.</p>
-            <ul className="feature-list">
-              <li><Camera aria-hidden="true" />Listings will use actual vehicle photos</li>
-              <li><Check aria-hidden="true" />Price and mileage shown clearly</li>
-              <li><Check aria-hidden="true" />Availability confirmed before your visit</li>
-            </ul>
+            <h2>Have something specific in mind?</h2>
+            <p>
+              Tell us your preferred make, model, budget, and must-have
+              features. We’ll be in touch.
+            </p>
           </div>
           <LeadForm kind="vehicle" />
         </div>

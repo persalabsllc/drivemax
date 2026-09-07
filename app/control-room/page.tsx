@@ -19,6 +19,7 @@ import type { Lead, Message, Staff } from "../../lib/crm-types";
 import { logoutAction } from "./actions";
 import VehicleEditor from "./VehicleEditor";
 import LeadEditor from "./LeadEditor";
+import { leadLabel } from "../../lib/purchase-requests";
 
 export const dynamic = "force-dynamic";
 const one = (v: string | string[] | undefined) =>
@@ -34,6 +35,7 @@ export default async function ControlRoom({
   const page = Math.max(1, Math.min(10000, Number(one(p.page)) || 1));
   const q = one(p.q).slice(0, 100);
   const status = one(p.status);
+  const requestType = one(p.type) === "purchase-offer" ? "purchase-offer" : "";
   const base = tab === "leads" ? "leads" : "vehicles";
   let query = db()
     .from(base)
@@ -53,6 +55,8 @@ export default async function ControlRoom({
     )
   )
     query = query.eq("status", status);
+  if (base === "leads" && requestType)
+    query = query.eq("details->>purpose", requestType);
   const [list, inventoryCount, newCount, followupCount, staffResult] =
     await Promise.all([
       query.range((page - 1) * 30, page * 30 - 1),
@@ -120,7 +124,7 @@ export default async function ControlRoom({
     }
   }
   const pagination = (n: number) =>
-    `/control-room?${new URLSearchParams({ tab, q, status, page: String(n) })}`;
+    `/control-room?${new URLSearchParams({ tab, q, status, type: requestType, page: String(n) })}`;
   return (
     <div className="cr-shell">
       <aside className="cr-sidebar">
@@ -252,6 +256,17 @@ export default async function ControlRoom({
                   )}
                 </select>
               </label>
+              {tab === "leads" && (
+                <label>
+                  Request type
+                  <select name="type" defaultValue={requestType}>
+                    <option value="">All inquiries</option>
+                    <option value="purchase-offer">
+                      Purchase offer requests
+                    </option>
+                  </select>
+                </label>
+              )}
               <button className="button button-secondary">Search</button>
               <Link href={`/control-room?tab=${tab}`} className="text-link">
                 Reset
@@ -278,7 +293,7 @@ export default async function ControlRoom({
                           <td>
                             <strong>{l.name}</strong>
                             <small>
-                              {l.kind} ·{" "}
+                              {leadLabel(l)} ·{" "}
                               {new Date(l.created_at).toLocaleDateString(
                                 "en-US",
                                 { timeZone: "America/New_York" },

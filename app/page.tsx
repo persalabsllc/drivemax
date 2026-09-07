@@ -82,6 +82,12 @@ export default async function Home() {
       </section>
 
       <FeaturedInventory />
+      <section className="section sell-home-section">
+        <div className="container sell-home-card">
+          <div><span className="kicker">We buy vehicles</span><h2>Ready to sell your car?</h2><p>Send us your VIN, mileage, and a few details. Our team will review your vehicle and follow up to discuss a purchase offer.</p></div>
+          <Link className="button button-primary" href="/sell-your-car">Get a purchase offer <ArrowRight aria-hidden="true" size={18} /></Link>
+        </div>
+      </section>
       {!hasInventory && <section className="section inventory-intro">
         <div className="container">
           <div className="section-heading section-heading-split">

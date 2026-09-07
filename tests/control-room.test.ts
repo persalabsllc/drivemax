@@ -169,6 +169,49 @@ test("Postgres migration: persistence, idempotent intake, sold URL stability, an
       ).rows[0].count,
       1,
     );
+    const purchaseId = "7f56bb23-3eb1-4c20-9f44-e2d017278162";
+    const purchasePayload = {
+      ...payload,
+      requestId: purchaseId,
+      purpose: "purchase-offer",
+      sellerVin: "1HGCM82633A004352",
+      sellerMiles: "85000",
+      condition: "Good",
+      titleStatus: "Clean title",
+      askingPrice: "4500",
+      message: "Purchase offer requested. Recent tires.",
+    };
+    for (let i = 0; i < 2; i++)
+      await pg.query("select public.submit_lead($1::jsonb)", [
+        JSON.stringify(purchasePayload),
+      ]);
+    const purchase = (
+      await pg.query<{
+        details: Record<string, string>;
+        vehicle_id: string | null;
+      }>("select details,vehicle_id from public.leads where id=$1", [
+        purchaseId,
+      ])
+    ).rows[0];
+    assert.equal(purchase.details.purpose, "purchase-offer");
+    assert.equal(purchase.details.sellerVin, purchasePayload.sellerVin);
+    assert.equal(purchase.details.sellerMiles, "85000");
+    assert.equal(purchase.details.askingPrice, "4500");
+    assert.equal(purchase.vehicle_id, null);
+    const purchaseMessages = await pg.query<{ body: string }>(
+      "select body from public.messages where lead_id=$1",
+      [purchaseId],
+    );
+    assert.equal(purchaseMessages.rows.length, 1);
+    assert.equal(purchaseMessages.rows[0].body, purchasePayload.message);
+    assert.equal(
+      (
+        await pg.query(
+          "select id from public.leads where details->>'purpose'='purchase-offer'",
+        )
+      ).rows.length,
+      1,
+    );
     for (let i = 0; i < 3; i++) {
       const r = await pg.query<{ allowed: boolean }>(
         "select public.take_request_slot($1,2) as allowed",

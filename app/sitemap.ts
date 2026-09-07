@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next';
 import {publicInventory} from '../lib/backend';
 export const dynamic = 'force-dynamic';
 
-const routes = ['', '/inventory', '/apply', '/about', '/about/staff', '/about/employment', '/contact', '/payments'];
+const routes = ['', '/inventory', '/sell-your-car', '/apply', '/about', '/about/staff', '/about/employment', '/contact', '/payments'];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const vehicles = await publicInventory('available,pending,sold');

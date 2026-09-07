@@ -10,6 +10,7 @@ import {
 import VehicleGallery from "../../_components/VehicleGallery";
 import VehicleCard from "../../_components/VehicleCard";
 import LeadForm from "../../_components/ConnectedLeadForm";
+import VehicleHistory from "../../_components/VehicleHistory";
 export const dynamic = "force-dynamic";
 type Props = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -156,6 +157,19 @@ export default async function VehiclePage({ params }: Props) {
                     <li key={`${i}-${f}`}>{f}</li>
                   ))}
                 </ul>
+                {v.features.some((f) => f.startsWith("NHTSA ")) && (
+                  <p className="form-help">
+                    Crash-test ratings apply to the vehicle version shown.{" "}
+                    <a
+                      className="text-link"
+                      href="https://www.nhtsa.gov/ratings"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      About NHTSA safety ratings ↗
+                    </a>
+                  </p>
+                )}
               </>
             )}
             {!sold && v.financing && (
@@ -168,6 +182,7 @@ export default async function VehiclePage({ params }: Props) {
               </>
             )}
           </div>
+          <VehicleHistory vin={v.vin} />
         </div>
       </section>
       <section className="page-section page-section-muted" id="vehicle-inquiry">

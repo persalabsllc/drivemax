@@ -25,6 +25,7 @@ export const viewport: Viewport = {
 
 const primaryLinks = [
   { href: '/inventory', label: 'Inventory' },
+  { href: '/sell-your-car', label: 'Sell your car' },
   { href: '/apply', label: 'Financing' },
   { href: '/about', label: 'About' },
   { href: '/contact', label: 'Contact' },
@@ -82,6 +83,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <div className="footer-column">
               <h2>Shop</h2>
               <Link href="/inventory">Inventory updates</Link>
+              <Link href="/sell-your-car">Sell your car</Link>
               <Link href="/apply">Financing request</Link>
               <Link href="/payments">Payment help</Link>
             </div>

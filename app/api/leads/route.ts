@@ -1,6 +1,7 @@
 import { backendReady, db } from "../../../lib/backend";
 import { leadSchema } from "../../../lib/inventory";
 import { takeSlot } from "../../../lib/rate-limit";
+import { purchaseSummary } from "../../../lib/purchase-requests";
 
 export async function POST(request: Request) {
   if (!backendReady())
@@ -30,6 +31,10 @@ export async function POST(request: Request) {
       );
     const v = parsed.data;
     if (v.website) return Response.json({ ok: true });
+    if (v.purpose === "purchase-offer") {
+      v.reason = "Sell us your car";
+      v.message = purchaseSummary(v);
+    }
     const ip =
       request.headers.get("x-vercel-forwarded-for") ||
       request.headers.get("x-forwarded-for") ||

@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 import { addMessage, saveLead } from "./actions";
 import { leadStatuses } from "../../lib/inventory";
 import type { Lead, Message, Staff } from "../../lib/crm-types";
+import {
+  isPurchaseRequest,
+  leadLabel,
+  purchaseLabels,
+  purchaseOfferDraft,
+} from "../../lib/purchase-requests";
 
 function localDate(value: string | null) {
   if (!value) return "";
@@ -33,6 +39,11 @@ export default function LeadEditor({
   const [messageId, setMessageId] = useState("");
   const [direction, setDirection] = useState("note");
   const [body, setBody] = useState("");
+  const [offerAmount, setOfferAmount] = useState("");
+  const purchaseRequest = isPurchaseRequest(lead);
+  const details = Object.entries(lead.details).filter(
+    ([key, value]) => key !== "purpose" && value,
+  );
   const [retry, setRetry] = useState<{
     id: string;
     body: string;
@@ -59,7 +70,7 @@ export default function LeadEditor({
           <span className="kicker">Customer conversation</span>
           <h2>{lead.name}</h2>
           <p className="cr-muted">
-            {lead.kind} inquiry · Prefers {lead.preferred_contact.toLowerCase()}
+            {leadLabel(lead)} · Prefers {lead.preferred_contact.toLowerCase()}
           </p>
         </div>
         <span className={`cr-badge ${lead.status}`}>{lead.status}</span>
@@ -75,16 +86,14 @@ export default function LeadEditor({
           </Link>
         )}
       </div>
-      {Object.entries(lead.details).filter(([, v]) => v).length > 0 && (
+      {details.length > 0 && (
         <dl className="cr-details">
-          {Object.entries(lead.details)
-            .filter(([, v]) => v)
-            .map(([k, v]) => (
-              <div key={k}>
-                <dt>{k.replace(/([A-Z])/g, " $1")}</dt>
-                <dd>{v}</dd>
-              </div>
-            ))}
+          {details.map(([k, v]) => (
+            <div key={k}>
+              <dt>{purchaseLabels[k] || k.replace(/([A-Z])/g, " $1")}</dt>
+              <dd>{v}</dd>
+            </div>
+          ))}
         </dl>
       )}
       <form
@@ -178,6 +187,63 @@ export default function LeadEditor({
           Email replies become available once dealership email is connected.
           Internal notes are available now.
         </p>
+      )}
+      {purchaseRequest && (
+        <div className="cr-offer-draft">
+          <h3>Prepare a purchase offer</h3>
+          <p className="cr-muted">
+            Enter your offer to prepare an email below. Review the wording, then
+            choose Send email.
+          </p>
+          <div className="cr-offer-controls">
+            <label>
+              Offer amount ($)
+              <input
+                type="number"
+                min="1"
+                max="2000000"
+                step="0.01"
+                value={offerAmount}
+                disabled={busy || !!retry}
+                onChange={(e) => setOfferAmount(e.target.value)}
+              />
+            </label>
+            <button
+              type="button"
+              className="button button-secondary"
+              disabled={
+                busy ||
+                !!retry ||
+                !!body.trim() ||
+                !canEmail ||
+                !lead.email ||
+                !purchaseOfferDraft(lead, offerAmount)
+              }
+              onClick={() => {
+                setBody(purchaseOfferDraft(lead, offerAmount));
+                setDirection("outbound");
+                setMessageId("");
+                setNotice(
+                  "Offer email prepared below. Review it before sending.",
+                );
+                setIsError(false);
+              }}
+            >
+              Prepare offer email
+            </button>
+          </div>
+          {body.trim() && !retry && (
+            <p className="cr-muted">
+              Finish or clear your current message before preparing an offer.
+            </p>
+          )}
+          {!lead.email && (
+            <p className="cr-muted">
+              This customer supplied a phone number only. Contact them by phone
+              and record the offer as an internal note.
+            </p>
+          )}
+        </div>
       )}
       <form
         className="cr-form"

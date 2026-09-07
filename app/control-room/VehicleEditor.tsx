@@ -1,10 +1,18 @@
 "use client";
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { saveVehicle } from "./actions";
 import { vehicleStatuses, type Vehicle } from "../../lib/inventory";
+import {
+  mergeDecodedFields,
+  mergeFeatureLines,
+  type DecodedFields,
+  type DecodedVehicle,
+} from "../../lib/vehicle-data";
+import VinLookup from "../_components/VinLookup";
+import SafetyRatings from "./SafetyRatings";
 
 export default function VehicleEditor({
   vehicle,
@@ -20,6 +28,45 @@ export default function VehicleEditor({
   const [notice, setNotice] = useState("");
   const [error, setError] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [decoding, setDecoding] = useState(false);
+  const [vin, setVin] = useState(vehicle?.vin || "");
+  const [fields, setFields] = useState({
+    year: vehicle ? String(vehicle.year) : "",
+    make: vehicle?.make || "",
+    model: vehicle?.model || "",
+    trim: vehicle?.trim || "",
+    body_style: vehicle?.body_style || "",
+    transmission: vehicle?.transmission || "",
+    fuel: vehicle?.fuel || "",
+    drivetrain: vehicle?.drivetrain || "",
+  });
+  const [features, setFeatures] = useState(vehicle?.features.join("\n") || "");
+  const previousDecode = useRef<DecodedFields>({});
+  const previousFeatures = useRef<string[]>([]);
+  const ratingIdentity = `${vin}/${fields.year}/${fields.make}/${fields.model}/${fields.drivetrain}`;
+  const previousRatingIdentity = useRef(ratingIdentity);
+  useEffect(() => {
+    if (previousRatingIdentity.current !== ratingIdentity) {
+      setFeatures((current) =>
+        current
+          .split("\n")
+          .filter((line) => !line.trim().startsWith("NHTSA "))
+          .join("\n"),
+      );
+      previousRatingIdentity.current = ratingIdentity;
+    }
+  }, [ratingIdentity]);
+  const applyDecoded = useCallback((data: DecodedVehicle) => {
+    const previous = previousDecode.current,
+      oldFeatures = previousFeatures.current;
+    setFields((current) => mergeDecodedFields(current, data.fields, previous));
+    setFeatures((current) =>
+      mergeFeatureLines(current, oldFeatures, data.features),
+    );
+    previousDecode.current = data.fields;
+    previousFeatures.current = data.features;
+    setDirty(true);
+  }, []);
   const formRef = useRef<HTMLFormElement>(null);
   function reorder(index: number, step: number) {
     const next = [...photos];
@@ -67,6 +114,7 @@ export default function VehicleEditor({
       onChange={() => setDirty(true)}
       onSubmit={async (e) => {
         e.preventDefault();
+        if (decoding || uploading || busy) return;
         setBusy(true);
         setError(false);
         setNotice("");
@@ -109,6 +157,19 @@ export default function VehicleEditor({
         value={vehicle?.updated_at || ""}
       />
       <fieldset disabled={busy || uploading} className="cr-fieldset">
+        <VinLookup
+          vin={vin}
+          onVinChange={setVin}
+          onDecoded={applyDecoded}
+          onBusyChange={setDecoding}
+          initialVin={vehicle?.vin || ""}
+          disabled={busy || uploading}
+        />
+        <p className="cr-muted">
+          VIN lookup fills blank fields and adds reported specifications to
+          Features. Existing details stay editable. Confirm equipment on the
+          vehicle before publishing.
+        </p>
         <div className="cr-grid three">
           <label>
             Year
@@ -118,7 +179,10 @@ export default function VehicleEditor({
               required
               min="1900"
               max={new Date().getFullYear() + 2}
-              defaultValue={vehicle?.year || new Date().getFullYear()}
+              value={fields.year}
+              onChange={(e) =>
+                setFields((current) => ({ ...current, year: e.target.value }))
+              }
             />
           </label>
           <label>
@@ -127,7 +191,10 @@ export default function VehicleEditor({
               name="make"
               required
               maxLength={60}
-              defaultValue={vehicle?.make}
+              value={fields.make}
+              onChange={(e) =>
+                setFields((current) => ({ ...current, make: e.target.value }))
+              }
             />
           </label>
           <label>
@@ -136,21 +203,21 @@ export default function VehicleEditor({
               name="model"
               required
               maxLength={80}
-              defaultValue={vehicle?.model}
+              value={fields.model}
+              onChange={(e) =>
+                setFields((current) => ({ ...current, model: e.target.value }))
+              }
             />
           </label>
           <label>
             Trim
-            <input name="trim" maxLength={100} defaultValue={vehicle?.trim} />
-          </label>
-          <label>
-            VIN
             <input
-              name="vin"
-              required
-              minLength={17}
-              maxLength={17}
-              defaultValue={vehicle?.vin}
+              name="trim"
+              maxLength={100}
+              value={fields.trim}
+              onChange={(e) =>
+                setFields((current) => ({ ...current, trim: e.target.value }))
+              }
             />
           </label>
           <label>
@@ -208,8 +275,17 @@ export default function VehicleEditor({
               {label}
               <input
                 name={name}
-                maxLength={60}
-                defaultValue={vehicle?.[name]}
+                maxLength={name === "transmission" ? 80 : 60}
+                {...(name === "exterior"
+                  ? { defaultValue: vehicle?.exterior }
+                  : {
+                      value: fields[name],
+                      onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+                        setFields((current) => ({
+                          ...current,
+                          [name]: e.target.value,
+                        })),
+                    })}
               />
             </label>
           ))}
@@ -242,7 +318,8 @@ export default function VehicleEditor({
             <textarea
               name="features"
               rows={6}
-              defaultValue={vehicle?.features.join("\n")}
+              value={features}
+              onChange={(e) => setFeatures(e.target.value)}
               placeholder={"Backup camera\nBluetooth\nHeated seats"}
             />
           </label>
@@ -257,6 +334,23 @@ export default function VehicleEditor({
             />
           </label>
         </div>
+        <SafetyRatings
+          key={ratingIdentity}
+          year={fields.year}
+          make={fields.make}
+          model={fields.model}
+          disabled={busy || uploading || decoding}
+          onImport={(incoming) => {
+            setFeatures((current) =>
+              mergeFeatureLines(
+                current,
+                current.split("\n").filter((line) => line.startsWith("NHTSA ")),
+                incoming,
+              ),
+            );
+            setDirty(true);
+          }}
+        />
         <div>
           <h3>Vehicle photos</h3>
           <p className="cr-muted">
@@ -334,7 +428,10 @@ export default function VehicleEditor({
                 ? "All changes saved"
                 : "Start with the vehicle basics"}
         </span>
-        <button className="button button-primary" disabled={busy || uploading}>
+        <button
+          className="button button-primary"
+          disabled={busy || uploading || decoding}
+        >
           {busy ? "Saving…" : "Save vehicle"}
         </button>
       </div>

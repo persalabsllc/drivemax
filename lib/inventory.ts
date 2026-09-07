@@ -1,4 +1,11 @@
 import { z } from "zod";
+import { VIN_PATTERN } from "./vehicle-data";
+import {
+  vehicleConditions,
+  titleStatuses,
+  accidentHistories,
+  loanStatuses,
+} from "./purchase-requests";
 
 export const vehicleStatuses = [
   "draft",
@@ -121,8 +128,56 @@ export const leadSchema = z
     reason: z.string().max(120).optional(),
     position: z.string().max(120).optional(),
     website: z.string().max(200).default(""),
+    purpose: z.literal("purchase-offer").optional(),
+    sellerVin: z.string().trim().toUpperCase().max(17).optional(),
+    sellerMiles: z.string().trim().max(10).optional(),
+    sellerYear: z.string().trim().max(4).optional(),
+    sellerMake: z.string().trim().max(60).optional(),
+    sellerModel: z.string().trim().max(80).optional(),
+    sellerTrim: z.string().trim().max(100).optional(),
+    condition: z
+      .enum(vehicleConditions, {
+        error: "Choose the vehicle's overall condition.",
+      })
+      .optional(),
+    titleStatus: z
+      .enum(titleStatuses, { error: "Choose the vehicle's title status." })
+      .optional(),
+    accidentHistory: z.enum(accidentHistories).optional(),
+    loanStatus: z.enum(loanStatuses).optional(),
+    askingPrice: z.string().trim().max(12).optional(),
+    sellerZip: z.string().trim().max(10).optional(),
   })
   .superRefine((v, ctx) => {
+    if (v.purpose === "purchase-offer") {
+      const issue = (message: string) =>
+        ctx.addIssue({ code: "custom", message });
+      if (v.kind !== "vehicle" || v.vehicleId)
+        issue("Please submit your vehicle through the Sell your car form.");
+      if (!VIN_PATTERN.test(v.sellerVin || ""))
+        issue("Enter the vehicle's complete 17-character VIN.");
+      if (!/^\d+$/.test(v.sellerMiles || "") || Number(v.sellerMiles) > 2000000)
+        issue("Enter a valid mileage between 0 and 2,000,000.");
+      if (
+        !/^\d{4}$/.test(v.sellerYear || "") ||
+        Number(v.sellerYear) < 1981 ||
+        Number(v.sellerYear) > new Date().getFullYear() + 2
+      )
+        issue("Enter the vehicle's model year (1981 or newer).");
+      if (!v.sellerMake || !v.sellerModel)
+        issue("Enter the vehicle's make and model.");
+      if (!v.condition || !v.titleStatus)
+        issue("Choose the vehicle's condition and title status.");
+      if (!/^\d{5}(-\d{4})?$/.test(v.sellerZip || ""))
+        issue("Enter your ZIP code.");
+      if (
+        v.askingPrice &&
+        (!/^\d+(\.\d{1,2})?$/.test(v.askingPrice) ||
+          Number(v.askingPrice) <= 0 ||
+          Number(v.askingPrice) > 2000000)
+      )
+        issue("Enter a valid asking price, or leave it blank.");
+    }
     if (v.preferredContact === "Email" && !v.email)
       ctx.addIssue({
         code: "custom",

@@ -145,6 +145,39 @@
   display: grid;
   gap: 20px;
 }
+.cr-rating-lookup,
+.cr-offer-draft {
+  padding: 22px;
+  border: 1px solid #dce5ef;
+  border-radius: 10px;
+  background: #f7faff;
+  min-width: 0;
+}
+.cr-rating-lookup .cr-section-heading {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+.cr-rating-lookup .cr-section-heading > div {
+  flex: 1 1 250px;
+}
+.cr-rating-results {
+  margin-block: 18px;
+}
+.cr-rating-results ul {
+  padding-left: 20px;
+}
+.cr-offer-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: flex-end;
+}
+.cr-offer-controls label {
+  flex: 1 1 150px;
+}
+.cr-form .vin-lookup > p {
+  margin: 0;
+}
 .cr-form label,
 .cr-filters label {
   display: grid;

@@ -387,3 +387,44 @@ main[id], main [id] { scroll-margin-top: 110px; }
   .brand img { width: 145px; height: 145px; }
   .mobile-nav summary { padding-inline: 10px; }
 }
+
+.vin-lookup { display: grid; gap: 9px; min-width: 0; }
+.vin-lookup > label { font-size: 14px; font-weight: 750; }
+.vin-lookup-row { display: flex; gap: 10px; align-items: stretch; }
+.vin-lookup-row input { min-width: 0; width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px 14px; font: inherit; letter-spacing: .03em; background: #fff; color: var(--navy-950); }
+.vin-lookup-row .button { flex-shrink: 0; }
+.vin-lookup .form-help { max-width: none; }
+.vin-lookup :disabled { opacity: .6; cursor: default; }
+.sell-hero .button { margin-top: 26px; }
+.sell-fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 28px; min-width: 0; }
+.sell-form { min-width: 0; }
+.sell-form-heading { display: flex; gap: 14px; align-items: flex-start; }
+.sell-form-heading h2 { margin: 0; font-size: 23px; letter-spacing: -.025em; line-height: 1.25; }
+.sell-form-heading p { margin: 7px 0 0; color: #64748b; font-size: 14px; }
+.sell-step { display: grid; place-items: center; width: 36px; height: 36px; flex: 0 0 36px; background: #e7f0ff; color: #185bb6; border-radius: 50%; font-weight: 800; }
+.sell-process { display: grid; gap: 28px; margin-top: 32px; }
+.sell-process > div { display: grid; grid-template-columns: 30px minmax(0, 1fr); column-gap: 14px; }
+.sell-process svg { color: #1a5eb7; grid-row: span 2; margin-top: 3px; }
+.sell-process h3 { margin: 0; font-size: 18px; }
+.sell-process p { margin: 7px 0 0; font-size: 15px; }
+.sell-location { border-top: 1px solid var(--line); padding-top: 26px; margin-top: 32px !important; font-size: 14px !important; }
+.sell-home-section { padding-block: 44px; }
+.sell-home-card { display: flex; align-items: center; justify-content: space-between; gap: 30px; padding: 36px; background: #edf4ff; border: 1px solid #d7e4f6; border-radius: 18px; }
+.sell-home-card h2 { margin: 8px 0 12px; font-size: clamp(28px, 3vw, 40px); letter-spacing: -.04em; line-height: 1.1; }
+.sell-home-card p { margin: 0; max-width: 660px; color: #53657b; }
+.sell-home-card .button { flex-shrink: 0; }
+.vehicle-history { margin-top: 40px; padding: 30px; background: #f0f5fc; border: 1px solid #dce5ef; border-radius: 14px; }
+.vehicle-history h2 { margin: 8px 0 14px; font-size: 28px; letter-spacing: -.035em; }
+.vehicle-history > p { max-width: 720px; }
+.vehicle-history-vin { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; margin-block: 20px; }
+.vehicle-history-vin code { overflow-wrap: anywhere; font-size: 16px; letter-spacing: .04em; user-select: all; }
+.vehicle-history .button-row { align-items: center; margin-block: 20px; }
+@media (max-width: 760px) {
+  .sell-home-card { align-items: flex-start; flex-direction: column; padding: 26px; }
+  .sell-home-card .button { width: 100%; }
+  .vehicle-history { padding: 24px 20px; }
+}
+@media (max-width: 520px) {
+  .vin-lookup-row { flex-direction: column; }
+  .sell-form .form-footer .button { font-size: 14px; padding-inline: 12px; }
+}

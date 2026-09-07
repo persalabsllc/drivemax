@@ -53,7 +53,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <div className="announcement-bar">
           <div className="container announcement-inner">
             <span><MapPin aria-hidden="true" size={15} />6210 Old US Hwy 70 West, New Bern, NC</span>
-            <Link href="mailto:hello@drivemaxusedcars.com"><Mail aria-hidden="true" size={15} />hello@drivemaxusedcars.com</Link>
+            <Link href="mailto:sales@drivemaxusedcars.com"><Mail aria-hidden="true" size={15} />sales@drivemaxusedcars.com</Link>
           </div>
         </div>
         <header className="site-header">
@@ -96,7 +96,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               <a href="https://www.google.com/maps/dir/?api=1&destination=6210+Old+US+Hwy+70+West+New+Bern+NC+28562" target="_blank" rel="noreferrer">
                 6210 Old US Hwy 70 West<br />New Bern, NC 28562
               </a>
-              <a href="mailto:hello@drivemaxusedcars.com">hello@drivemaxusedcars.com</a>
+              <a href="mailto:sales@drivemaxusedcars.com">sales@drivemaxusedcars.com</a>
             </div>
           </div>
           <div className="container footer-bottom">

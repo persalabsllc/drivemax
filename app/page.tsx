@@ -167,7 +167,7 @@ export default async function Home() {
               <MapPin aria-hidden="true" />
               <span><strong>Drive Max Used Cars LLC</strong><br />6210 Old US Hwy 70 West<br />New Bern, NC 28562</span>
             </address>
-            <a className="contact-row" href="mailto:hello@drivemaxusedcars.com"><Mail aria-hidden="true" />hello@drivemaxusedcars.com</a>
+            <a className="contact-row" href="mailto:sales@drivemaxusedcars.com"><Mail aria-hidden="true" />sales@drivemaxusedcars.com</a>
             <div className="button-row">
               <a className="button button-primary" href="https://www.google.com/maps/dir/?api=1&destination=6210+Old+US+Hwy+70+West+New+Bern+NC+28562" target="_blank" rel="noreferrer">Get directions <ArrowRight aria-hidden="true" size={18} /></a>
               <Link className="button button-secondary" href="/contact">Contact us</Link>

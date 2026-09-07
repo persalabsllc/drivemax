@@ -7,7 +7,7 @@ export async function POST(request: Request) {
     return Response.json(
       {
         error:
-          "Online submissions are not connected yet. Email hello@drivemaxusedcars.com.",
+          "Online submissions are not connected yet. Email sales@drivemaxusedcars.com.",
       },
       { status: 503 },
     );
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
     return Response.json(
       {
         error:
-          "Your inquiry was not confirmed. Please try again or email hello@drivemaxusedcars.com.",
+          "Your inquiry was not confirmed. Please try again or email sales@drivemaxusedcars.com.",
       },
       { status: 503 },
     );

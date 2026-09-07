@@ -110,7 +110,7 @@ export default function LeadForm({ kind, online = false, vehicleId = '' }: { kin
     const body = ['New inquiry from the Drive Max Used Cars website', '', ...details, '', 'Please respond using the contact information above.'].join('\n');
 
     setStatus({ type: 'info', message: 'Your email app should open with the request prepared. Review it and press Send to finish.' });
-    window.location.href = `mailto:hello@drivemaxusedcars.com?subject=${encodeURIComponent(subjects[kind])}&body=${encodeURIComponent(body)}`;
+    window.location.href = `mailto:sales@drivemaxusedcars.com?subject=${encodeURIComponent(subjects[kind])}&body=${encodeURIComponent(body)}`;
   }
 
   const messageOptional = kind === 'vehicle' || kind === 'finance';
@@ -119,7 +119,7 @@ export default function LeadForm({ kind, online = false, vehicleId = '' }: { kin
   return (
     <form
       className="lead-form"
-      action={`mailto:hello@drivemaxusedcars.com?subject=${encodeURIComponent(subjects[kind])}`}
+      action={`mailto:sales@drivemaxusedcars.com?subject=${encodeURIComponent(subjects[kind])}`}
       method="post"
       encType="text/plain"
       onSubmit={handleSubmit}

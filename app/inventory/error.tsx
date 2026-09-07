@@ -5,7 +5,7 @@ export default function InventoryError({ reset }: { reset: () => void }) {
       <div className="container inventory-empty">
         <h1>Inventory is temporarily unavailable.</h1>
         <p>
-          Please try again or email hello@drivemaxusedcars.com for availability.
+          Please try again or email sales@drivemaxusedcars.com for availability.
         </p>
         <button onClick={reset} className="button button-primary">
           Try again

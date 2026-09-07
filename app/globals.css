@@ -414,11 +414,7 @@ main[id], main [id] { scroll-margin-top: 110px; }
 .sell-home-card p { margin: 0; max-width: 660px; color: #53657b; }
 .sell-home-card .button { flex-shrink: 0; }
 .vehicle-history { margin-top: 40px; padding: 30px; background: #f0f5fc; border: 1px solid #dce5ef; border-radius: 14px; }
-.vehicle-history h2 { margin: 8px 0 14px; font-size: 28px; letter-spacing: -.035em; }
 .vehicle-history > p { max-width: 720px; }
-.vehicle-history-vin { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; margin-block: 20px; }
-.vehicle-history-vin code { overflow-wrap: anywhere; font-size: 16px; letter-spacing: .04em; user-select: all; }
-.vehicle-history .button-row { align-items: center; margin-block: 20px; }
 .carfax-report-link { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 14px; padding: 20px 24px; margin-bottom: 18px; max-width: 100%; background: #fff; border: 1px solid #cbd8e7; border-radius: 10px; color: #1a5eb7; box-shadow: 0 3px 10px #0c1c3108; }
 .carfax-report-link:hover { border-color: #1a5eb7; box-shadow: 0 5px 16px #0c1c3115; }
 .carfax-report-link img { display: block; width: 172px; height: 36px; max-width: 100%; object-fit: contain; object-position: left center; }

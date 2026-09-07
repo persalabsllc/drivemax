@@ -393,7 +393,8 @@ main[id], main [id] { scroll-margin-top: 124px; }
   .announcement-inner { justify-content: center; text-align: center; padding-block: 8px; }
   .announcement-inner a { display: none; }
   .header-inner { min-height: 84px; gap: 16px; }
-  .brand { width: clamp(176px, calc(100vw - 180px), 204px); margin-block: -12px; }
+  .brand { width: clamp(176px, calc(100vw - 180px), 204px); min-width: 0; flex-shrink: 1; margin-block: -12px; }
+  .mobile-nav { flex-shrink: 0; }
   .home-hero::after { display: none; }
   .hero-grid { padding-block: 46px 54px; gap: 36px; }
   .hero-copy h1 { font-size: clamp(45px, 14vw, 66px); }

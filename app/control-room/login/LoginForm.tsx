@@ -13,18 +13,17 @@ export default function LoginForm() {
         <input name="email" type="email" required autoComplete="email" />
       </label>
       <label>
-        Sign-in code{" "}
-        <span className="cr-muted">(leave blank to request one)</span>
+        Password
         <input
-          name="code"
-          inputMode="numeric"
-          pattern="[0-9]{6,10}"
-          autoComplete="one-time-code"
-          maxLength={10}
+          name="password"
+          type="password"
+          autoComplete="current-password"
+          required
+          maxLength={256}
         />
       </label>
       <button className="button button-primary" disabled={pending}>
-        {pending ? "Signing in…" : "Continue"}
+        {pending ? "Signing in…" : "Sign in"}
       </button>
       <p
         className={state.error ? "cr-error" : "cr-muted"}

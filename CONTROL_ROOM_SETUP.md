@@ -20,9 +20,11 @@ Keep Preview and Production on separate Supabase projects when testing. Do not p
 
 ## 2. Staff sign-in
 
-Create the first owner in **Supabase Authentication → Users**, using the owner's chosen email address. Disable public signups. Configure production SMTP for Supabase Auth.
+Create the first owner in **Supabase Authentication → Users → Add user → Create new user**, using the owner's chosen email address and password. Enter the password only in Supabase's account form, never in SQL or source files. Enable **Auto Confirm User** for this owner-created account. Disable public signups.
 
-In the **Magic Link email template**, include `{{ .Token }}` as the sign-in code. The website accepts email codes, not magic-link redirects. Configure OTP expiry and provider rate limits. Then insert that user's ID in `public.staff`:
+The website uses Supabase email/password sign-in, followed by a server-side active-staff check. No email-code template or outbound email provider is required to sign in. Configure production SMTP if you later enable recovery/invitation email. Password recovery currently uses the Supabase administrator workflow; there is no public password-reset screen in this version.
+
+After creating the Auth user, add its ID to `public.staff`:
 
 ```sql
 insert into public.staff (id, email, name, role)
@@ -31,7 +33,7 @@ values ('AUTH_USER_UUID', 'owner-email@example.com', 'Owner name', 'owner');
 
 Use the exact lowercased Auth email. Staff access requires both a confirmed Supabase Auth user and an active `staff` row; a public signup alone never grants access. Create additional Auth users and staff rows in the same way. Set `active=false` to revoke application access immediately. The initial version does not include an in-app staff invitation screen.
 
-Staff enter at `/control-room` or the **Staff login** footer link. Request a code, retrieve it from email, then enter the code on the same screen.
+Staff enter at `/control-room` or the **Staff login** footer link and enter their email address and password.
 
 ## 3. Dealership email
 
@@ -52,7 +54,7 @@ Run `npm ci`, `npm test`, and `npm run build`. These verify compilation, validat
 
 On a dedicated staging project, verify these flows with dealership-controlled test accounts:
 
-1. Staff code sign-in succeeds; unknown/inactive accounts cannot access private pages, actions, or uploads. Sign-out and session refresh work.
+1. Staff password sign-in succeeds; incorrect passwords and unknown/inactive accounts cannot access private pages, actions, or uploads. Sign-out and session refresh work. Confirm passwords are never returned in responses or stored in business tables.
 2. Save a draft, upload actual photos, reorder them, publish, reload, and confirm persistence from a second session. Verify concurrent edits produce a reload warning.
 3. Featured available vehicle appears on the homepage and search. Mark it sold: it disappears from those surfaces, remains below available inventory, and retains the same detail URL and sitemap entry. Check metadata and sold structured data.
 4. Submit a contact, financing, and vehicle inquiry. Confirm each appears once, retrying the same submission does not duplicate it, and unsuccessful submissions never show success.

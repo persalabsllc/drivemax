@@ -40,7 +40,9 @@ export async function loginAction(
       .toLowerCase(),
   );
   if (!email.success) return { error: "Enter your staff email address." };
-  const code = String(form.get("code") || "").trim();
+  const password = String(form.get("password") || "");
+  if (!password || password.length > 256)
+    return { error: "Enter your password." };
   try {
     const h = await headers();
     if (
@@ -55,38 +57,15 @@ export async function loginAction(
     )
       return { error: "Please wait before trying again." };
     const auth = await authClient();
-    if (!code) {
-      const { data: staff, error } = await db()
-        .from("staff")
-        .select("id")
-        .eq("email", email.data)
-        .eq("active", true)
-        .maybeSingle();
-      if (error) return { error: "Sign-in is temporarily unavailable." };
-      if (staff) {
-        const sent = await auth.auth.signInWithOtp({
-          email: email.data,
-          options: { shouldCreateUser: false },
-        });
-        if (sent.error)
-          return { error: "Could not send a sign-in code. Try again shortly." };
-      }
-      return {
-        message:
-          "If this is an active staff account, a sign-in code is on its way. Enter it below.",
-      };
-    }
-    if (!/^\d{6,10}$/.test(code))
-      return { error: "Enter the code from your email." };
-    const result = await auth.auth.verifyOtp({
+    const result = await auth.auth.signInWithPassword({
       email: email.data,
-      token: code,
-      type: "email",
+      password,
     });
     if (result.error || !(await staffSession())) {
       await auth.auth.signOut();
       return {
-        error: "That code could not be verified for an active staff account.",
+        error:
+          "Email or password was not accepted for an active staff account.",
       };
     }
   } catch {

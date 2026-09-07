@@ -60,7 +60,16 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <header className="site-header">
           <div className="container header-inner">
             <Link href="/" className="brand" aria-label="Drive Max Used Cars home">
-              <Image src="/drive-max-logo.svg" alt="Drive Max Used Cars" width={320} height={320} priority />
+              <Image
+                src="/drive-max-logo-transparent.webp"
+                alt="Drive Max Used Cars"
+                width={1064}
+                height={532}
+                sizes="(max-width: 360px) 164px, (max-width: 384px) calc(100vw - 180px), (max-width: 760px) 204px, 270px"
+                priority
+              />
+              <span className="brand-sparkle brand-sparkle-top" aria-hidden="true" />
+              <span className="brand-sparkle brand-sparkle-bottom" aria-hidden="true" />
             </Link>
             <nav className="desktop-nav" aria-label="Primary navigation">
               <HeaderLinks />
@@ -73,7 +82,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <div className="container footer-grid">
             <div className="footer-brand-column">
               <Link href="/" className="footer-logo" aria-label="Drive Max Used Cars home">
-                <Image src="/drive-max-logo.svg" alt="" width={320} height={320} />
+                <Image src="/drive-max-logo-transparent.webp" alt="" width={1064} height={532} sizes="210px" />
               </Link>
               <div>
                 <strong>Drive Max Used Cars LLC</strong>

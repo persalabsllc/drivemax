@@ -1,9 +1,13 @@
 "use client";
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { addMessage, saveLead } from "./actions";
 import { leadStatuses } from "../../lib/inventory";
+import {
+  isVehicleSnapshotKey,
+  type LeadVehicle,
+} from "../../lib/lead-vehicles";
+import VehicleAssignment from "./VehicleAssignment";
 import type { Lead, Message, Staff } from "../../lib/crm-types";
 import {
   isPurchaseRequest,
@@ -24,13 +28,15 @@ export default function LeadEditor({
   messages,
   staff,
   canEmail,
-  vehicleLink,
+  vehicle,
+  vehicles,
 }: {
   lead: Lead;
   messages: Message[];
   staff: Staff[];
   canEmail: boolean;
-  vehicleLink: string | null;
+  vehicle: LeadVehicle | null;
+  vehicles: LeadVehicle[];
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -42,7 +48,11 @@ export default function LeadEditor({
   const [offerAmount, setOfferAmount] = useState("");
   const purchaseRequest = isPurchaseRequest(lead);
   const details = Object.entries(lead.details).filter(
-    ([key, value]) => key !== "purpose" && value,
+    ([key, value]) =>
+      key !== "purpose" &&
+      !isVehicleSnapshotKey(key) &&
+      !(key === "vehicle" && lead.details.originalVehicleId) &&
+      value,
   );
   const [retry, setRetry] = useState<{
     id: string;
@@ -80,12 +90,41 @@ export default function LeadEditor({
         {lead.phone && (
           <a href={`tel:${lead.phone.replace(/[^+\d]/g, "")}`}>{lead.phone}</a>
         )}
-        {vehicleLink && (
-          <Link href={vehicleLink} target="_blank">
-            Vehicle of interest ↗
-          </Link>
-        )}
       </div>
+      {lead.details.originalVehicleId && (
+        <details className="cr-original-vehicle">
+          <summary>
+            Original inquiry vehicle: {lead.details.originalVehicleTitle}
+          </summary>
+          <dl className="cr-details">
+            <div>
+              <dt>Original VIN</dt>
+              <dd>{lead.details.originalVehicleVin}</dd>
+            </div>
+            <div>
+              <dt>Recorded mileage</dt>
+              <dd>
+                {Number(lead.details.originalVehicleMiles).toLocaleString(
+                  "en-US",
+                )}{" "}
+                miles
+              </dd>
+            </div>
+            <div>
+              <dt>Original stock number</dt>
+              <dd>{lead.details.originalVehicleStock}</dd>
+            </div>
+          </dl>
+          <p className="cr-muted">
+            Saved{" "}
+            {new Date(lead.details.originalVehicleCapturedAt).toLocaleString(
+              "en-US",
+              { timeZone: "America/New_York" },
+            )}{" "}
+            ET. Retained when the assigned vehicle changes.
+          </p>
+        </details>
+      )}
       {details.length > 0 && (
         <dl className="cr-details">
           {details.map(([k, v]) => (
@@ -108,6 +147,12 @@ export default function LeadEditor({
       >
         <input type="hidden" name="id" value={lead.id} />
         <input type="hidden" name="updated_at" value={lead.updated_at} />
+        <VehicleAssignment
+          key={`${lead.id}-${lead.updated_at}`}
+          vehicle={vehicle}
+          vehicles={vehicles}
+          disabled={busy}
+        />
         <fieldset disabled={busy} className="cr-fieldset cr-grid three">
           <label>
             Lead stage

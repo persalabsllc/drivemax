@@ -38,6 +38,7 @@ export const purchaseLabels: Record<string, string> = {
   reason: "Request",
   vehicleType: "Vehicle type",
   downPayment: "Planned down payment",
+  preferredVisit: "Preferred visit (awaiting confirmation)",
 };
 export function isPurchaseRequest(lead: { details: Record<string, string> }) {
   return lead.details.purpose === "purchase-offer";
@@ -48,7 +49,13 @@ export function leadLabel(lead: {
 }) {
   return isPurchaseRequest(lead)
     ? "Purchase offer request"
-    : `${lead.kind} inquiry`;
+    : lead.details.purpose === "test-drive"
+      ? "Test-drive request"
+      : lead.details.purpose === "vehicle-update"
+        ? "Availability update request"
+        : lead.details.purpose === "similar-vehicle"
+          ? "Similar vehicle request"
+          : `${lead.kind} inquiry`;
 }
 export function purchaseSummary(value: {
   sellerYear?: string;

@@ -2,6 +2,11 @@ import { backendReady, db } from "../../../lib/backend";
 import { leadSchema } from "../../../lib/inventory";
 import { takeSlot } from "../../../lib/rate-limit";
 import { purchaseSummary } from "../../../lib/purchase-requests";
+import {
+  captureVehicleInquiry,
+  leadVehicleColumns,
+  type LeadVehicle,
+} from "../../../lib/lead-vehicles";
 
 export async function POST(request: Request) {
   if (!backendReady())
@@ -47,10 +52,11 @@ export async function POST(request: Request) {
         { error: "Please try again later or email the dealership." },
         { status: 429 },
       );
+    let payload: Record<string, unknown> = v;
     if (v.vehicleId) {
       const { data, error } = await db()
         .from("vehicles")
-        .select("status")
+        .select(leadVehicleColumns)
         .eq("id", v.vehicleId)
         .in("status", ["available", "pending", "sold"])
         .maybeSingle();
@@ -59,11 +65,25 @@ export async function POST(request: Request) {
           { error: "This listing changed. Refresh the page and try again." },
           { status: 400 },
         );
-      // Sold inquiries are explicitly requests for a similar vehicle, never reservations.
-      if (data.status === "sold")
-        v.reason = "Request a vehicle similar to this sold listing";
+      try {
+        payload = captureVehicleInquiry(
+          v,
+          data as unknown as LeadVehicle,
+          new Date().toISOString(),
+        );
+      } catch (error) {
+        return Response.json(
+          {
+            error:
+              error instanceof Error
+                ? error.message
+                : "Please refresh this listing.",
+          },
+          { status: 409 },
+        );
+      }
     }
-    const { error } = await db().rpc("submit_lead", { payload: v });
+    const { error } = await db().rpc("submit_lead", { payload });
     if (error) throw error;
     return Response.json(
       { ok: true },

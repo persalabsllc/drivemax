@@ -128,7 +128,15 @@ export const leadSchema = z
     reason: z.string().max(120).optional(),
     position: z.string().max(120).optional(),
     website: z.string().max(200).default(""),
-    purpose: z.literal("purchase-offer").optional(),
+    purpose: z
+      .enum([
+        "purchase-offer",
+        "test-drive",
+        "vehicle-update",
+        "similar-vehicle",
+      ])
+      .optional(),
+    preferredVisit: z.string().trim().max(160).optional(),
     sellerVin: z.string().trim().toUpperCase().max(17).optional(),
     sellerMiles: z.string().trim().max(10).optional(),
     sellerYear: z.string().trim().max(4).optional(),
@@ -149,6 +157,16 @@ export const leadSchema = z
     sellerZip: z.string().trim().max(10).optional(),
   })
   .superRefine((v, ctx) => {
+    if (
+      v.purpose &&
+      v.purpose !== "purchase-offer" &&
+      (v.kind !== "vehicle" || !v.vehicleId)
+    )
+      ctx.addIssue({
+        code: "custom",
+        message:
+          "Choose a listed vehicle before requesting a test drive or availability update.",
+      });
     if (v.purpose === "purchase-offer") {
       const issue = (message: string) =>
         ctx.addIssue({ code: "custom", message });

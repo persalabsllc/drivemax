@@ -16,6 +16,11 @@ import {
 import { leadStatuses, vehicleSchema, vehicleSlug } from "../../lib/inventory";
 import { takeSlot } from "../../lib/rate-limit";
 import { leadEmailFrom, leadReplyDomain } from "../../lib/email-config";
+import {
+  leadVehicleColumns,
+  updateVehicleAssignment,
+  type LeadVehicle,
+} from "../../lib/lead-vehicles";
 
 export type ActionResult = { error?: string; message?: string; id?: string };
 const idSchema = z.string().uuid();
@@ -153,6 +158,7 @@ export async function saveLead(form: FormData): Promise<ActionResult> {
       assigned_to: z.union([idSchema, z.literal("")]),
       follow_up_at: z.string().max(40),
       updated_at: z.string().min(1),
+      vehicle_id: z.union([idSchema, z.literal("")]).optional(),
     })
     .safeParse(Object.fromEntries(form));
   if (!parsed.success) return validation(parsed.error);
@@ -169,13 +175,49 @@ export async function saveLead(form: FormData): Promise<ActionResult> {
       .maybeSingle();
     if (error || !data) return { error: "Choose an active staff member." };
   }
+  const { data: current, error: currentError } = await db()
+    .from("leads")
+    .select("vehicle_id,details")
+    .eq("id", v.id)
+    .eq("updated_at", v.updated_at)
+    .maybeSingle();
+  if (currentError || !current)
+    return { error: "This lead changed. Reload before saving your update." };
+  const nextVehicleId =
+    v.vehicle_id === undefined ? current.vehicle_id : v.vehicle_id || null;
+  const ids = [
+    ...new Set([current.vehicle_id, nextVehicleId].filter(Boolean)),
+  ] as string[];
+  let related: LeadVehicle[] = [];
+  if (ids.length) {
+    const result = await db()
+      .from("vehicles")
+      .select(leadVehicleColumns)
+      .in("id", ids);
+    if (result.error)
+      return { error: "Could not check the selected vehicle. Try again." };
+    related = result.data as unknown as LeadVehicle[];
+  }
+  const nextVehicle = related.find((car) => car.id === nextVehicleId) || null;
+  const previousVehicle =
+    related.find((car) => car.id === current.vehicle_id) || null;
+  if (nextVehicleId && !nextVehicle)
+    return { error: "Choose a vehicle that exists in inventory." };
+  const now = new Date().toISOString();
   const { data, error } = await db()
     .from("leads")
     .update({
       status: v.status,
       assigned_to: v.assigned_to || null,
       follow_up_at: followUp?.toISOString() || null,
-      updated_at: new Date().toISOString(),
+      vehicle_id: nextVehicleId,
+      details: updateVehicleAssignment(
+        current.details,
+        previousVehicle,
+        nextVehicle,
+        now,
+      ),
+      updated_at: now,
     })
     .eq("id", v.id)
     .eq("updated_at", v.updated_at)

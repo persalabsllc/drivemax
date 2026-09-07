@@ -449,6 +449,14 @@
   margin: 4px 0 0;
   overflow-wrap: anywhere;
 }
+.cr-vehicle-assignment { border: 1px solid #dce5ef; border-radius: 10px; padding: 20px; background: #f8fafc; }
+.cr-vehicle-assignment legend { font-size: 17px; font-weight: 750; padding-inline: 6px; }
+.cr-assigned-vehicle > strong { font-size: 19px; }
+.cr-assigned-vehicle .cr-details { padding: 0; background: none; }
+.cr-original-vehicle { padding: 15px 18px; border: 1px solid #dce5ef; border-radius: 8px; }
+.cr-original-vehicle summary { cursor: pointer; font-weight: 650; }
+.cr-original-vehicle p { font-size: 12px; }
+.cr-filters .cr-vehicle-filter { flex: 1; min-width: 190px; max-width: 340px; }
 .cr-thread {
   display: grid;
   gap: 14px;

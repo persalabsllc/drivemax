@@ -140,7 +140,7 @@ export default async function VehiclePage({ params }: Props) {
                   ? "Find me something similar"
                   : pending
                     ? "Ask for an update"
-                    : "Ask about this vehicle"}
+                    : "Request a test drive"}
               </a>
             </aside>
           </div>
@@ -192,15 +192,19 @@ export default async function VehiclePage({ params }: Props) {
             <h2>
               {sold
                 ? "Looking for something similar?"
-                : `Interested in this ${v.make}?`}
+                : pending
+                  ? "Ask about availability"
+                  : "Request a test drive"}
             </h2>
             <p>
               {sold
                 ? `This ${title} is sold. Tell us what you liked about it and we’ll help you explore other options.`
-                : "Send a question or ask to schedule a visit. Your inquiry will include this vehicle."}
+                : pending
+                  ? "A sale is pending on this vehicle. Send your details and we’ll contact you with an update."
+                  : `Ready to get behind the wheel of this ${v.make} ${v.model}? Your selected vehicle is already included. Tell us how to reach you and we’ll arrange a visit.`}
             </p>
           </div>
-          <LeadForm kind="vehicle" vehicleId={v.id} />
+          <LeadForm kind="vehicle" vehicle={v} />
         </div>
       </section>
       {alternatives.length > 0 && (

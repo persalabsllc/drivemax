@@ -20,6 +20,33 @@ import { logoutAction } from "./actions";
 import VehicleEditor from "./VehicleEditor";
 import LeadEditor from "./LeadEditor";
 import { leadLabel } from "../../lib/purchase-requests";
+import {
+  leadVehicleColumns,
+  leadVehicleTitle,
+  openLeadStatuses,
+  vehicleInquiryPurposes,
+  type LeadVehicle,
+} from "../../lib/lead-vehicles";
+
+type ListedLead = Lead & { vehicle: LeadVehicle | null };
+type ListedVehicle = Vehicle & {
+  leads: { count: number }[];
+  open_leads: { count: number }[];
+};
+async function vehicleChoices() {
+  const all: LeadVehicle[] = [];
+  for (let start = 0; ; start += 1000) {
+    const r = await db()
+      .from("vehicles")
+      .select(leadVehicleColumns)
+      .order("created_at", { ascending: false })
+      .order("id")
+      .range(start, start + 999);
+    if (r.error) throw new Error("Could not load vehicle choices.");
+    all.push(...(r.data as unknown as LeadVehicle[]));
+    if (r.data.length < 1000) return all;
+  }
+}
 
 export const dynamic = "force-dynamic";
 const one = (v: string | string[] | undefined) =>
@@ -35,14 +62,40 @@ export default async function ControlRoom({
   const page = Math.max(1, Math.min(10000, Number(one(p.page)) || 1));
   const q = one(p.q).slice(0, 100);
   const status = one(p.status);
-  const requestType = one(p.type) === "purchase-offer" ? "purchase-offer" : "";
+  const requestType = ["purchase-offer", ...vehicleInquiryPurposes].includes(
+    one(p.type),
+  )
+    ? one(p.type)
+    : "";
+  const rawVehicleFilter = one(p.vehicleFilter);
+  const vehicleFilter =
+    rawVehicleFilter === "unassigned" ||
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      rawVehicleFilter,
+    )
+      ? rawVehicleFilter
+      : "";
   const base = tab === "leads" ? "leads" : "vehicles";
   let query = db()
     .from(base)
-    .select("*", { count: "exact" })
+    .select(
+      base === "leads"
+        ? `*,vehicle:vehicles(${leadVehicleColumns})`
+        : "*,leads(count),open_leads:leads(count)",
+      { count: "exact" },
+    )
     .order(base === "leads" ? "updated_at" : "created_at", {
       ascending: false,
     });
+  if (base === "vehicles")
+    query = query.in("open_leads.status", openLeadStatuses);
+  if (base === "leads" && vehicleFilter)
+    query =
+      vehicleFilter === "unassigned"
+        ? query.is("vehicle_id", null)
+        : query.eq("vehicle_id", vehicleFilter);
+  if (base === "leads" && status === "open")
+    query = query.in("status", openLeadStatuses);
   if (q)
     query = query.ilike(
       base === "leads" ? "name" : "make",
@@ -57,7 +110,7 @@ export default async function ControlRoom({
     query = query.eq("status", status);
   if (base === "leads" && requestType)
     query = query.eq("details->>purpose", requestType);
-  const [list, inventoryCount, newCount, followupCount, staffResult] =
+  const [list, inventoryCount, newCount, followupCount, staffResult, choices] =
     await Promise.all([
       query.range((page - 1) * 30, page * 30 - 1),
       db()
@@ -78,6 +131,7 @@ export default async function ControlRoom({
         .select("id,name,email,role")
         .eq("active", true)
         .order("name"),
+      tab === "leads" ? vehicleChoices() : Promise.resolve([] as LeadVehicle[]),
     ]);
   if (
     [list, inventoryCount, newCount, followupCount, staffResult].some(
@@ -88,7 +142,7 @@ export default async function ControlRoom({
   let vehicle: Vehicle | null = null;
   let lead: Lead | null = null;
   let messages: Message[] = [];
-  let vehicleLink: string | null = null;
+  let leadVehicle: LeadVehicle | null = null;
   const vehicleId = one(p.vehicle),
     leadId = one(p.lead);
   if (vehicleId && vehicleId !== "new") {
@@ -114,17 +168,10 @@ export default async function ControlRoom({
       throw new Error("Could not load this conversation.");
     lead = l.data as Lead | null;
     messages = m.data as Message[];
-    if (lead?.vehicle_id) {
-      const v = await db()
-        .from("vehicles")
-        .select("slug")
-        .eq("id", lead.vehicle_id)
-        .maybeSingle();
-      if (v.data) vehicleLink = `/inventory/${v.data.slug}`;
-    }
+    leadVehicle = choices.find((v) => v.id === lead?.vehicle_id) || null;
   }
   const pagination = (n: number) =>
-    `/control-room?${new URLSearchParams({ tab, q, status, type: requestType, page: String(n) })}`;
+    `/control-room?${new URLSearchParams({ tab, q, status, type: requestType, vehicleFilter, page: String(n) })}`;
   return (
     <div className="cr-shell">
       <aside className="cr-sidebar">
@@ -249,6 +296,7 @@ export default async function ControlRoom({
                 Status
                 <select name="status" defaultValue={status}>
                   <option value="">All statuses</option>
+                  {tab === "leads" && <option value="open">Open leads</option>}
                   {(tab === "leads" ? leadStatuses : vehicleStatuses).map(
                     (s) => (
                       <option key={s}>{s}</option>
@@ -261,9 +309,28 @@ export default async function ControlRoom({
                   Request type
                   <select name="type" defaultValue={requestType}>
                     <option value="">All inquiries</option>
+                    <option value="test-drive">Test-drive requests</option>
+                    <option value="vehicle-update">Availability updates</option>
+                    <option value="similar-vehicle">
+                      Similar vehicle requests
+                    </option>
                     <option value="purchase-offer">
                       Purchase offer requests
                     </option>
+                  </select>
+                </label>
+              )}
+              {tab === "leads" && (
+                <label className="cr-vehicle-filter">
+                  Vehicle
+                  <select name="vehicleFilter" defaultValue={vehicleFilter}>
+                    <option value="">All vehicles</option>
+                    <option value="unassigned">No vehicle assigned</option>
+                    {choices.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {leadVehicleTitle(v)} · {v.stock_number}
+                      </option>
+                    ))}
                   </select>
                 </label>
               )}
@@ -283,12 +350,17 @@ export default async function ControlRoom({
                         ? "Contact / follow-up"
                         : "Internet price"}
                     </th>
+                    <th>
+                      {tab === "leads"
+                        ? "Vehicle of interest"
+                        : "Customer leads"}
+                    </th>
                     <th>Open</th>
                   </tr>
                 </thead>
                 <tbody>
                   {tab === "leads"
-                    ? (list.data as Lead[]).map((l) => (
+                    ? (list.data as unknown as ListedLead[]).map((l) => (
                         <tr key={l.id}>
                           <td>
                             <strong>{l.name}</strong>
@@ -319,6 +391,28 @@ export default async function ControlRoom({
                             )}
                           </td>
                           <td>
+                            {l.vehicle ? (
+                              <>
+                                <Link
+                                  className="text-link"
+                                  href={`/control-room?tab=inventory&vehicle=${l.vehicle.id}`}
+                                >
+                                  {leadVehicleTitle(l.vehicle)}
+                                </Link>
+                                <small>
+                                  Stock {l.vehicle.stock_number} ·{" "}
+                                  {l.vehicle.miles.toLocaleString("en-US")}{" "}
+                                  miles
+                                </small>
+                                <small>VIN {l.vehicle.vin}</small>
+                              </>
+                            ) : (
+                              <span className="cr-muted">
+                                No vehicle assigned
+                              </span>
+                            )}
+                          </td>
+                          <td>
                             <Link
                               className="text-link"
                               href={`/control-room?tab=leads&lead=${l.id}`}
@@ -328,7 +422,7 @@ export default async function ControlRoom({
                           </td>
                         </tr>
                       ))
-                    : (list.data as Vehicle[]).map((v) => (
+                    : (list.data as unknown as ListedVehicle[]).map((v) => (
                         <tr key={v.id}>
                           <td>
                             <strong>{vehicleTitle(v)}</strong>
@@ -343,6 +437,21 @@ export default async function ControlRoom({
                             </span>
                           </td>
                           <td>{money(v.internet_price)}</td>
+                          <td>
+                            <Link
+                              className="text-link"
+                              href={`/control-room?tab=leads&vehicleFilter=${v.id}&status=open`}
+                            >
+                              {v.open_leads?.[0]?.count || 0} open
+                            </Link>
+                            <small>
+                              <Link
+                                href={`/control-room?tab=leads&vehicleFilter=${v.id}`}
+                              >
+                                {v.leads?.[0]?.count || 0} total
+                              </Link>
+                            </small>
+                          </td>
                           <td>
                             <Link
                               className="text-link"
@@ -364,7 +473,7 @@ export default async function ControlRoom({
                     : "No vehicles here yet."}
                 </h3>
                 <p>
-                  {q || status
+                  {q || status || vehicleFilter || requestType
                     ? "Try a different search or status."
                     : tab === "leads"
                       ? "Website inquiries will appear here as they arrive."
@@ -399,7 +508,8 @@ export default async function ControlRoom({
             messages={messages}
             staff={staffResult.data as Staff[]}
             canEmail={emailReady()}
-            vehicleLink={vehicleLink}
+            vehicle={leadVehicle}
+            vehicles={choices}
           />
         )}
         {((vehicleId && vehicleId !== "new" && !vehicle) ||

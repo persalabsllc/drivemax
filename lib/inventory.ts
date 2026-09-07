@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { VIN_PATTERN } from "./vehicle-data";
+import { isValidLeadPhone, phoneValidationMessage } from "./lead-phone";
 import {
   vehicleConditions,
   titleStatuses,
@@ -117,7 +118,11 @@ export const leadSchema = z
     vehicleId: z.union([z.string().uuid(), z.literal("")]).optional(),
     name: z.string().trim().min(2).max(120),
     email: z.union([z.email(), z.literal("")]).default(""),
-    phone: z.string().trim().max(40).default(""),
+    phone: z
+      .string()
+      .trim()
+      .default("")
+      .refine(isValidLeadPhone, phoneValidationMessage),
     preferredContact: z.enum(["Email", "Phone call", "Text message"]),
     message: z.string().trim().max(6000).default(""),
     experience: z.string().trim().max(6000).default(""),
@@ -200,14 +205,6 @@ export const leadSchema = z
       ctx.addIssue({
         code: "custom",
         message: "Enter an email address for your reply.",
-      });
-    if (
-      v.preferredContact !== "Email" &&
-      v.phone.replace(/\D/g, "").length < 10
-    )
-      ctx.addIssue({
-        code: "custom",
-        message: "Enter a phone number for your reply.",
       });
     if (v.kind === "contact" && !v.message)
       ctx.addIssue({ code: "custom", message: "Please enter your message." });

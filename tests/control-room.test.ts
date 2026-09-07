@@ -74,26 +74,59 @@ test("published listings require real photos, description, valid VIN, and price"
   assert.equal(schemaAvailability("sold"), "https://schema.org/SoldOut");
   assert.match(vehicleSlug(vehicle, id), /^2020-toyota-camry-le-0e400b44$/);
 });
-test("inquiry validation enforces the chosen reply method", () => {
+test("inquiry validation requires a phone number for every reply method", () => {
   const lead = {
     requestId: id,
     kind: "vehicle",
     name: "Test Customer",
     email: "customer@example.com",
-    phone: "",
+    phone: "(252) 555-0100",
     preferredContact: "Email",
   };
   assert.equal(leadSchema.safeParse(lead).success, true);
   assert.equal(leadSchema.safeParse({ ...lead, email: "" }).success, false);
-  assert.equal(
-    leadSchema.safeParse({ ...lead, preferredContact: "Phone call" }).success,
-    false,
-  );
+  for (const kind of ["vehicle", "contact", "finance", "employment"])
+    for (const preferredContact of ["Email", "Phone call", "Text message"])
+      for (const phone of [
+        undefined,
+        "",
+        " ",
+        "252555",
+        "abc2525550100",
+        "1".repeat(16),
+      ]) {
+        const result = leadSchema.safeParse({
+          ...lead,
+          kind,
+          preferredContact,
+          phone,
+          message: "Test inquiry",
+          position: "Sales",
+          experience: "Test experience",
+        });
+        assert.equal(
+          result.success,
+          false,
+          `${kind} / ${preferredContact} / ${phone}`,
+        );
+        if (!result.success)
+          assert.ok(
+            result.error.issues.some((issue) => issue.path[0] === "phone"),
+          );
+      }
+  for (const phone of [
+    "2525550100",
+    "252-555-0100",
+    "+1 (252) 555-0100",
+    "+44 20 7946 0123",
+  ])
+    assert.equal(leadSchema.safeParse({ ...lead, phone }).success, true, phone);
   assert.equal(
     leadSchema.safeParse({
       ...lead,
       preferredContact: "Phone call",
       phone: "252-555-0100",
+      email: "",
     }).success,
     true,
   );

@@ -140,6 +140,21 @@ main[id], main [id] { scroll-margin-top: 110px; }
 .hero-status-card strong { font-size: 17px; }
 .hero-status-card a { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; color: var(--blue-700); font-size: 13px; font-weight: 850; }
 .image-caption { position: absolute; right: 14px; top: 14px; padding: 5px 8px; border-radius: 6px; background: rgba(6,20,38,.72); color: #dbe7f4; font-size: 11px; }
+.hero-media.hero-inventory { min-height: 0; background: #fff; color: var(--navy-900); }
+.hero-inventory-photo { display: block; position: relative; aspect-ratio: 4 / 3; background: #eef2f6; }
+.hero-inventory-photo img { object-fit: contain; }
+.hero-inventory-details { padding: 20px 22px 22px; }
+.hero-inventory-details h2 { margin: 0; font-size: clamp(20px, 2.1vw, 26px); line-height: 1.25; }
+.hero-inventory-details p { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 18px; margin: 9px 0 10px; color: var(--muted); }
+.hero-inventory-details p strong { color: var(--navy-900); font-size: 24px; }
+.hero-inventory-details > a { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; color: var(--blue-700); font-weight: 850; }
+.hero-inventory-badge { position: absolute; left: 14px; top: 14px; padding: 7px 11px; border-radius: 8px; background: var(--navy-900); color: #fff; font-size: 12px; font-weight: 850; pointer-events: none; }
+.hero-inventory-controls { position: absolute; right: 14px; top: 14px; display: flex; align-items: center; padding: 2px; gap: 2px; border-radius: 10px; background: rgba(6,20,38,.92); color: #fff; box-shadow: 0 4px 16px rgba(0,0,0,.15); }
+.hero-inventory-controls > span { padding: 0 8px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.hero-inventory-controls button { display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 7px; background: transparent; color: #fff; cursor: pointer; }
+.hero-inventory-controls button:hover { background: rgba(255,255,255,.2); }
+.hero-inventory-controls button:focus-visible { outline: 2px solid #fff; outline-offset: -3px; background: rgba(255,255,255,.2); }
+.hero-inventory-photo:focus-visible { outline-offset: -4px; }
 
 .quick-actions { position: relative; z-index: 4; margin-top: -1px; background: #fff; border-bottom: 1px solid var(--line); }
 .quick-actions-grid { display: grid; grid-template-columns: repeat(3, 1fr); }

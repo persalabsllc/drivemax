@@ -147,6 +147,7 @@ const purchase = {
   purpose: "purchase-offer",
   name: "Test Seller",
   email: "seller@example.com",
+  phone: "252-555-0100",
   preferredContact: "Email",
   sellerVin: vin,
   sellerYear: "2003",
@@ -182,7 +183,8 @@ test("purchase intake requires usable vehicle details and the selected contact m
     { vehicleId: purchase.requestId },
     { kind: "finance" },
     { email: "" },
-    { preferredContact: "Phone call" },
+    { phone: "" },
+    { preferredContact: "Phone call", phone: "" },
   ]) {
     assert.equal(
       leadSchema.safeParse({ ...purchase, ...patch }).success,

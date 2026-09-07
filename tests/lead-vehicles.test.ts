@@ -40,6 +40,7 @@ const request = {
   vehicleId: original.id,
   name: "TEST Test Drive",
   email: "test@example.com",
+  phone: "252-555-0100",
   preferredContact: "Email",
   preferredVisit: "Saturday morning",
   message: "Please confirm availability.",
@@ -187,11 +188,13 @@ test("CRM persistence links requests, retains snapshots after reassignment, and 
         details: Record<string, string>;
         updated_at: string;
         status: string;
-      }>("select details,updated_at,status from public.leads where id=$1", [
+        phone: string;
+      }>("select details,updated_at,status,phone from public.leads where id=$1", [
         request.requestId,
       ])
     ).rows[0];
     assert.equal(lead.status, "new");
+    assert.equal(lead.phone, request.phone);
     assert.equal(lead.details.originalVehicleVin, original.vin);
     assert.equal(lead.details.preferredVisit, "Saturday morning");
     const changed = updateVehicleAssignment(

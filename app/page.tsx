@@ -1,7 +1,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import FeaturedInventory from './_components/FeaturedInventory';
-import {publicInventory} from '../lib/backend';
+import HomepageInventory from './_components/HomepageInventory';
+import {photoUrl, publicInventory} from '../lib/backend';
+import {featuredHomepageVehicles} from '../lib/homepage-inventory';
 import {
   ArrowRight,
   BadgeCheck,
@@ -18,7 +20,9 @@ import {
 
 export const dynamic = 'force-dynamic';
 export default async function Home() {
-  const hasInventory = (await publicInventory('available')).length > 0;
+  const available = await publicInventory('available');
+  const hasInventory = available.length > 0;
+  const homepageVehicles = featuredHomepageVehicles(available, photoUrl);
   return (
     <>
       <section className="home-hero">
@@ -42,22 +46,28 @@ export default async function Home() {
               <span>Real listings, clear details, and straight answers before you make the drive.</span>
             </div>
           </div>
-          <div className="hero-media">
-            <Image
-              src="/dealership-hero.webp"
-              alt="Silver crossover parked on a clean dealership lot"
-              fill
-              priority
-              sizes="(max-width: 760px) calc(100vw - 30px), (max-width: 980px) calc(100vw - 40px), 50vw"
-            />
-            <div className="hero-media-shade" />
-            <div className="hero-status-card">
-              <span className="mini-label">Drive Max update</span>
-              <strong>Reopening inventory is on the way.</strong>
-              <Link href="/inventory#vehicle-request">Send a vehicle request <ArrowRight aria-hidden="true" size={16} /></Link>
+          {homepageVehicles.length ? (
+            <HomepageInventory vehicles={homepageVehicles} />
+          ) : (
+            <div className="hero-media">
+              <Image
+                src="/dealership-hero.webp"
+                alt="Silver crossover parked on a clean dealership lot"
+                fill
+                priority
+                sizes="(max-width: 760px) calc(100vw - 30px), (max-width: 980px) calc(100vw - 40px), 50vw"
+              />
+              <div className="hero-media-shade" />
+              <div className="hero-status-card">
+                <span className="mini-label">Drive Max update</span>
+                <strong>{hasInventory ? 'Find your next vehicle.' : 'Reopening inventory is on the way.'}</strong>
+                <Link href={hasInventory ? '/inventory' : '/inventory#vehicle-request'}>
+                  {hasInventory ? 'View inventory' : 'Send a vehicle request'} <ArrowRight aria-hidden="true" size={16} />
+                </Link>
+              </div>
+              <span className="image-caption">Illustrative image—not current inventory.</span>
             </div>
-            <span className="image-caption">Illustrative image—not current inventory.</span>
-          </div>
+          )}
         </div>
       </section>
 

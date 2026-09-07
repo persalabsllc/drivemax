@@ -281,6 +281,9 @@ export default function SellVehicleForm({ online }: { online: boolean }) {
               type="tel"
               autoComplete="tel"
               maxLength={40}
+              placeholder="(252) 555-0123"
+              required
+              aria-describedby="sell-contact-hint"
             />
           </div>
           <div className="field field-full">
@@ -292,6 +295,10 @@ export default function SellVehicleForm({ online }: { online: boolean }) {
             </select>
           </div>
         </div>
+        <p id="sell-contact-hint" className="form-instruction">
+          A phone number is required. Add your email address if you’d prefer an
+          email reply.
+        </p>
         <p className="form-consent-note">
           By submitting, you’re asking Drive Max to contact you about purchasing
           your vehicle. Any offer is confirmed after a vehicle inspection and

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { ArrowRight } from "lucide-react";
 import { leadVehicleTitle, type LeadVehicle } from "../../lib/lead-vehicles";
+import { isValidLeadPhone, phoneValidationMessage } from "../../lib/lead-phone";
 
 type LeadFormKind = "vehicle" | "contact" | "finance" | "employment";
 
@@ -122,28 +123,14 @@ export default function LeadForm({
       formData.get("preferredContact") || "Email",
     );
 
-    if (!email && !phone) {
-      showError(
-        "Please add an email address or phone number so we can respond.",
-        ["email", "phone"],
-      );
+    if (!isValidLeadPhone(phone)) {
+      showError(phoneValidationMessage, ["phone"]);
       return;
     }
     if (preferredContact === "Email" && !email) {
       showError(
         "Please add an email address or choose phone call or text message as your preferred contact method.",
         ["email"],
-      );
-      return;
-    }
-    if (
-      (preferredContact === "Phone call" ||
-        preferredContact === "Text message") &&
-      !phone
-    ) {
-      showError(
-        "Please add a phone number or choose email as your preferred contact method.",
-        ["phone"],
       );
       return;
     }
@@ -247,8 +234,8 @@ export default function LeadForm({
           </div>
         )}
         <p id={contactHintId} className="form-instruction field-full">
-          Provide an email address or phone number. We’ll validate the reply
-          method you select.
+          A phone number is required. Add your email address if you’d prefer an
+          email reply.
         </p>
         <Field
           id={`${kind}-name`}
@@ -275,7 +262,7 @@ export default function LeadForm({
           name="phone"
           type="tel"
           placeholder="(252) 555-0123"
-          optional
+          required
           autoComplete="tel"
           describedBy={`${contactHintId}${status?.type === "error" ? ` ${statusId}` : ""}`}
           invalid={invalidFields.includes("phone")}

@@ -22,7 +22,7 @@ export default function ContactPage() {
             <div className="contact-map"><iframe title="Map showing Drive Max Used Cars in New Bern" loading="lazy" referrerPolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q=6210%20Old%20US%20Hwy%2070%20West%20New%20Bern%20NC%2028562&output=embed" /></div>
           </div>
           <div>
-            <div className="content-intro content-intro-static"><span className="kicker">Send a message</span><h2>How can we help?</h2><p>Share only the information needed for your question. Never include card, bank, Social Security, or account-password information.</p></div>
+            <div className="content-intro content-intro-static"><span className="kicker">Send a message</span><h2>How can we help?</h2><p>Tell us what you need and the best way to reach you. We’ll take it from there.</p></div>
             <LeadForm kind="contact" />
           </div>
         </div>

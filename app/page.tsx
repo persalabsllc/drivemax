@@ -2,15 +2,16 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
   ArrowRight,
+  BadgeCheck,
   BadgeDollarSign,
   CalendarCheck,
   Camera,
   CarFront,
   Check,
+  CreditCard,
   Mail,
   MapPin,
   MessageCircleQuestion,
-  ShieldCheck,
 } from 'lucide-react';
 
 export default function Home() {
@@ -33,7 +34,7 @@ export default function Home() {
               </Link>
             </div>
             <div className="hero-trust">
-              <ShieldCheck aria-hidden="true" size={21} />
+              <BadgeCheck aria-hidden="true" size={21} />
               <span>Real listings, clear details, and straight answers before you make the drive.</span>
             </div>
           </div>
@@ -69,7 +70,7 @@ export default function Home() {
             <ArrowRight aria-hidden="true" />
           </Link>
           <Link href="/payments" className="quick-action">
-            <ShieldCheck aria-hidden="true" />
+            <CreditCard aria-hidden="true" />
             <span><strong>Already a customer?</strong><small>Get help with your Drive Max account</small></span>
             <ArrowRight aria-hidden="true" />
           </Link>
@@ -139,14 +140,14 @@ export default function Home() {
         <div className="container finance-feature-grid">
           <div>
             <span className="kicker kicker-on-dark">Financing</span>
-            <h2>Start with a conversation—not your Social Security number.</h2>
-            <p>Send a basic financing request and we’ll help you understand the next step. Sensitive financial information does not belong in a general website form or email.</p>
+            <h2>Let’s find a financing path that fits.</h2>
+            <p>Tell us what you’re shopping for, your budget, and your planned down payment. We’ll follow up to discuss available options and next steps.</p>
             <Link className="button button-light" href="/apply">Start a financing request <ArrowRight aria-hidden="true" size={18} /></Link>
           </div>
           <ul className="finance-checklist">
-            <li><Check aria-hidden="true" /> We do not ask for an SSN here</li>
-            <li><Check aria-hidden="true" /> We do not request bank or card details by email</li>
-            <li><Check aria-hidden="true" /> Clear next steps from a real person</li>
+            <li><Check aria-hidden="true" /> A quick online inquiry</li>
+            <li><Check aria-hidden="true" /> Options based on your needs</li>
+            <li><Check aria-hidden="true" /> Personal follow-up from Drive Max</li>
           </ul>
         </div>
       </section>

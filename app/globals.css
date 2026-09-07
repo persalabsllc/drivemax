@@ -251,9 +251,6 @@ main[id], main [id] { scroll-margin-top: 110px; }
 .info-card p { margin: 0; color: var(--muted); }
 .info-card p + p { margin-top: 10px; }
 .info-card a:not(.button) { color: var(--blue-700); font-weight: 750; }
-.security-note { display: flex; gap: 13px; margin-top: 22px; padding: 16px; border: 1px solid #f0d795; border-radius: 10px; background: #fff9e9; color: #5d4a15; font-size: 14px; }
-.security-note svg { flex: 0 0 auto; margin-top: 2px; }
-.payment-security-note { max-width: 620px; margin-inline: auto; text-align: left; }
 .contact-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-bottom: 18px; }
 .contact-cards .info-card + .info-card { margin-top: 0; }
 .contact-map { min-height: 360px; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-md); }

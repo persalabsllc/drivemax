@@ -85,14 +85,6 @@ export default function LeadForm({ kind }: { kind: LeadFormKind }) {
       return;
     }
 
-    const enteredText = Array.from(formData.values()).map(String).join(' ');
-    const socialSecurityNumber = /\b\d{3}[- ]?\d{2}[- ]?\d{4}\b/;
-    const longFinancialNumber = /\b(?:\d[ -]*){13,19}\b/;
-    if (socialSecurityNumber.test(enteredText) || longFinancialNumber.test(enteredText)) {
-      showError('For your security, remove any Social Security, bank account, or payment card number before continuing.');
-      return;
-    }
-
     setInvalidFields([]);
     const details = Array.from(formData.entries())
       .filter(([, value]) => String(value).trim())

@@ -15,8 +15,13 @@ export default function HomepageInventory({
   const [playing, setPlaying] = useState(true);
   const [hovered, setHovered] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const [loadedPhotos, setLoadedPhotos] = useState<Set<string>>(
+    () => new Set(),
+  );
   const count = vehicles.length;
   const activeIndex = index % Math.max(count, 1);
+  const nextIndex = (activeIndex + 1) % Math.max(count, 1);
+  const nextPhotoReady = loadedPhotos.has(vehicles[nextIndex]?.photo);
   const vehicle = vehicles[activeIndex];
 
   useEffect(() => {
@@ -36,13 +41,13 @@ export default function HomepageInventory({
   }, []);
 
   useEffect(() => {
-    if (count < 2 || !playing || hovered || hidden) return;
+    if (count < 2 || !playing || hovered || hidden || !nextPhotoReady) return;
     const timer = window.setInterval(
       () => setIndex((current) => (current + 1) % count),
       6000,
     );
     return () => window.clearInterval(timer);
-  }, [count, playing, hovered, hidden]);
+  }, [count, playing, hovered, hidden, nextPhotoReady]);
 
   function move(direction: number) {
     setPlaying(false);
@@ -75,14 +80,31 @@ export default function HomepageInventory({
             href={vehicle.href}
             aria-label={`View ${vehicle.title}`}
           >
-            <Image
-              key={vehicle.id}
-              src={vehicle.photo}
-              alt={vehicle.title}
-              fill
-              priority={activeIndex === 0}
-              sizes="(max-width: 760px) calc(100vw - 30px), (max-width: 980px) calc(100vw - 40px), 50vw"
-            />
+            {vehicles.map((item, photoIndex) => {
+              if (photoIndex !== activeIndex && photoIndex !== nextIndex)
+                return null;
+              const active = photoIndex === activeIndex;
+              return (
+                <Image
+                  key={`${item.id}:${item.photo}`}
+                  src={item.photo}
+                  alt={active ? item.title : ""}
+                  aria-hidden={active ? undefined : true}
+                  style={{ opacity: active ? 1 : 0, pointerEvents: "none" }}
+                  fill
+                  priority={photoIndex === 0}
+                  loading="eager"
+                  sizes="(max-width: 760px) calc(100vw - 30px), (max-width: 980px) calc(100vw - 40px), 50vw"
+                  onLoad={() =>
+                    setLoadedPhotos((current) =>
+                      current.has(item.photo)
+                        ? current
+                        : new Set([...current, item.photo]),
+                    )
+                  }
+                />
+              );
+            })}
           </Link>
           <div className="hero-inventory-details">
             <h2>{vehicle.title}</h2>

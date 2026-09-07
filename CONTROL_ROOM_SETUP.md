@@ -37,14 +37,21 @@ Staff enter at `/control-room` or the **Staff login** footer link and enter thei
 
 ## 3. Dealership email
 
-Connect Resend and verify a Drive Max sending domain. Configure:
+Connect the Drive Max Resend resource to the Vercel project and finish verifying `drivemaxusedcars.com` for sending. Configure these server environment variables:
 
 - `RESEND_API_KEY`: an appropriate key with send and received-email access.
-- `LEAD_EMAIL_FROM`: verified sender, e.g. `Drive Max <hello@drivemaxusedcars.com>`.
-- `LEAD_REPLY_DOMAIN`: dedicated receiving subdomain, e.g. `replies.drivemaxusedcars.com`.
 - `RESEND_WEBHOOK_SECRET`: signing secret for the webhook below.
 
-Configure receiving MX records on the dedicated reply subdomain, **not on the dealership's existing mailbox domain**. Preserve existing mailbox routing. Register `/api/email/webhook` in Resend for `email.received`, `email.delivered`, `email.bounced`, `email.complained`, `email.suppressed`, and `email.failed`.
+The public email addresses are configured in `lib/email-config.ts`:
+
+- Sender: `Drive Max <sales@drivemaxusedcars.com>`.
+- Reply domain: `uemoridela.resend.app`, the receiving domain supplied by the Drive Max Resend account.
+
+The Resend-managed reply domain accepts `lead+UUID@uemoridela.resend.app` without registering another custom domain or adding receiving DNS records. Namecheap handles the dealership's normal inboxes. Keep receiving disabled on the root domain in Resend.
+
+`LEAD_EMAIL_FROM` and `LEAD_REPLY_DOMAIN` remain optional environment overrides. A blank override uses the configured default. If changing Resend accounts, use the receiving domain supplied by the new account; if using a branded receiving subdomain later, verify it under a plan that supports it and configure MX on that subdomain.
+
+Register `/api/email/webhook` in Resend for `email.received`, `email.delivered`, `email.bounced`, `email.complained`, `email.suppressed`, and `email.failed`. The webhook URL must point to a publicly reachable deployment of the Control Room code. A preview behind Vercel sign-in cannot receive provider callbacks without an approved automation bypass. Save the signing secret in `RESEND_WEBHOOK_SECRET`, redeploy, and test a full send-and-reply conversation before considering the connection active.
 
 Replies sent from the CRM use a unique `lead+UUID@reply-domain` address. Replies from the matching customer's email are appended to that lead. Unrelated inbound mail is ignored. Email HTML and attachments are not displayed in the CRM; plain text is stored. Direct mail to the dealership's existing mailbox and SMS are not automatically imported. Calls/texts can be logged as internal notes. Employment/resume inquiries retain their existing email-app flow.
 

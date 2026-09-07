@@ -15,6 +15,7 @@ import {
 } from "../../lib/backend";
 import { leadStatuses, vehicleSchema, vehicleSlug } from "../../lib/inventory";
 import { takeSlot } from "../../lib/rate-limit";
+import { leadEmailFrom, leadReplyDomain } from "../../lib/email-config";
 
 export type ActionResult = { error?: string; message?: string; id?: string };
 const idSchema = z.string().uuid();
@@ -261,11 +262,11 @@ export async function addMessage(form: FormData): Promise<ActionResult> {
         process.env.RESEND_API_KEY,
       ).emails.send(
         {
-          from: process.env.LEAD_EMAIL_FROM!,
+          from: leadEmailFrom(),
           to: existing?.recipient || lead.email,
           subject: existing?.subject || subject,
           text: v.body,
-          replyTo: `lead+${lead.id}@${process.env.LEAD_REPLY_DOMAIN}`,
+          replyTo: `lead+${lead.id}@${leadReplyDomain()}`,
         },
         { idempotencyKey: `lead-message-${v.id}` },
       );

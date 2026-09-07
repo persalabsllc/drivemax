@@ -1,6 +1,7 @@
 import { Resend, type WebhookEventPayload } from "resend";
 import { backendReady, db, emailReady } from "../../../../lib/backend";
 import { mailbox, replyLeadId } from "../../../../lib/email-routing";
+import { leadReplyDomain } from "../../../../lib/email-config";
 
 export async function POST(request: Request) {
   if (!backendReady() || !emailReady())
@@ -27,7 +28,7 @@ export async function POST(request: Request) {
   }
   try {
     if (event.type === "email.received") {
-      const id = replyLeadId(event.data.to, process.env.LEAD_REPLY_DOMAIN!);
+      const id = replyLeadId(event.data.to, leadReplyDomain());
       if (!id) return Response.json({ ignored: true });
       const { data: lead, error } = await db()
         .from("leads")
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
         throw new Error("Could not retrieve received email.");
       if (
         mailbox(email.data.from) !== lead.email.toLowerCase() ||
-        replyLeadId(email.data.to, process.env.LEAD_REPLY_DOMAIN!) !== id
+        replyLeadId(email.data.to, leadReplyDomain()) !== id
       )
         return Response.json({ ignored: true });
       // Plain text only in the CRM. Do not render email HTML or download attachments.

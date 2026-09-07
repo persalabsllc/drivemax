@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import type { Vehicle } from "./inventory";
+import { leadEmailFrom, leadReplyDomain } from "./email-config";
 
 export const backendReady = () =>
   process.env.CONTROL_ROOM_ENABLED === "true" &&
@@ -13,8 +14,8 @@ export const backendReady = () =>
   !!process.env.SUPABASE_SERVICE_ROLE_KEY;
 export const emailReady = () =>
   !!process.env.RESEND_API_KEY &&
-  !!process.env.LEAD_EMAIL_FROM &&
-  !!process.env.LEAD_REPLY_DOMAIN &&
+  !!leadEmailFrom() &&
+  !!leadReplyDomain() &&
   !!process.env.RESEND_WEBHOOK_SECRET;
 export function db() {
   if (!backendReady()) throw new Error("Control Room is not connected yet.");

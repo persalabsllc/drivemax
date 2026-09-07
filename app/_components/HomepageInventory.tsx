@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, Pause, Play } from "lucide-react";
 import type { HomepageVehicle } from "../../lib/homepage-inventory";
+import VehiclePricing from "./VehiclePricing";
 
 export default function HomepageInventory({
   vehicles,
@@ -108,10 +109,8 @@ export default function HomepageInventory({
           </Link>
           <div className="hero-inventory-details">
             <h2>{vehicle.title}</h2>
-            <p>
-              <strong>{vehicle.price}</strong>
-              <span>{vehicle.mileage}</span>
-            </p>
+            <p>{vehicle.mileage}</p>
+            <VehiclePricing price={vehicle.basePrice} />
             <Link href={vehicle.href}>
               View vehicle <ArrowRight size={17} aria-hidden="true" />
             </Link>

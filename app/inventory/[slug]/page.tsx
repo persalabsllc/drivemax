@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { publicInventory, publicVehicle, photoUrl } from "../../../lib/backend";
 import {
-  money,
   vehicleTitle,
   schemaAvailability,
 } from "../../../lib/inventory";
@@ -11,6 +10,8 @@ import VehicleGallery from "../../_components/VehicleGallery";
 import VehicleCard from "../../_components/VehicleCard";
 import LeadForm from "../../_components/ConnectedLeadForm";
 import VehicleHistory from "../../_components/VehicleHistory";
+import VehiclePricing from "../../_components/VehiclePricing";
+import { totalVehiclePrice } from "../../../lib/vehicle-pricing";
 export const dynamic = "force-dynamic";
 type Props = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -56,7 +57,7 @@ export default async function VehiclePage({ params }: Props) {
       "@type": "Offer",
       url: `https://www.drivemaxusedcars.com/inventory/${v.slug}`,
       availability: schemaAvailability(v.status),
-      ...(sold ? {} : { price: v.internet_price, priceCurrency: "USD" }),
+      ...(sold ? {} : { price: totalVehiclePrice(v.internet_price), priceCurrency: "USD" }),
     },
   };
   return (
@@ -106,17 +107,15 @@ export default async function VehiclePage({ params }: Props) {
           <div className="vehicle-detail-grid">
             <VehicleGallery photos={v.photos.map(photoUrl)} title={title} />
             <aside className="vehicle-detail-summary">
-              <span className="kicker">
-                {sold ? "Listing status" : "Internet price"}
-              </span>
-              <strong className="vehicle-detail-price">
-                {sold ? "Sold" : money(v.internet_price)}
-              </strong>
-              <p>
-                {sold
-                  ? "Browse similar available vehicles below."
-                  : "Confirm final out-the-door pricing with the dealership."}
-              </p>
+              {sold ? (
+                <>
+                  <span className="kicker">Listing status</span>
+                  <strong className="vehicle-detail-price">Sold</strong>
+                  <p>Browse similar available vehicles below.</p>
+                </>
+              ) : (
+                <VehiclePricing price={v.internet_price} prominent />
+              )}
               <dl>
                 {[
                   ["Mileage", `${v.miles.toLocaleString()} miles`],

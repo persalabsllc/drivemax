@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { addMessage, saveLead } from "./actions";
 import { leadStatuses } from "../../lib/inventory";
+import { contactNoticeKeys } from "../../lib/contact-notice";
 import {
   isVehicleSnapshotKey,
   type LeadVehicle,
@@ -51,6 +52,7 @@ export default function LeadEditor({
     ([key, value]) =>
       key !== "purpose" &&
       !isVehicleSnapshotKey(key) &&
+      !contactNoticeKeys.some((noticeKey) => noticeKey === key) &&
       !(key === "vehicle" && lead.details.originalVehicleId) &&
       value,
   );
@@ -134,6 +136,17 @@ export default function LeadEditor({
             </div>
           ))}
         </dl>
+      )}
+      {lead.details.contactNoticeText && (
+        <details className="cr-contact-notice">
+          <summary>Website inquiry contact notice</summary>
+          <p>{lead.details.contactNoticeText}</p>
+          <p>
+            Version: {lead.details.contactNoticeVersion}<br />
+            Submitted: {lead.details.contactNoticeSubmittedAt}<br />
+            This records the inquiry notice, not an opt-in to automated marketing.
+          </p>
+        </details>
       )}
       <form
         onSubmit={(e) => {

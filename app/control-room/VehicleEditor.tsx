@@ -241,7 +241,7 @@ export default function VehicleEditor({
             />
           </label>
           <label>
-            Internet price ($)
+            Vehicle price ($), before dealer fee
             <input
               name="internet_price"
               type="number"
@@ -250,7 +250,12 @@ export default function VehicleEditor({
               step="0.01"
               required
               defaultValue={vehicle?.internet_price}
+              aria-describedby="vehicle-price-help"
             />
+            <small id="vehicle-price-help">
+              Enter the vehicle price only. The website adds the $399 dealer
+              administration fee to the displayed total; tax and tags are extra.
+            </small>
           </label>
           <label>
             Status

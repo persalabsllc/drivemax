@@ -1,11 +1,11 @@
-import { money, vehicleTitle, type Vehicle } from "./inventory";
+import { vehicleTitle, type Vehicle } from "./inventory";
 
 export type HomepageVehicle = {
   id: string;
   href: string;
   title: string;
   photo: string;
-  price: string;
+  basePrice: number;
   mileage: string;
 };
 
@@ -25,7 +25,7 @@ export function featuredHomepageVehicles(
       href: `/inventory/${vehicle.slug}`,
       title: vehicleTitle(vehicle),
       photo: photoUrl(vehicle.photos[0]),
-      price: money(vehicle.internet_price),
+      basePrice: vehicle.internet_price,
       mileage: `${vehicle.miles.toLocaleString("en-US")} miles`,
     }));
 }

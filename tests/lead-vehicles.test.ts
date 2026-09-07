@@ -9,6 +9,7 @@ import {
   type LeadVehicle,
 } from "../lib/lead-vehicles";
 import { leadLabel } from "../lib/purchase-requests";
+import { captureContactNotice, CONTACT_NOTICE_VERSION, CONTACT_NOTICE_TEXT } from "../lib/contact-notice";
 
 const original: LeadVehicle = {
   id: "0e400b44-3e80-4d19-a9f4-4e283be977d6",
@@ -174,9 +175,12 @@ test("CRM persistence links requests, retains snapshots after reassignment, and 
           v.miles,
         ],
       );
-    const captured = captureVehicleInquiry(
-      leadSchema.parse(request),
-      original,
+    const captured = captureContactNotice(
+      captureVehicleInquiry(
+        leadSchema.parse({ ...request, contactNoticeVersion: CONTACT_NOTICE_VERSION }),
+        original,
+        now,
+      ),
       now,
     );
     for (let attempt = 0; attempt < 2; attempt++)
@@ -197,6 +201,9 @@ test("CRM persistence links requests, retains snapshots after reassignment, and 
     assert.equal(lead.phone, request.phone);
     assert.equal(lead.details.originalVehicleVin, original.vin);
     assert.equal(lead.details.preferredVisit, "Saturday morning");
+    assert.equal(lead.details.contactNoticeVersion, CONTACT_NOTICE_VERSION);
+    assert.equal(lead.details.contactNoticeText, CONTACT_NOTICE_TEXT);
+    assert.equal(lead.details.contactNoticeSubmittedAt, now);
     const changed = updateVehicleAssignment(
       lead.details,
       original,

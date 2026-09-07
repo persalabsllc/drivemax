@@ -5,6 +5,8 @@ import type { FormEvent } from "react";
 import { ArrowRight } from "lucide-react";
 import { leadVehicleTitle, type LeadVehicle } from "../../lib/lead-vehicles";
 import { isValidLeadPhone, phoneValidationMessage } from "../../lib/lead-phone";
+import { CONTACT_NOTICE_TEXT } from "../../lib/contact-notice";
+import ContactNotice from "./ContactNotice";
 
 type LeadFormKind = "vehicle" | "contact" | "finance" | "employment";
 
@@ -29,6 +31,7 @@ const labels: Record<string, string> = {
   message: "Message",
   experience: "Experience",
   preferredVisit: "Preferred visit (awaiting confirmation)",
+  contactNoticeVersion: "Website contact notice version",
 };
 
 function Field({
@@ -188,6 +191,8 @@ export default function LeadForm({
       ...details,
       "",
       "Please respond using the contact information above.",
+      "",
+      `Contact notice shown with this request: ${CONTACT_NOTICE_TEXT}`,
     ].join("\n");
 
     setStatus({
@@ -425,10 +430,7 @@ export default function LeadForm({
         </div>
       </div>
 
-      <p className="form-consent-note">
-        By sending this request, you’re asking Drive Max to reply using the
-        contact information you provided.
-      </p>
+      <ContactNotice id={`${kind}-contact-notice`} />
 
       <div className="form-footer">
         <p className="form-help">
@@ -440,6 +442,7 @@ export default function LeadForm({
           className="button button-primary"
           type="submit"
           disabled={busy || submitted}
+          aria-describedby={`${kind}-contact-notice`}
         >
           {busy
             ? "Sending…"

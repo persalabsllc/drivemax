@@ -110,10 +110,36 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               <a href="mailto:sales@drivemaxusedcars.com">sales@drivemaxusedcars.com</a>
             </div>
           </div>
+          <div className="container footer-disclosures">
+            <p>
+              Vehicle prices are shown with a separate $399 dealer administration fee.
+              The displayed total price includes this fee and excludes applicable taxes,
+              title, registration, and tag charges. The dealer administration fee is a
+              dealer charge, not a government fee.
+            </p>
+            <p>
+              Vehicles are subject to prior sale. Availability, pricing, and advertised
+              offers are subject to change. We make every effort to keep website information
+              accurate but are not responsible for typographical errors or omissions,
+              to the extent permitted by law. Please confirm vehicle details, availability,
+              and final pricing with our team. Financing is subject to lender approval and
+              applicable terms. These notices do not limit rights provided by law.
+            </p>
+            <p>
+              Submitting a website request authorizes Drive Max Used Cars LLC to call,
+              text, or email you about your inquiry and related follow-up unless you opt
+              out. Message and data rates may apply. You may opt out by telling our team,
+              emailing sales@drivemaxusedcars.com, or replying STOP to a text you receive.
+              Consent is not a condition of purchase and does not enroll you in recurring
+              automated marketing. See our <Link href="/privacy-policy">Privacy Policy</Link>.
+            </p>
+          </div>
           <div className="container footer-bottom">
             <span>© {new Date().getFullYear()} Drive Max Used Cars LLC</span>
-            <Link href="/control-room">Staff login</Link>
-            <span>Vehicle availability, pricing, and financing terms are subject to change.</span>
+            <nav className="footer-legal-links" aria-label="Footer information">
+              <Link href="/privacy-policy">Privacy Policy</Link>
+              <Link href="/control-room">Staff login</Link>
+            </nav>
           </div>
         </footer>
       </body>

@@ -2,6 +2,7 @@ import { backendReady, db } from "../../../lib/backend";
 import { leadSchema } from "../../../lib/inventory";
 import { takeSlot } from "../../../lib/rate-limit";
 import { purchaseSummary } from "../../../lib/purchase-requests";
+import { captureContactNotice } from "../../../lib/contact-notice";
 import {
   captureVehicleInquiry,
   leadVehicleColumns,
@@ -83,6 +84,7 @@ export async function POST(request: Request) {
         );
       }
     }
+    payload = captureContactNotice(payload, new Date().toISOString());
     const { error } = await db().rpc("submit_lead", { payload });
     if (error) throw error;
     return Response.json(

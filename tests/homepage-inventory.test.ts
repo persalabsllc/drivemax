@@ -54,7 +54,7 @@ test("homepage rotation includes only featured, available vehicles with a cover 
     href: `/inventory/${vehicle.slug}`,
     title: "2020 Toyota Camry LE",
     photo: "https://photos.example.com/test/front.webp",
-    price: "$14,995",
+    basePrice: 14995,
     mileage: "85,000 miles",
   });
   assert.equal(slides[1].href, "/inventory/second-vehicle");

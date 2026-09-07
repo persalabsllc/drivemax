@@ -491,3 +491,35 @@ main[id], main [id] { scroll-margin-top: 124px; }
   .vin-lookup-row { flex-direction: column; }
   .sell-form .form-footer .button { font-size: 14px; padding-inline: 12px; }
 }
+
+/* Consistent fee-inclusive pricing, from the homepage through vehicle details. */
+.vehicle-pricing { margin-block: 16px 12px; color: var(--navy-900); min-width: 0; }
+.vehicle-pricing dl { margin: 0; }
+.vehicle-pricing .vehicle-pricing-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 8px 12px; padding: 5px 0; border: 0; font-size: 13px; line-height: 1.45; }
+.vehicle-pricing dt { color: #526173; }
+.vehicle-pricing dd { margin: 0; text-align: right; font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.vehicle-pricing .vehicle-pricing-total { margin-top: 9px; padding-top: 11px; border-top: 1px solid #cdd7e3; }
+.vehicle-pricing-total dt { color: var(--navy-900); font-size: 15px; font-weight: 800; }
+.vehicle-pricing-total dd { color: var(--navy-900); font-size: 26px; font-weight: 850; letter-spacing: -.035em; line-height: 1.2; }
+.vehicle-pricing .vehicle-pricing-tax-note { display: block; margin: 3px 0 0; color: #526173; font-size: 12px; line-height: 1.5; text-align: right; }
+.vehicle-pricing-prominent { margin-top: 0; }
+.vehicle-pricing-prominent .vehicle-pricing-row { font-size: 14px; }
+.vehicle-pricing-prominent .vehicle-pricing-total dd { font-size: clamp(28px, 3vw, 38px); }
+.vehicle-pricing + .vehicle-card-price { margin-top: 12px; padding-top: 0; border-top: 0; }
+.inventory-filters small, #vehicle-price-help { color: #526173; font-size: 12px; font-weight: 450; line-height: 1.5; }
+.form-consent-note p { margin: 0 0 10px; }
+.form-consent-note a, .policy-copy a:not(.text-link) { text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
+.footer-disclosures { margin-top: 40px; padding-top: 22px; border-top: 1px solid rgba(255,255,255,.15); color: #bcc9d8; font-size: 12px; line-height: 1.7; }
+.footer-disclosures p { margin: 0 0 12px; }
+.footer-disclosures a { color: #e2eaf4; text-decoration: underline; text-underline-offset: 3px; }
+.footer-disclosures + .footer-bottom { margin-top: 18px; }
+.footer-legal-links { display: flex; flex-wrap: wrap; gap: 14px 28px; }
+.footer-legal-links a { padding-block: 6px; }
+.policy-copy { max-width: 860px; color: #42536a; line-height: 1.8; }
+.policy-copy h2 { margin: 36px 0 12px; color: var(--navy-900); font-size: 23px; line-height: 1.3; letter-spacing: -.025em; }
+.policy-copy p { margin: 0 0 16px; }
+.policy-updated { font-size: 13px; font-weight: 650; }
+.policy-copy address { margin-bottom: 20px; font-style: normal; }
+.cr-contact-notice { margin-block: 20px; padding: 16px; border: 1px solid #dce5ef; border-radius: 10px; color: #526173; font-size: 13px; line-height: 1.6; }
+.cr-contact-notice summary { cursor: pointer; color: var(--navy-900); font-weight: 750; }
+.cr-contact-notice p { margin-bottom: 0; }

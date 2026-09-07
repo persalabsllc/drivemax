@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { VIN_PATTERN } from "./vehicle-data";
 import { isValidLeadPhone, phoneValidationMessage } from "./lead-phone";
+import { totalVehiclePrice } from "./vehicle-pricing";
+import { CONTACT_NOTICE_VERSION } from "./contact-notice";
 import {
   vehicleConditions,
   titleStatuses,
@@ -97,7 +99,7 @@ export function inventoryMatches(v: Vehicle, q = "", body = "", maxPrice = "") {
   return (
     v.status === "available" &&
     (!body || v.body_style === body) &&
-    (!maxPrice || v.internet_price <= Number(maxPrice)) &&
+    (!maxPrice || totalVehiclePrice(v.internet_price) <= Number(maxPrice)) &&
     (!q ||
       `${vehicleTitle(v)} ${v.stock_number} ${v.features.join(" ")}`
         .toLowerCase()
@@ -114,6 +116,7 @@ export function schemaAvailability(status: Vehicle["status"]) {
 export const leadSchema = z
   .object({
     requestId: z.string().uuid(),
+    contactNoticeVersion: z.literal(CONTACT_NOTICE_VERSION).optional(),
     kind: z.enum(["vehicle", "contact", "finance", "employment"]),
     vehicleId: z.union([z.string().uuid(), z.literal("")]).optional(),
     name: z.string().trim().min(2).max(120),

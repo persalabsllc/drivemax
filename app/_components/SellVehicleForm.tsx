@@ -14,6 +14,7 @@ import {
   type DecodedVehicle,
 } from "../../lib/vehicle-data";
 import VinLookup from "./VinLookup";
+import ContactNotice from "./ContactNotice";
 
 export default function SellVehicleForm({ online }: { online: boolean }) {
   const [vin, setVin] = useState("");
@@ -299,16 +300,16 @@ export default function SellVehicleForm({ online }: { online: boolean }) {
           A phone number is required. Add your email address if you’d prefer an
           email reply.
         </p>
-        <p className="form-consent-note">
-          By submitting, you’re asking Drive Max to contact you about purchasing
-          your vehicle. Any offer is confirmed after a vehicle inspection and
-          title review.
+        <p className="form-help">
+          Any purchase offer is confirmed after a vehicle inspection and title review.
         </p>
+        <ContactNotice id="sell-contact-notice" />
         <div className="form-footer">
           <button
             className="button button-primary"
             type="submit"
             disabled={busy || submitted || decoding || !online}
+            aria-describedby="sell-contact-notice"
           >
             {submitted ? (
               <>

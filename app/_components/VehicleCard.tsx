@@ -2,7 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { CarFront, ArrowRight } from "lucide-react";
 import { photoUrl } from "../../lib/backend";
-import { money, vehicleTitle, type Vehicle } from "../../lib/inventory";
+import { vehicleTitle, type Vehicle } from "../../lib/inventory";
+import VehiclePricing from "./VehiclePricing";
 export default function VehicleCard({ vehicle: v }: { vehicle: Vehicle }) {
   const sold = v.status === "sold";
   return (
@@ -37,8 +38,9 @@ export default function VehicleCard({ vehicle: v }: { vehicle: Vehicle }) {
           {v.miles.toLocaleString("en-US")} miles{" "}
           {v.transmission && `· ${v.transmission}`}
         </p>
+        {!sold && <VehiclePricing price={v.internet_price} />}
         <div className="vehicle-card-price">
-          <strong>{sold ? "Sold" : money(v.internet_price)}</strong>
+          {sold && <strong>Sold</strong>}
           <Link href={`/inventory/${v.slug}`} className="text-link">
             {sold ? "View details" : "Take a look"} <ArrowRight size={16} />
           </Link>

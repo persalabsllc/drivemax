@@ -1,34 +1,108 @@
 import './globals.css';
+import type { Metadata, Viewport } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
-import type { Metadata } from 'next';
+import { Mail, MapPin } from 'lucide-react';
+import MobileNav from './_components/MobileNav';
 
 export const metadata: Metadata = {
-  title: 'Drive Max Used Cars | New Bern, NC',
-  description: 'Affordable used cars under $20,000 with in-house financing in New Bern, North Carolina.',
+  metadataBase: new URL('https://www.drivemaxusedcars.com'),
+  title: {
+    default: 'Drive Max Used Cars | New Bern, NC',
+    template: '%s | Drive Max Used Cars',
+  },
+  description:
+    'Drive Max Used Cars is preparing to reopen in New Bern, NC with straightforward vehicle shopping and financing guidance.',
+  alternates: { canonical: '/' },
+  icons: { icon: '/drive-max-logo.svg' },
 };
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#08182d',
+};
+
+const primaryLinks = [
+  { href: '/inventory', label: 'Inventory' },
+  { href: '/apply', label: 'Financing' },
+  { href: '/about', label: 'About' },
+  { href: '/contact', label: 'Contact' },
+];
+
+function HeaderLinks() {
+  return (
+    <>
+      {primaryLinks.map((link) => (
+        <Link key={link.href} href={link.href} className="nav-link">
+          {link.label}
+        </Link>
+      ))}
+      <Link href="/payments" className="button button-small button-outline">
+        Payment help
+      </Link>
+    </>
+  );
+}
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
       <body>
-        <header className="topbar">
-          <Link href="/" className="brand" aria-label="Drive Max Used Cars home">
-            <img src="/drive-max-logo.svg" alt="Drive Max Used Cars" />
-          </Link>
-          <nav>
-            <Link href="/inventory">Inventory</Link>
-            <Link href="/apply">Apply for Credit</Link>
-            <Link href="/about">About Us</Link>
-            <Link href="/about/staff">Meet the Staff</Link>
-            <Link href="/about/employment">Employment</Link>
-            <Link href="/contact">Contact</Link>
-            <Link href="/payments" className="payBtn">Make a Payment</Link>
-          </nav>
+        <a className="skip-link" href="#main-content">Skip to main content</a>
+        <div className="announcement-bar">
+          <div className="container announcement-inner">
+            <span><MapPin aria-hidden="true" size={15} />6210 Old US Hwy 70 West, New Bern, NC</span>
+            <Link href="mailto:hello@drivemaxusedcars.com"><Mail aria-hidden="true" size={15} />hello@drivemaxusedcars.com</Link>
+          </div>
+        </div>
+        <header className="site-header">
+          <div className="container header-inner">
+            <Link href="/" className="brand" aria-label="Drive Max Used Cars home">
+              <Image src="/drive-max-logo.svg" alt="Drive Max Used Cars" width={320} height={320} priority />
+            </Link>
+            <nav className="desktop-nav" aria-label="Primary navigation">
+              <HeaderLinks />
+            </nav>
+            <MobileNav />
+          </div>
         </header>
-        <main>{children}</main>
-        <footer>
-          <div><strong>Drive Max Used Cars</strong><br/>6210 Old US Hwy 70 West, New Bern, NC 28562</div>
-          <div><a href="mailto:hello@drivemaxusedcars.com">hello@drivemaxusedcars.com</a><br/>Serving New Bern since 2019</div>
+        <main id="main-content">{children}</main>
+        <footer className="site-footer">
+          <div className="container footer-grid">
+            <div className="footer-brand-column">
+              <Link href="/" className="footer-logo" aria-label="Drive Max Used Cars home">
+                <Image src="/drive-max-logo.svg" alt="" width={320} height={320} />
+              </Link>
+              <div>
+                <strong>Drive Max Used Cars LLC</strong>
+                <p>A straightforward place to shop used vehicles in New Bern.</p>
+              </div>
+            </div>
+            <div className="footer-column">
+              <h2>Shop</h2>
+              <Link href="/inventory">Inventory updates</Link>
+              <Link href="/apply">Financing request</Link>
+              <Link href="/payments">Payment help</Link>
+            </div>
+            <div className="footer-column">
+              <h2>Dealership</h2>
+              <Link href="/about">About Drive Max</Link>
+              <Link href="/about/staff">Meet the team</Link>
+              <Link href="/about/employment">Employment</Link>
+            </div>
+            <div className="footer-column footer-contact">
+              <h2>Get in touch</h2>
+              <a href="https://www.google.com/maps/dir/?api=1&destination=6210+Old+US+Hwy+70+West+New+Bern+NC+28562" target="_blank" rel="noreferrer">
+                6210 Old US Hwy 70 West<br />New Bern, NC 28562
+              </a>
+              <a href="mailto:hello@drivemaxusedcars.com">hello@drivemaxusedcars.com</a>
+            </div>
+          </div>
+          <div className="container footer-bottom">
+            <span>© {new Date().getFullYear()} Drive Max Used Cars LLC</span>
+            <span>Vehicle availability, pricing, and financing terms are subject to change.</span>
+          </div>
         </footer>
       </body>
     </html>

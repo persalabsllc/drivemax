@@ -1,1 +1,32 @@
-export default function Contact(){return <><section className="pageHero"><span className="eyebrow">We’re easy to reach</span><h1>Contact Drive Max</h1><p className="sectionLead">Questions about a vehicle, financing, your account, or visiting the dealership? Send us a message.</p></section><section className="contentGrid"><form className="glass form" action="mailto:hello@drivemaxusedcars.com" method="post" encType="text/plain"><label>Name</label><input name="name" required/><label>Email</label><input type="email" name="email" required/><label>Phone</label><input name="phone"/><label>How can we help?</label><select name="reason"><option>Vehicle availability</option><option>Financing</option><option>Existing customer</option><option>Employment</option><option>Other</option></select><label>Message</label><textarea name="message" required/><button className="primary formButton" type="submit">Send Message</button></form><div><div className="glass card"><h3>Visit us</h3><p><strong>6210 Old US Hwy 70 West<br/>New Bern, NC 28562</strong></p><p><a href="mailto:hello@drivemaxusedcars.com">hello@drivemaxusedcars.com</a></p></div><div className="glass mapWrap contactMap"><iframe title="Drive Max Used Cars location" loading="lazy" src="https://www.google.com/maps?q=6210%20Old%20US%20Hwy%2070%20West%20New%20Bern%20NC%2028562&output=embed" /></div></div></section></>}
+import type { Metadata } from 'next';
+import { Mail, MapPin } from 'lucide-react';
+import LeadForm from '../_components/LeadForm';
+
+export const metadata: Metadata = {
+  title: 'Contact',
+  description: 'Contact Drive Max Used Cars in New Bern, NC about inventory, financing, a visit, or an existing account.',
+  alternates: { canonical: '/contact' },
+};
+
+export default function ContactPage() {
+  return (
+    <>
+      <section className="subpage-hero"><div className="container"><span className="kicker kicker-on-dark">Contact Drive Max</span><h1>Ask before you make the drive.</h1><p>Have a question about reopening, a vehicle request, financing, or an existing account? Send us the details and we’ll point you in the right direction.</p></div></section>
+      <section className="page-section">
+        <div className="container content-split content-split-wide">
+          <div>
+            <div className="contact-cards">
+              <div className="info-card"><div className="info-card-icon"><MapPin aria-hidden="true" /></div><h2>Visit Drive Max</h2><p>6210 Old US Hwy 70 West<br />New Bern, NC 28562</p><p><a href="https://www.google.com/maps/dir/?api=1&destination=6210+Old+US+Hwy+70+West+New+Bern+NC+28562" target="_blank" rel="noreferrer">Get directions</a></p></div>
+              <div className="info-card"><div className="info-card-icon"><Mail aria-hidden="true" /></div><h2>Email us</h2><p><a href="mailto:hello@drivemaxusedcars.com">hello@drivemaxusedcars.com</a></p><p>Please contact us before visiting while reopening work is underway.</p></div>
+            </div>
+            <div className="contact-map"><iframe title="Map showing Drive Max Used Cars in New Bern" loading="lazy" referrerPolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q=6210%20Old%20US%20Hwy%2070%20West%20New%20Bern%20NC%2028562&output=embed" /></div>
+          </div>
+          <div>
+            <div className="content-intro content-intro-static"><span className="kicker">Send a message</span><h2>How can we help?</h2><p>Share only the information needed for your question. Never include card, bank, Social Security, or account-password information.</p></div>
+            <LeadForm kind="contact" />
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}

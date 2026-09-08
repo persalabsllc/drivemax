@@ -1,14 +1,14 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "../../lib/seo";
 import { CarFront, ClipboardList, Handshake } from "lucide-react";
 import { backendReady } from "../../lib/backend";
 import SellVehicleForm from "../_components/SellVehicleForm";
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: "Sell Your Car in New Bern",
   description:
     "Sell your car, truck, or SUV to Drive Max Used Cars in New Bern, NC. Share your VIN, mileage, and condition to request a purchase offer from our team.",
-  alternates: { canonical: "/sell-your-car" },
-};
+  path: "/sell-your-car",
+});
 export default function SellYourCarPage() {
   return (
     <>

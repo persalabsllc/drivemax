@@ -5,9 +5,10 @@ import Link from "next/link";
 import { Mail, MapPin } from "lucide-react";
 import MobileNav from "./_components/MobileNav";
 import AboutNav from "./_components/AboutNav";
+import { SITE_URL } from "../lib/seo";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://www.drivemaxusedcars.com"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Drive Max Used Cars | New Bern, NC",
     template: "%s | Drive Max Used Cars",
@@ -15,6 +16,9 @@ export const metadata: Metadata = {
   description:
     "Family owned and operated since 2019, Drive Max Used Cars offers quality used vehicles, financing options, and friendly service in New Bern, NC.",
   alternates: { canonical: "/" },
+  ...(process.env.VERCEL_ENV === "preview"
+    ? { robots: { index: false, follow: true } }
+    : {}),
   icons: { icon: "/drive-max-logo.svg" },
 };
 
@@ -138,6 +142,7 @@ export default function RootLayout({
               <Link href="/about">About Drive Max</Link>
               <Link href="/about/staff">Meet the staff</Link>
               <Link href="/about/employment">Employment</Link>
+              <Link href="/areas-we-serve">Areas we serve</Link>
             </div>
             <div className="footer-column footer-contact">
               <h2>Get in touch</h2>
@@ -187,6 +192,7 @@ export default function RootLayout({
             <span>© {new Date().getFullYear()} Drive Max Used Cars LLC</span>
             <nav className="footer-legal-links" aria-label="Footer information">
               <Link href="/privacy-policy">Privacy Policy</Link>
+              <Link href="/site-map">Site map</Link>
               <Link href="/control-room">Staff login</Link>
             </nav>
           </div>

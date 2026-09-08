@@ -588,3 +588,29 @@ main[id], main [id] { scroll-margin-top: 124px; }
   .staff-join .button { width: 100%; }
   .owner-monogram { width: 80px; height: 80px; font-size: 32px; margin-bottom: 24px; }
 }
+.seo-breadcrumbs { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; margin-bottom: 1.5rem; font-size: .9rem; overflow-wrap: anywhere; }
+.seo-breadcrumbs a { color: inherit; text-decoration: underline; text-underline-offset: 4px; }
+.local-home-section { background: #eef3fa; }
+.local-home-card { display: flex; align-items: center; justify-content: space-between; gap: 2rem; }
+.local-home-card > div { max-width: 760px; }
+.local-home-card h2 { max-width: 680px; }
+.local-home-card p { line-height: 1.8; color: #526176; }
+.local-home-card > .button { flex-shrink: 0; }
+.local-area-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 1.5rem; align-items: start; }
+.local-area-card { min-width: 0; padding: clamp(1.25rem, 3vw, 2.25rem); border: 1px solid #dce3ec; border-radius: 20px; background: #fff; }
+.local-area-card h2 { font-size: clamp(1.5rem, 2.3vw, 2rem); line-height: 1.2; margin-bottom: 1rem; }
+.local-area-card p { color: #526176; line-height: 1.8; }
+.local-visit-card { display: flex; flex-direction: column; gap: 1rem; background: #edf3fc; }
+.local-visit-card h2, .local-visit-card p { margin: 0; }
+.local-visit-card address { font-style: normal; line-height: 1.8; }
+.local-visit-card .button { align-self: flex-start; }
+.service-area-list { display: flex; flex-wrap: wrap; gap: .6rem; padding: 0; margin: 1.5rem 0 0; list-style: none; }
+.service-area-list li { padding: .45rem .8rem; background: #eff4fa; border-radius: 7px; font-size: .9rem; font-weight: 600; }
+.local-shopping-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem; }
+.local-text-links { display: flex; flex-wrap: wrap; gap: .8rem 1.5rem; }
+.site-map-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); list-style: none; gap: 1.25rem; padding: 0; margin: 0 0 2.5rem; }
+.site-map-grid li { border: 1px solid #dce3ec; border-radius: 14px; padding: 1.5rem; background: #fff; }
+.site-map-grid a { font-size: 1.15rem; font-weight: 700; color: #2155a6; }
+.site-map-grid p { margin-bottom: 0; line-height: 1.6; color: #526176; }
+@media (max-width: 1000px) { .local-home-card { align-items: flex-start; flex-direction: column; } .site-map-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .local-area-grid, .local-shopping-grid, .site-map-grid { grid-template-columns: minmax(0, 1fr); } .local-home-card > .button { flex-shrink: 1; max-width: 100%; white-space: normal; } }

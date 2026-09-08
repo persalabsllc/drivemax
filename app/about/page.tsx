@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "../../lib/seo";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -8,12 +8,12 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
-export const metadata: Metadata = {
-  title: "About us",
+export const metadata = pageMetadata({
+  title: "Family-Owned Used Car Dealer in New Bern",
   description:
     "Family owned and operated since 2019. Discover quality used vehicles, financing and warranty options, and personal service at Drive Max in New Bern, NC.",
-  alternates: { canonical: "/about" },
-};
+  path: "/about",
+});
 
 export default function AboutPage() {
   return (

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "../../../lib/seo";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -11,12 +11,12 @@ import {
   Wrench,
 } from "lucide-react";
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: "Meet the staff",
   description:
     "Meet owner Kyle Kratoville and get to know the roles behind Drive Max Used Cars in New Bern. Reach Kyle directly with questions about Drive Max or the car business.",
-  alternates: { canonical: "/about/staff" },
-};
+  path: "/about/staff",
+});
 
 // Add individual staff profiles and approved photos as they are provided.
 const departments = [

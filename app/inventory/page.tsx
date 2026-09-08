@@ -4,13 +4,15 @@ import { publicInventory } from "../../lib/backend";
 import { inventoryMatches } from "../../lib/inventory";
 import VehicleCard from "../_components/VehicleCard";
 import LeadForm from "../_components/ConnectedLeadForm";
+import { inventoryPageMetadata } from "../../lib/seo";
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = {
-  title: "Used Car Inventory in New Bern, NC",
-  description:
-    "Browse available used cars at Drive Max in New Bern. Photos, mileage, pricing, and vehicle details, plus our clearly marked sold archive.",
-  alternates: { canonical: "/inventory" },
-};
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<Metadata> {
+  return inventoryPageMetadata(await searchParams);
+}
 export default async function Inventory({
   searchParams,
 }: {
@@ -47,7 +49,7 @@ export default async function Inventory({
       <section className="subpage-hero">
         <div className="container">
           <span className="kicker kicker-on-dark">Drive Max inventory</span>
-          <h1>Your next vehicle starts here.</h1>
+          <h1>Used car inventory in New Bern.</h1>
           <p>
             Explore the lot, get to know the details, and find a vehicle that
             fits your life.

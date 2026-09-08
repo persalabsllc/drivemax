@@ -1,5 +1,5 @@
-import type { MetadataRoute } from 'next';
+import { siteRobots } from "../lib/seo";
 
-export default function robots(): MetadataRoute.Robots {
-  return { rules: { userAgent: '*', allow: '/', disallow:['/control-room','/api/'] }, sitemap: 'https://www.drivemaxusedcars.com/sitemap.xml' };
+export default function robots() {
+  return siteRobots();
 }

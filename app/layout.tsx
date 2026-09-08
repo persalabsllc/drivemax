@@ -1,44 +1,49 @@
-import './globals.css';
-import type { Metadata, Viewport } from 'next';
-import Image from 'next/image';
-import Link from 'next/link';
-import { Mail, MapPin } from 'lucide-react';
-import MobileNav from './_components/MobileNav';
+import "./globals.css";
+import type { Metadata, Viewport } from "next";
+import Image from "next/image";
+import Link from "next/link";
+import { Mail, MapPin } from "lucide-react";
+import MobileNav from "./_components/MobileNav";
+import AboutNav from "./_components/AboutNav";
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://www.drivemaxusedcars.com'),
+  metadataBase: new URL("https://www.drivemaxusedcars.com"),
   title: {
-    default: 'Drive Max Used Cars | New Bern, NC',
-    template: '%s | Drive Max Used Cars',
+    default: "Drive Max Used Cars | New Bern, NC",
+    template: "%s | Drive Max Used Cars",
   },
   description:
-    'Drive Max Used Cars is preparing to reopen in New Bern, NC with straightforward vehicle shopping and financing guidance.',
-  alternates: { canonical: '/' },
-  icons: { icon: '/drive-max-logo.svg' },
+    "Family owned and operated since 2019, Drive Max Used Cars offers quality used vehicles, financing options, and friendly service in New Bern, NC.",
+  alternates: { canonical: "/" },
+  icons: { icon: "/drive-max-logo.svg" },
 };
 
 export const viewport: Viewport = {
-  width: 'device-width',
+  width: "device-width",
   initialScale: 1,
-  themeColor: '#08182d',
+  themeColor: "#08182d",
 };
 
 const primaryLinks = [
-  { href: '/inventory', label: 'Inventory' },
-  { href: '/sell-your-car', label: 'Sell your car' },
-  { href: '/apply', label: 'Financing' },
-  { href: '/about', label: 'About' },
-  { href: '/contact', label: 'Contact' },
+  { href: "/inventory", label: "Inventory" },
+  { href: "/sell-your-car", label: "Sell your car" },
+  { href: "/apply", label: "Financing" },
+  { href: "/about", label: "About" },
+  { href: "/contact", label: "Contact" },
 ];
 
 function HeaderLinks() {
   return (
     <>
-      {primaryLinks.map((link) => (
-        <Link key={link.href} href={link.href} className="nav-link">
-          {link.label}
-        </Link>
-      ))}
+      {primaryLinks.map((link) =>
+        link.href === "/about" ? (
+          <AboutNav key={link.href} />
+        ) : (
+          <Link key={link.href} href={link.href} className="nav-link">
+            {link.label}
+          </Link>
+        ),
+      )}
       <Link href="/payments" className="button button-small button-outline">
         Payment help
       </Link>
@@ -46,20 +51,34 @@ function HeaderLinks() {
   );
 }
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
       <body>
-        <a className="skip-link" href="#main-content">Skip to main content</a>
+        <a className="skip-link" href="#main-content">
+          Skip to main content
+        </a>
         <div className="announcement-bar">
           <div className="container announcement-inner">
-            <span><MapPin aria-hidden="true" size={15} />6210 Old US Hwy 70 West, New Bern, NC</span>
-            <Link href="mailto:sales@drivemaxusedcars.com"><Mail aria-hidden="true" size={15} />sales@drivemaxusedcars.com</Link>
+            <span>
+              <MapPin aria-hidden="true" size={15} />
+              6210 Old US Hwy 70 West, New Bern, NC
+            </span>
+            <Link href="mailto:sales@drivemaxusedcars.com">
+              <Mail aria-hidden="true" size={15} />
+              sales@drivemaxusedcars.com
+            </Link>
           </div>
         </div>
         <header className="site-header">
           <div className="container header-inner">
-            <Link href="/" className="brand" aria-label="Drive Max Used Cars home">
+            <Link
+              href="/"
+              className="brand"
+              aria-label="Drive Max Used Cars home"
+            >
               <Image
                 src="/drive-max-logo-transparent.webp"
                 alt="Drive Max Used Cars"
@@ -68,8 +87,14 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 sizes="(max-width: 360px) 164px, (max-width: 384px) calc(100vw - 180px), (max-width: 760px) 204px, 270px"
                 priority
               />
-              <span className="brand-sparkle brand-sparkle-top" aria-hidden="true" />
-              <span className="brand-sparkle brand-sparkle-bottom" aria-hidden="true" />
+              <span
+                className="brand-sparkle brand-sparkle-top"
+                aria-hidden="true"
+              />
+              <span
+                className="brand-sparkle brand-sparkle-bottom"
+                aria-hidden="true"
+              />
             </Link>
             <nav className="desktop-nav" aria-label="Primary navigation">
               <HeaderLinks />
@@ -81,17 +106,29 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <footer className="site-footer">
           <div className="container footer-grid">
             <div className="footer-brand-column">
-              <Link href="/" className="footer-logo" aria-label="Drive Max Used Cars home">
-                <Image src="/drive-max-logo-transparent.webp" alt="" width={1064} height={532} sizes="210px" />
+              <Link
+                href="/"
+                className="footer-logo"
+                aria-label="Drive Max Used Cars home"
+              >
+                <Image
+                  src="/drive-max-logo-transparent.webp"
+                  alt=""
+                  width={1064}
+                  height={532}
+                  sizes="210px"
+                />
               </Link>
               <div>
                 <strong>Drive Max Used Cars LLC</strong>
-                <p>A straightforward place to shop used vehicles in New Bern.</p>
+                <p>
+                  A straightforward place to shop used vehicles in New Bern.
+                </p>
               </div>
             </div>
             <div className="footer-column">
               <h2>Shop</h2>
-              <Link href="/inventory">Inventory updates</Link>
+              <Link href="/inventory">Shop inventory</Link>
               <Link href="/sell-your-car">Sell your car</Link>
               <Link href="/apply">Financing request</Link>
               <Link href="/payments">Payment help</Link>
@@ -99,39 +136,51 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <div className="footer-column">
               <h2>Dealership</h2>
               <Link href="/about">About Drive Max</Link>
-              <Link href="/about/staff">Meet the team</Link>
+              <Link href="/about/staff">Meet the staff</Link>
               <Link href="/about/employment">Employment</Link>
             </div>
             <div className="footer-column footer-contact">
               <h2>Get in touch</h2>
-              <a href="https://www.google.com/maps/dir/?api=1&destination=6210+Old+US+Hwy+70+West+New+Bern+NC+28562" target="_blank" rel="noreferrer">
-                6210 Old US Hwy 70 West<br />New Bern, NC 28562
+              <a
+                href="https://www.google.com/maps/dir/?api=1&destination=6210+Old+US+Hwy+70+West+New+Bern+NC+28562"
+                target="_blank"
+                rel="noreferrer"
+              >
+                6210 Old US Hwy 70 West
+                <br />
+                New Bern, NC 28562
               </a>
-              <a href="mailto:sales@drivemaxusedcars.com">sales@drivemaxusedcars.com</a>
+              <a href="mailto:sales@drivemaxusedcars.com">
+                sales@drivemaxusedcars.com
+              </a>
             </div>
           </div>
           <div className="container footer-disclosures">
             <p>
-              Vehicle prices are shown with a separate $399 dealer administration fee.
-              The displayed total price includes this fee and excludes applicable taxes,
-              title, registration, and tag charges. The dealer administration fee is a
-              dealer charge, not a government fee.
+              Vehicle prices are shown with a separate $399 dealer
+              administration fee. The displayed total price includes this fee
+              and excludes applicable taxes, title, registration, and tag
+              charges. The dealer administration fee is a dealer charge, not a
+              government fee.
             </p>
             <p>
-              Vehicles are subject to prior sale. Availability, pricing, and advertised
-              offers are subject to change. We make every effort to keep website information
-              accurate but are not responsible for typographical errors or omissions,
-              to the extent permitted by law. Please confirm vehicle details, availability,
-              and final pricing with our team. Financing is subject to lender approval and
-              applicable terms. These notices do not limit rights provided by law.
+              Vehicles are subject to prior sale. Availability, pricing, and
+              advertised offers are subject to change. We make every effort to
+              keep website information accurate but are not responsible for
+              typographical errors or omissions, to the extent permitted by law.
+              Please confirm vehicle details, availability, and final pricing
+              with our team. Financing is subject to lender approval and
+              applicable terms. These notices do not limit rights provided by
+              law.
             </p>
             <p>
-              Submitting a website request authorizes Drive Max Used Cars LLC to call,
-              text, or email you about your inquiry and related follow-up unless you opt
-              out. Message and data rates may apply. You may opt out by telling our team,
-              emailing sales@drivemaxusedcars.com, or replying STOP to a text you receive.
-              Consent is not a condition of purchase and does not enroll you in recurring
-              automated marketing. See our <Link href="/privacy-policy">Privacy Policy</Link>.
+              Submitting a website request authorizes Drive Max Used Cars LLC to
+              call, text, or email you about your inquiry and related follow-up
+              unless you opt out. Message and data rates may apply. You may opt
+              out by telling our team, emailing sales@drivemaxusedcars.com, or
+              replying STOP to a text you receive. Consent is not a condition of
+              purchase and does not enroll you in recurring automated marketing.
+              See our <Link href="/privacy-policy">Privacy Policy</Link>.
             </p>
           </div>
           <div className="container footer-bottom">

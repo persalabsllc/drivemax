@@ -1,0 +1,3 @@
+import type { Metadata } from 'next';
+export const metadata: Metadata = { title: 'About layout check', robots: { index: false, follow: false } };
+export default function VerifyAbout() { return <section style={{padding: '30px', display: 'flex', alignItems: 'flex-start', gap: '24px', flexWrap: 'wrap'}}><iframe title="Staff mobile 390" src="/about/staff" style={{width:390,height:850,border:'1px solid #ccd'}}/><iframe title="About mobile 320" src="/about" style={{width:320,height:850,border:'1px solid #ccd'}}/><iframe title="Home tablet 1024" src="/" style={{width:1024,height:850,border:'1px solid #ccd'}}/></section>; }

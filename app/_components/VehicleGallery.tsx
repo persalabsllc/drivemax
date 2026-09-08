@@ -10,7 +10,9 @@ export default function VehicleGallery({
 }) {
   const [index, setIndex] = useState(0);
   if (!photos.length)
-    return <div className="vehicle-gallery-main">Photos coming soon</div>;
+    return (
+      <div className="vehicle-gallery-main">Contact us for vehicle photos</div>
+    );
   return (
     <div>
       <div className="vehicle-gallery-main">

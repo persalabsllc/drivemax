@@ -1,16 +1,17 @@
-'use client';
+"use client";
 
-import { useEffect, useRef } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { ChevronDown, Menu } from 'lucide-react';
+import { useEffect, useRef } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { ChevronDown, Menu } from "lucide-react";
+import AboutNav from "./AboutNav";
 
 const links = [
-  { href: '/inventory', label: 'Inventory' },
-  { href: '/sell-your-car', label: 'Sell your car' },
-  { href: '/apply', label: 'Financing' },
-  { href: '/about', label: 'About' },
-  { href: '/contact', label: 'Contact' },
+  { href: "/inventory", label: "Inventory" },
+  { href: "/sell-your-car", label: "Sell your car" },
+  { href: "/apply", label: "Financing" },
+  { href: "/about", label: "About" },
+  { href: "/contact", label: "Contact" },
 ];
 
 export default function MobileNav() {
@@ -33,12 +34,25 @@ export default function MobileNav() {
         <ChevronDown className="menu-chevron" aria-hidden="true" size={18} />
       </summary>
       <nav aria-label="Mobile navigation">
-        {links.map((link) => (
-          <Link key={link.href} href={link.href} className="mobile-nav-link" onClick={closeMenu}>
-            {link.label}
-          </Link>
-        ))}
-        <Link href="/payments" className="button button-small button-outline mobile-payment" onClick={closeMenu}>
+        {links.map((link) =>
+          link.href === "/about" ? (
+            <AboutNav key={link.href} mobile onNavigate={closeMenu} />
+          ) : (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="mobile-nav-link"
+              onClick={closeMenu}
+            >
+              {link.label}
+            </Link>
+          ),
+        )}
+        <Link
+          href="/payments"
+          className="button button-small button-outline mobile-payment"
+          onClick={closeMenu}
+        >
           Payment help
         </Link>
       </nav>

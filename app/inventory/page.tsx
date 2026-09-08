@@ -77,7 +77,11 @@ export default async function Inventory({
             </label>
             <label>
               Maximum total price
-              <select name="max" defaultValue={max} aria-describedby="inventory-price-hint">
+              <select
+                name="max"
+                defaultValue={max}
+                aria-describedby="inventory-price-hint"
+              >
                 <option value="">Any price</option>
                 {[10000, 15000, 20000, 25000, 35000, 50000].map((n) => (
                   <option key={n} value={n}>
@@ -85,7 +89,9 @@ export default async function Inventory({
                   </option>
                 ))}
               </select>
-              <small id="inventory-price-hint">Includes $399 dealer fee; plus tax and tags.</small>
+              <small id="inventory-price-hint">
+                Includes $399 dealer fee; plus tax and tags.
+              </small>
             </label>
             <button className="button button-primary">
               Search available cars
@@ -122,7 +128,7 @@ export default async function Inventory({
               <h3>
                 {searching
                   ? "No available vehicles match that search."
-                  : "New inventory is on the way."}
+                  : "Let us help you find your next vehicle."}
               </h3>
               <p>
                 Tell us what you’re looking for, and we’ll help you find your

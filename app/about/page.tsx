@@ -1,20 +1,145 @@
-import type { Metadata } from 'next';
-import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import type { Metadata } from "next";
+import Link from "next/link";
+import {
+  ArrowRight,
+  BadgeCheck,
+  FileCheck2,
+  HeartHandshake,
+  ShieldCheck,
+} from "lucide-react";
 
-export const metadata: Metadata = { title: 'About', description: 'Learn about Drive Max Used Cars, a local used-car dealership preparing to reopen in New Bern, North Carolina.', alternates: { canonical: '/about' } };
+export const metadata: Metadata = {
+  title: "About us",
+  description:
+    "Family owned and operated since 2019. Discover quality used vehicles, financing and warranty options, and personal service at Drive Max in New Bern, NC.",
+  alternates: { canonical: "/about" },
+};
 
 export default function AboutPage() {
   return (
     <>
-      <section className="subpage-hero"><div className="container"><span className="kicker kicker-on-dark">About Drive Max</span><h1>A familiar local name, getting ready for a fresh start.</h1><p>Drive Max Used Cars first opened in New Bern in 2019. Now we’re preparing the dealership for its next chapter on Old US Highway 70 West.</p></div></section>
-      <section className="section">
-        <div className="container story-grid">
-          <div className="story-copy"><span className="kicker">Our approach</span><h2>Make the important parts easier to understand.</h2><p>A used car is a major purchase. Shoppers should be able to see what is actually available, get the important details, ask honest questions, and understand the next step before spending half a day at a dealership.</p><p>That is the standard we are building toward as Drive Max prepares to reopen: useful information, a direct line to the dealership, and no pretend inventory just to make the website look full.</p><div className="button-row"><Link className="button button-primary" href="/inventory">See inventory updates <ArrowRight aria-hidden="true" size={18} /></Link><Link className="button button-secondary" href="/contact">Contact Drive Max</Link></div></div>
-          <aside className="story-highlight"><span>Drive Max Used Cars LLC</span><strong>Locally operated in New Bern, North Carolina.</strong><p>6210 Old US Hwy 70 West<br />New Bern, NC 28562</p></aside>
+      <section className="subpage-hero">
+        <div className="container">
+          <span className="kicker kicker-on-dark">
+            Family owned & operated since 2019
+          </span>
+          <h1>Good cars. Good people. Right here in New Bern.</h1>
+          <p>
+            A smooth, transparent, and fun purchase experience, with people who
+            care before, during, and after the sale.
+          </p>
         </div>
       </section>
-      <section className="section section-muted"><div className="container"><div className="section-heading"><span className="kicker">What matters here</span><h2>Built around the way people actually shop.</h2></div><div className="values-grid"><article className="value-card"><span>01</span><h3>Real availability</h3><p>Vehicles appear online when they are ready to be shown—not as placeholders or stale listings.</p></article><article className="value-card"><span>02</span><h3>Useful answers</h3><p>Ask about condition, pricing, financing, or timing before planning a trip to the dealership.</p></article><article className="value-card"><span>03</span><h3>A straightforward process</h3><p>Clear information, helpful communication, and fewer hoops between your first question and the right vehicle.</p></article></div></div></section>
+      <section className="section">
+        <div className="container story-grid">
+          <div className="story-copy">
+            <span className="kicker">Our story</span>
+            <h2>Family owned. Community minded.</h2>
+            <p>
+              Drive Max Used Cars has been family owned and operated since 2019.
+              We love connecting our New Bern neighbors with high-quality used
+              vehicles and making the experience as enjoyable as the moment you
+              get your keys.
+            </p>
+            <p>
+              From your first question to life on the road, we believe in clear
+              information, honest conversations, and customer service that
+              continues long after the sale. We offer financing and warranty
+              options, help you understand your choices, and handle the DMV
+              paperwork so you can focus on your next vehicle.
+            </p>
+            <div className="button-row">
+              <Link className="button button-primary" href="/inventory">
+                Shop inventory <ArrowRight aria-hidden="true" size={18} />
+              </Link>
+              <Link className="button button-secondary" href="/about/staff">
+                Meet the staff
+              </Link>
+            </div>
+          </div>
+          <aside className="story-highlight purchase-promise">
+            <span>The Drive Max promise</span>
+            <strong>
+              A little more peace of mind with your next set of keys.
+            </strong>
+            <ul>
+              <li>
+                <BadgeCheck aria-hidden="true" />
+                <div>
+                  <b>Passing state safety inspection</b>
+                  <p>
+                    Every vehicle we sell comes with a passing state safety
+                    inspection.
+                  </p>
+                </div>
+              </li>
+              <li>
+                <ShieldCheck aria-hidden="true" />
+                <div>
+                  <b>Free 14-day dealer warranty</b>
+                  <p>
+                    Included with every vehicle we sell. Ask us for the written
+                    coverage, terms, and exclusions.
+                  </p>
+                </div>
+              </li>
+              <li>
+                <FileCheck2 aria-hidden="true" />
+                <div>
+                  <b>DMV paperwork handled</b>
+                  <p>
+                    We take care of the paperwork and walk you through the next
+                    steps.
+                  </p>
+                </div>
+              </li>
+            </ul>
+          </aside>
+        </div>
+      </section>
+      <section className="section section-muted">
+        <div className="container">
+          <div className="section-heading">
+            <span className="kicker">Here for the whole journey</span>
+            <h2>Service before, during, and after the sale.</h2>
+          </div>
+          <div className="values-grid">
+            <article className="value-card">
+              <span>01 / Before</span>
+              <h3>Find your fit.</h3>
+              <p>
+                Tell us what you need, ask your questions, and explore quality
+                used vehicles with a team that listens.
+              </p>
+            </article>
+            <article className="value-card">
+              <span>02 / During</span>
+              <h3>Know your options.</h3>
+              <p>
+                Review the numbers, financing choices, and available warranty
+                options with clear explanations and personal guidance.
+              </p>
+            </article>
+            <article className="value-card">
+              <span>03 / After</span>
+              <h3>Keep in touch.</h3>
+              <p>
+                Questions about your purchase or what comes next? You have a
+                direct line to people who are happy to help.
+              </p>
+            </article>
+          </div>
+          <p className="about-terms">
+            Financing is subject to lender approval and applicable terms.
+            Optional warranty coverage and pricing vary by vehicle and plan. Our
+            included 14-day dealer warranty is subject to its written terms.
+          </p>
+          <Link className="text-link" href="/contact">
+            <HeartHandshake aria-hidden="true" size={20} /> Get to know Drive
+            Max <ArrowRight aria-hidden="true" size={17} />
+          </Link>
+        </div>
+      </section>
     </>
   );
 }

@@ -101,6 +101,9 @@ test("page metadata has matching canonical and social URLs", () => {
     metadata.alternates?.canonical,
     `${SITE_URL}/inventory/test-car`,
   );
+  assert.deepEqual(metadata.title, {
+    absolute: "Used cars | Drive Max Used Cars",
+  });
   assert.equal(metadata.openGraph?.url, metadata.alternates?.canonical);
   assert.equal(metadata.openGraph?.description, metadata.description);
   assert.equal(metadata.twitter?.description, metadata.description);

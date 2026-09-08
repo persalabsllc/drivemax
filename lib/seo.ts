@@ -106,7 +106,7 @@ export function pageMetadata({
         alt: SITE_NAME,
       };
   return {
-    title,
+    title: { absolute: socialTitle },
     description,
     alternates: { canonical: absoluteUrl(path) },
     ...(noIndex || process.env.VERCEL_ENV === "preview"

@@ -4,6 +4,7 @@ import FeaturedInventory from "./_components/FeaturedInventory";
 import HomepageInventory from "./_components/HomepageInventory";
 import { photoUrl, publicInventory } from "../lib/backend";
 import { featuredHomepageVehicles } from "../lib/homepage-inventory";
+import { dealershipSchema, jsonLd, pageMetadata } from "../lib/seo";
 import {
   ArrowRight,
   BadgeCheck,
@@ -18,12 +19,22 @@ import {
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
+export const metadata = pageMetadata({
+  title: "Used Cars in New Bern, NC",
+  description:
+    "Shop quality used cars at family-owned Drive Max in New Bern, NC. Serving Havelock, Kinston, Jacksonville, and nearby communities with financing options.",
+  path: "/",
+});
 export default async function Home() {
   const available = await publicInventory("available");
   const hasInventory = available.length > 0;
   const homepageVehicles = featuredHomepageVehicles(available, photoUrl);
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd(dealershipSchema) }}
+      />
       <section className="home-hero">
         <div className="container hero-grid">
           <div className="hero-copy">
@@ -35,8 +46,8 @@ export default async function Home() {
               Used cars without the <span>runaround.</span>
             </h1>
             <p className="hero-lead">
-              Find a high-quality used vehicle with friendly people, clear
-              answers, and financing options. We’re here to make your next
+              Find a high-quality used vehicle in New Bern with friendly people,
+              clear answers, and financing options. We’re here to make your next
               purchase smooth, transparent, and fun.
             </p>
             <div className="button-row">
@@ -258,6 +269,25 @@ export default async function Home() {
         </div>
       </section>
 
+      <section className="section local-home-section">
+        <div className="container local-home-card">
+          <div>
+            <span className="kicker">
+              Proud to call eastern North Carolina home
+            </span>
+            <h2>Used cars in New Bern. A welcome for every neighbor.</h2>
+            <p>
+              Shopping for used cars in Havelock, Jacksonville, Kinston, or
+              Greenville? Explore Drive Max’s inventory online, then visit our
+              New Bern dealership. We also welcome our neighbors in Dover, Cove
+              City, Trent Woods, and James City.
+            </p>
+          </div>
+          <Link className="button button-secondary" href="/areas-we-serve">
+            Explore areas we serve <ArrowRight aria-hidden="true" size={18} />
+          </Link>
+        </div>
+      </section>
       <section className="section location-section">
         <div className="container location-grid">
           <div className="location-copy">

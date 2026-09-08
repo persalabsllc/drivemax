@@ -1,13 +1,13 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "../../lib/seo";
 import { Mail, MapPin } from "lucide-react";
 import LeadForm from "../_components/ConnectedLeadForm";
 
-export const metadata: Metadata = {
-  title: "Contact",
+export const metadata = pageMetadata({
+  title: "Contact & Directions to Our New Bern Dealership",
   description:
     "Contact Drive Max Used Cars in New Bern, NC about inventory, financing, a visit, or an existing account.",
-  alternates: { canonical: "/contact" },
-};
+  path: "/contact",
+});
 
 export default function ContactPage() {
   return (

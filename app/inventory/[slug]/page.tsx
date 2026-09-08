@@ -2,28 +2,32 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { publicInventory, publicVehicle, photoUrl } from "../../../lib/backend";
-import {
-  vehicleTitle,
-  schemaAvailability,
-} from "../../../lib/inventory";
+import { vehicleTitle, schemaAvailability } from "../../../lib/inventory";
 import VehicleGallery from "../../_components/VehicleGallery";
 import VehicleCard from "../../_components/VehicleCard";
 import LeadForm from "../../_components/ConnectedLeadForm";
 import VehicleHistory from "../../_components/VehicleHistory";
 import VehiclePricing from "../../_components/VehiclePricing";
 import { totalVehiclePrice } from "../../../lib/vehicle-pricing";
+import {
+  absoluteUrl,
+  breadcrumbSchema,
+  jsonLd,
+  pageMetadata,
+  SITE_URL,
+} from "../../../lib/seo";
 export const dynamic = "force-dynamic";
 type Props = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const v = await publicVehicle((await params).slug);
   if (!v) return { title: "Vehicle not found", robots: { index: false } };
   const title = `${v.status === "sold" ? "SOLD — " : v.status === "pending" ? "Sale pending — " : ""}${vehicleTitle(v)}`;
-  return {
-    title,
+  return pageMetadata({
+    title: `${title} in New Bern, NC`,
     description: `${title} at Drive Max Used Cars in New Bern, NC. ${v.miles.toLocaleString()} miles. ${v.status === "sold" ? "This vehicle has sold. Browse our available inventory." : v.description.slice(0, 130)}`,
-    alternates: { canonical: `/inventory/${v.slug}` },
-    openGraph: { title, images: v.photos[0] ? [photoUrl(v.photos[0])] : [] },
-  };
+    path: `/inventory/${encodeURIComponent(v.slug)}`,
+    image: v.photos[0] ? photoUrl(v.photos[0]) : undefined,
+  });
 }
 export default async function VehiclePage({ params }: Props) {
   const v = await publicVehicle((await params).slug);
@@ -55,9 +59,17 @@ export default async function VehiclePage({ params }: Props) {
     image: v.photos.map(photoUrl),
     offers: {
       "@type": "Offer",
-      url: `https://www.drivemaxusedcars.com/inventory/${v.slug}`,
+      url: absoluteUrl(`/inventory/${encodeURIComponent(v.slug)}`),
+      seller: {
+        "@type": "AutoDealer",
+        "@id": `${SITE_URL}/#dealership`,
+        name: "Drive Max Used Cars",
+        url: SITE_URL,
+      },
       availability: schemaAvailability(v.status),
-      ...(sold ? {} : { price: totalVehiclePrice(v.internet_price), priceCurrency: "USD" }),
+      ...(sold
+        ? {}
+        : { price: totalVehiclePrice(v.internet_price), priceCurrency: "USD" }),
     },
   };
   return (
@@ -65,14 +77,25 @@ export default async function VehiclePage({ params }: Props) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(schema).replace(/</g, "\\u003c"),
+          __html: jsonLd([
+            schema,
+            breadcrumbSchema([
+              { name: "Home", path: "/" },
+              { name: "Inventory", path: "/inventory" },
+              { name: title, path: `/inventory/${encodeURIComponent(v.slug)}` },
+            ]),
+          ]),
         }}
       />
       <section className="page-section">
         <div className="container">
-          <Link className="text-link" href="/inventory">
-            ← All inventory
-          </Link>
+          <nav className="seo-breadcrumbs" aria-label="Breadcrumb">
+            <Link href="/">Home</Link>
+            <span aria-hidden="true">/</span>
+            <Link href="/inventory">Inventory</Link>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page">{title}</span>
+          </nav>
           <div className="vehicle-detail-heading">
             <div>
               <span className="kicker">

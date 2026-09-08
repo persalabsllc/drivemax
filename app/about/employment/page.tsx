@@ -1,13 +1,13 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "../../../lib/seo";
 import { Check, Paperclip } from "lucide-react";
 import LeadForm from "../../_components/LeadForm";
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: "Employment",
   description:
     "Share your employment interest with Drive Max Used Cars in New Bern, NC.",
-  alternates: { canonical: "/about/employment" },
-};
+  path: "/about/employment",
+});
 
 export default function EmploymentPage() {
   return (

@@ -1,13 +1,13 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "../../lib/seo";
 import Link from "next/link";
 import { CONTACT_NOTICE_PARAGRAPHS } from "../../lib/contact-notice";
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: "Privacy Policy",
   description:
     "How Drive Max Used Cars LLC uses website inquiry information, protects it, and handles your contact preferences and privacy requests.",
-  alternates: { canonical: "/privacy-policy" },
-};
+  path: "/privacy-policy",
+});
 
 export default function PrivacyPolicy() {
   return (

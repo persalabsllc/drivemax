@@ -1,5 +1,6 @@
 import type { Metadata, MetadataRoute } from "next";
 import type { Vehicle } from "./inventory";
+import { APPOINTMENT_NOTE, REGULAR_OPENING_HOURS } from "./business-hours";
 
 export const SITE_URL = "https://www.drivemaxusedcars.com";
 export const SITE_NAME = "Drive Max Used Cars";
@@ -206,8 +207,8 @@ export const dealershipSchema = {
       logo: absoluteUrl("/drive-max-logo-transparent.webp"),
       email: "sales@drivemaxusedcars.com",
       foundingDate: "2019",
-      description:
-        "Family-owned used car dealership in New Bern, North Carolina, offering quality used vehicles, financing options, and personal service.",
+      description: `Family-owned used car dealership in New Bern, North Carolina, offering quality used vehicles, financing options, and personal service. ${APPOINTMENT_NOTE}`,
+      openingHoursSpecification: REGULAR_OPENING_HOURS,
       address: {
         "@type": "PostalAddress",
         streetAddress: "6210 Old US Hwy 70 West",

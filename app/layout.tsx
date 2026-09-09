@@ -6,6 +6,7 @@ import { Mail, MapPin } from "lucide-react";
 import MobileNav from "./_components/MobileNav";
 import AboutNav from "./_components/AboutNav";
 import { SITE_URL } from "../lib/seo";
+import BusinessHours from "./_components/BusinessHours";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -158,6 +159,7 @@ export default function RootLayout({
               <a href="mailto:sales@drivemaxusedcars.com">
                 sales@drivemaxusedcars.com
               </a>
+              <BusinessHours compact />
             </div>
           </div>
           <div className="container footer-disclosures">

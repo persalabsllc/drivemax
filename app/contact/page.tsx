@@ -1,6 +1,7 @@
 import { pageMetadata } from "../../lib/seo";
 import { Mail, MapPin } from "lucide-react";
 import LeadForm from "../_components/ConnectedLeadForm";
+import BusinessHours from "../_components/BusinessHours";
 
 export const metadata = pageMetadata({
   title: "Contact & Directions to Our New Bern Dealership",
@@ -63,6 +64,9 @@ export default function ContactPage() {
                 </p>
               </div>
             </div>
+            <div className="contact-hours-card">
+              <BusinessHours headingLevel="h2" />
+            </div>
             <div className="contact-map">
               <iframe
                 title="Map showing Drive Max Used Cars in New Bern"
@@ -72,7 +76,7 @@ export default function ContactPage() {
               />
             </div>
           </div>
-          <div>
+          <div id="contact-form">
             <div className="content-intro content-intro-static">
               <span className="kicker">Send a message</span>
               <h2>How can we help?</h2>

@@ -1,5 +1,6 @@
 import { pageMetadata } from "../../lib/seo";
 import Link from "next/link";
+import BusinessHours from "../_components/BusinessHours";
 import {
   ArrowRight,
   BadgeCheck,
@@ -138,6 +139,34 @@ export default function AboutPage() {
             <HeartHandshake aria-hidden="true" size={20} /> Get to know Drive
             Max <ArrowRight aria-hidden="true" size={17} />
           </Link>
+        </div>
+      </section>
+      <section className="section">
+        <div className="container about-visit-grid">
+          <div>
+            <span className="kicker">Come see us</span>
+            <h2>A friendly welcome, on your schedule.</h2>
+            <p>
+              Visit our New Bern dealership Tuesday through Saturday during our
+              regular hours, or arrange a Monday or Sunday appointment. We’re
+              happy to help you plan a visit and confirm the vehicle you’d like
+              to see.
+            </p>
+            <address>
+              6210 Old US Hwy 70 West
+              <br />
+              New Bern, NC 28562
+            </address>
+            <Link
+              className="button button-primary"
+              href="/contact#contact-form"
+            >
+              Plan your visit <ArrowRight aria-hidden="true" size={18} />
+            </Link>
+          </div>
+          <div className="about-hours-card">
+            <BusinessHours headingLevel="h2" />
+          </div>
         </div>
       </section>
     </>

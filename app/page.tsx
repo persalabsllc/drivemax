@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import FeaturedInventory from "./_components/FeaturedInventory";
+import BusinessHours from "./_components/BusinessHours";
 import HomepageInventory from "./_components/HomepageInventory";
 import { photoUrl, publicInventory } from "../lib/backend";
 import { featuredHomepageVehicles } from "../lib/homepage-inventory";
@@ -311,6 +312,7 @@ export default async function Home() {
               <Mail aria-hidden="true" />
               sales@drivemaxusedcars.com
             </a>
+            <BusinessHours />
             <div className="button-row">
               <a
                 className="button button-primary"

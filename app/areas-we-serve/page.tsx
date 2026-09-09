@@ -1,4 +1,5 @@
 import Link from "next/link";
+import BusinessHours from "../_components/BusinessHours";
 import { ArrowRight, MapPin } from "lucide-react";
 import {
   breadcrumbSchema,
@@ -82,6 +83,7 @@ export default function AreasWeServe() {
                 <br />
                 New Bern, NC 28562
               </address>
+              <BusinessHours />
               <p>
                 Check availability and arrange your visit before heading over.
                 On a vehicle listing, choose “Request a test drive” to send us

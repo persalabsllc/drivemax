@@ -76,7 +76,7 @@ export default function LeadEditor({
     }
   }
   return (
-    <section className="cr-panel cr-form">
+    <section id="lead-editor" className="cr-panel cr-form">
       <div className="cr-section-heading">
         <div>
           <span className="kicker">Customer conversation</span>
@@ -142,9 +142,12 @@ export default function LeadEditor({
           <summary>Website inquiry contact notice</summary>
           <p>{lead.details.contactNoticeText}</p>
           <p>
-            Version: {lead.details.contactNoticeVersion}<br />
-            Submitted: {lead.details.contactNoticeSubmittedAt}<br />
-            This records the inquiry notice, not an opt-in to automated marketing.
+            Version: {lead.details.contactNoticeVersion}
+            <br />
+            Submitted: {lead.details.contactNoticeSubmittedAt}
+            <br />
+            This records the inquiry notice, not an opt-in to automated
+            marketing.
           </p>
         </details>
       )}

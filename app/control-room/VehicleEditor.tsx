@@ -3,8 +3,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { saveVehicle } from "./actions";
-import { vehicleStatuses, type Vehicle } from "../../lib/inventory";
+import { archiveVehicle, saveVehicle } from "./actions";
+import {
+  vehicleStatuses,
+  vehicleTitle,
+  type Vehicle,
+} from "../../lib/inventory";
 import {
   mergeDecodedFields,
   mergeFeatureLines,
@@ -29,6 +33,8 @@ export default function VehicleEditor({
   const [error, setError] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [decoding, setDecoding] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const [vin, setVin] = useState(vehicle?.vin || "");
   const [fields, setFields] = useState({
     year: vehicle ? String(vehicle.year) : "",
@@ -109,12 +115,13 @@ export default function VehicleEditor({
   }
   return (
     <form
+      id="vehicle-editor"
       className="cr-panel cr-form"
       ref={formRef}
       onChange={() => setDirty(true)}
       onSubmit={async (e) => {
         e.preventDefault();
-        if (decoding || uploading || busy) return;
+        if (decoding || uploading || busy || removing) return;
         setBusy(true);
         setError(false);
         setNotice("");
@@ -138,7 +145,8 @@ export default function VehicleEditor({
       <div className="cr-section-heading">
         <div>
           <span className="kicker">Inventory editor</span>
-          <h2>{vehicle ? "Vehicle details" : "Add a vehicle"}</h2>
+          <h2>{vehicle ? vehicleTitle(vehicle) : "Add a vehicle"}</h2>
+          {vehicle && <p className="cr-muted">Stock {vehicle.stock_number}</p>}
         </div>
         {vehicle && (
           <Link
@@ -150,13 +158,94 @@ export default function VehicleEditor({
           </Link>
         )}
       </div>
+      <div className="cr-editor-links">
+        <Link className="text-link" href="/control-room?tab=inventory">
+          ← Back to inventory
+        </Link>
+        <a className="text-link" href="#vehicle-photos">
+          Jump to photos
+        </a>
+        {vehicle && vehicle.status !== "archived" && (
+          <button
+            type="button"
+            className="cr-remove-link"
+            disabled={busy || uploading || decoding || removing}
+            onClick={() => setConfirmRemove(true)}
+          >
+            Remove from inventory
+          </button>
+        )}
+      </div>
+      {confirmRemove && vehicle && (
+        <div
+          className="cr-remove-confirm"
+          role="group"
+          aria-labelledby="remove-vehicle-title"
+        >
+          <h3 id="remove-vehicle-title">Remove {vehicleTitle(vehicle)}?</h3>
+          <p>
+            Stock {vehicle.stock_number} will be hidden from the website and
+            current inventory. Its photos and customer history will stay in
+            Archived, where you can restore it.
+          </p>
+          {dirty && <p>Unsaved edits will be discarded.</p>}
+          <div className="cr-editor-links">
+            <button
+              type="button"
+              className="button button-secondary"
+              disabled={removing}
+              onClick={() => setConfirmRemove(false)}
+            >
+              Keep vehicle
+            </button>
+            <button
+              type="button"
+              className="button cr-button-danger"
+              disabled={busy || uploading || decoding || removing}
+              onClick={async () => {
+                setRemoving(true);
+                setNotice("");
+                setError(false);
+                try {
+                  const form = new FormData();
+                  form.set("id", vehicle.id);
+                  form.set("updated_at", vehicle.updated_at);
+                  const result = await archiveVehicle(form);
+                  if (result.error) {
+                    setError(true);
+                    setNotice(result.error);
+                  } else {
+                    router.push("/control-room?tab=inventory");
+                    router.refresh();
+                  }
+                } catch {
+                  setError(true);
+                  setNotice("Could not remove the vehicle. Please try again.");
+                } finally {
+                  setRemoving(false);
+                }
+              }}
+            >
+              {removing ? "Removing…" : "Remove vehicle"}
+            </button>
+          </div>
+          {error && notice && (
+            <p className="cr-error" role="alert">
+              {notice}
+            </p>
+          )}
+        </div>
+      )}
       <input type="hidden" name="id" value={vehicle?.id || ""} />
       <input
         type="hidden"
         name="updated_at"
         value={vehicle?.updated_at || ""}
       />
-      <fieldset disabled={busy || uploading} className="cr-fieldset">
+      <fieldset
+        disabled={busy || uploading || removing}
+        className="cr-fieldset"
+      >
         <VinLookup
           vin={vin}
           onVinChange={setVin}
@@ -356,7 +445,7 @@ export default function VehicleEditor({
             setDirty(true);
           }}
         />
-        <div>
+        <div id="vehicle-photos">
           <h3>Vehicle photos</h3>
           <p className="cr-muted">
             First photo is the cover. JPG, PNG, or WebP; under 4 MB each. Up to
@@ -435,7 +524,7 @@ export default function VehicleEditor({
         </span>
         <button
           className="button button-primary"
-          disabled={busy || uploading || decoding}
+          disabled={busy || uploading || decoding || removing}
         >
           {busy ? "Saving…" : "Save vehicle"}
         </button>
@@ -444,7 +533,7 @@ export default function VehicleEditor({
         className={error ? "cr-error" : "cr-success"}
         role={error ? "alert" : "status"}
       >
-        {notice}
+        {confirmRemove ? "" : notice}
       </p>
     </form>
   );

@@ -44,7 +44,7 @@ export default async function Home() {
               Family owned in New Bern since 2019
             </span>
             <h1>
-              Used cars without the <span>runaround.</span>
+              Reliable vehicles <span>you can afford.</span>
             </h1>
             <p className="hero-lead">
               Find a high-quality used vehicle in New Bern with friendly people,

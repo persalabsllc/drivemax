@@ -149,6 +149,37 @@ export async function saveVehicle(form: FormData): Promise<ActionResult> {
     };
   }
 }
+export async function archiveVehicle(form: FormData): Promise<ActionResult> {
+  await requireStaff();
+  const parsed = z
+    .object({
+      id: idSchema,
+      updated_at: z.string().min(1).max(50),
+    })
+    .safeParse(Object.fromEntries(form));
+  if (!parsed.success) return validation(parsed.error);
+  try {
+    const { data, error } = await db()
+      .from("vehicles")
+      .update({ status: "archived", featured: false })
+      .eq("id", parsed.data.id)
+      .eq("updated_at", parsed.data.updated_at)
+      .select("id")
+      .maybeSingle();
+    if (error)
+      return { error: "Could not remove the vehicle. Please try again." };
+    if (!data)
+      return {
+        error:
+          "This vehicle changed in another session. Reload before removing it.",
+      };
+    refreshInventory();
+    return { id: data.id, message: "Vehicle removed from inventory." };
+  } catch {
+    return { error: "Could not remove the vehicle. Please try again." };
+  }
+}
+
 export async function saveLead(form: FormData): Promise<ActionResult> {
   await requireStaff();
   const parsed = z

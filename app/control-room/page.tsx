@@ -89,6 +89,7 @@ export default async function ControlRoom({
     });
   if (base === "vehicles")
     query = query.in("open_leads.status", openLeadStatuses);
+  if (base === "vehicles" && !status) query = query.neq("status", "archived");
   if (base === "leads" && vehicleFilter)
     query =
       vehicleFilter === "unassigned"
@@ -295,7 +296,9 @@ export default async function ControlRoom({
               <label>
                 Status
                 <select name="status" defaultValue={status}>
-                  <option value="">All statuses</option>
+                  <option value="">
+                    {tab === "leads" ? "All statuses" : "Current inventory"}
+                  </option>
                   {tab === "leads" && <option value="open">Open leads</option>}
                   {(tab === "leads" ? leadStatuses : vehicleStatuses).map(
                     (s) => (
@@ -362,8 +365,12 @@ export default async function ControlRoom({
                   {tab === "leads"
                     ? (list.data as unknown as ListedLead[]).map((l) => (
                         <tr key={l.id}>
-                          <td>
-                            <strong>{l.name}</strong>
+                          <td className="cr-record-title">
+                            <Link
+                              href={`/control-room?tab=leads&lead=${l.id}#lead-editor`}
+                            >
+                              <strong>{l.name}</strong>
+                            </Link>
                             <small>
                               {leadLabel(l)} ·{" "}
                               {new Date(l.created_at).toLocaleDateString(
@@ -372,12 +379,12 @@ export default async function ControlRoom({
                               )}
                             </small>
                           </td>
-                          <td>
+                          <td data-label="Status">
                             <span className={`cr-badge ${l.status}`}>
                               {l.status}
                             </span>
                           </td>
-                          <td>
+                          <td data-label="Contact / follow-up">
                             {l.email || l.phone}
                             {l.follow_up_at && (
                               <small>
@@ -390,7 +397,7 @@ export default async function ControlRoom({
                               </small>
                             )}
                           </td>
-                          <td>
+                          <td data-label="Vehicle of interest">
                             {l.vehicle ? (
                               <>
                                 <Link
@@ -412,10 +419,10 @@ export default async function ControlRoom({
                               </span>
                             )}
                           </td>
-                          <td>
+                          <td className="cr-record-actions">
                             <Link
-                              className="text-link"
-                              href={`/control-room?tab=leads&lead=${l.id}`}
+                              className="button button-secondary"
+                              href={`/control-room?tab=leads&lead=${l.id}#lead-editor`}
                             >
                               View →
                             </Link>
@@ -424,20 +431,30 @@ export default async function ControlRoom({
                       ))
                     : (list.data as unknown as ListedVehicle[]).map((v) => (
                         <tr key={v.id}>
-                          <td>
-                            <strong>{vehicleTitle(v)}</strong>
+                          <td className="cr-record-title">
+                            <Link
+                              href={`/control-room?tab=inventory&vehicle=${v.id}#vehicle-editor`}
+                            >
+                              <strong>{vehicleTitle(v)}</strong>
+                            </Link>
                             <small>
                               Stock {v.stock_number} ·{" "}
                               {v.miles.toLocaleString()} miles
                             </small>
+                            <small>
+                              {v.photos.length}{" "}
+                              {v.photos.length === 1 ? "photo" : "photos"}
+                            </small>
                           </td>
-                          <td>
+                          <td data-label="Status">
                             <span className={`cr-badge ${v.status}`}>
                               {v.status}
                             </span>
                           </td>
-                          <td>{money(v.internet_price)}</td>
-                          <td>
+                          <td data-label="Internet price">
+                            {money(v.internet_price)}
+                          </td>
+                          <td data-label="Customer leads">
                             <Link
                               className="text-link"
                               href={`/control-room?tab=leads&vehicleFilter=${v.id}&status=open`}
@@ -452,13 +469,23 @@ export default async function ControlRoom({
                               </Link>
                             </small>
                           </td>
-                          <td>
-                            <Link
-                              className="text-link"
-                              href={`/control-room?tab=inventory&vehicle=${v.id}`}
-                            >
-                              Edit →
-                            </Link>
+                          <td className="cr-record-actions">
+                            <div>
+                              <Link
+                                className="button button-primary"
+                                href={`/control-room?tab=inventory&vehicle=${v.id}#vehicle-editor`}
+                                aria-label={`Edit ${vehicleTitle(v)}, stock ${v.stock_number}`}
+                              >
+                                Edit vehicle
+                              </Link>
+                              <Link
+                                className="button button-secondary"
+                                href={`/control-room?tab=inventory&vehicle=${v.id}#vehicle-photos`}
+                                aria-label={`Add photos to ${vehicleTitle(v)}, stock ${v.stock_number}`}
+                              >
+                                Add photos
+                              </Link>
+                            </div>
                           </td>
                         </tr>
                       ))}

@@ -4,8 +4,6 @@ import {
   ArrowRight,
   BriefcaseBusiness,
   CarFront,
-  Mail,
-  Phone,
   ReceiptText,
   Sparkles,
   Wrench,
@@ -14,7 +12,7 @@ import {
 export const metadata = pageMetadata({
   title: "Meet the staff",
   description:
-    "Meet owner Kyle Kratoville and get to know the roles behind Drive Max Used Cars in New Bern. Reach Kyle directly with questions about Drive Max or the car business.",
+    "Get to know the roles behind Drive Max Used Cars in New Bern, from management and sales to vehicle preparation and accounting.",
   path: "/about/staff",
 });
 
@@ -68,58 +66,6 @@ export default function StaffPage() {
             Get to know the people and the work behind your Drive Max
             experience.
           </p>
-        </div>
-      </section>
-      <section className="section page-section-muted">
-        <div className="container">
-          <article className="owner-profile">
-            <div className="owner-intro">
-              <div className="owner-monogram" aria-hidden="true">
-                KK
-              </div>
-              <span className="kicker kicker-on-dark">Owner</span>
-              <h2>Kyle Kratoville</h2>
-              <p>Your neighbor in New Bern. Your direct line to Drive Max.</p>
-              <div className="owner-contact">
-                <a href="mailto:Kyle@drivemaxusedcars.com">
-                  <Mail size={19} aria-hidden="true" />
-                  <span>Kyle@drivemaxusedcars.com</span>
-                </a>
-                <a href="tel:+12525154389">
-                  <Phone size={19} aria-hidden="true" />
-                  <span>
-                    252-515-4389 <small>Cell</small>
-                  </span>
-                </a>
-              </div>
-            </div>
-            <div className="owner-bio">
-              <span className="kicker">A note from Kyle</span>
-              <h3>Cars brought me in. People made it home.</h3>
-              <p>
-                I started in the car business in 2012 because I loved cars and
-                people. I worked my way up to Sales Manager at a franchise
-                dealership, then decided to open my own dealership so I could
-                create a warm, supportive work culture and serve the community I
-                love: New Bern.
-              </p>
-              <p>
-                At Drive Max, I want you to feel comfortable asking questions
-                and confident in the people helping you. Buying a vehicle should
-                be a smooth, transparent, and fun experience, and our
-                relationship should continue well beyond the sale.
-              </p>
-              <p>
-                When I’m away from the dealership, I enjoy boating, hiking, and
-                playing with my dogs, Jace and Tucker.
-              </p>
-              <p className="owner-invitation">
-                I’m always available to help with questions or concerns about
-                Drive Max or the car business, whether you’ve bought a vehicle
-                from me or not. Please reach out anytime.
-              </p>
-            </div>
-          </article>
         </div>
       </section>
       <section className="section">

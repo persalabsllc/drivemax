@@ -5,6 +5,7 @@ import { takeSlot } from "../../../../lib/rate-limit";
 import {
   appraisalSchema,
   appraisalNumbers,
+  appraisalForStorage,
   subjectSchema,
 } from "../../../../lib/appraisal";
 import {
@@ -20,6 +21,7 @@ import {
 import {
   fetchMarketSnapshot,
   marketCheckJson,
+  currentMarketUsage,
 } from "../../../../lib/appraisal-market";
 
 export const runtime = "nodejs";
@@ -52,13 +54,15 @@ export async function GET() {
     );
   try {
     await ensureAppraisalStorage();
-    const [records, key] = await Promise.all([
+    const [records, key, usage] = await Promise.all([
       listAppraisals(),
       configuredMarketKey(),
+      currentMarketUsage(),
     ]);
     return response({
       records,
       connected: !!key,
+      usage,
       isOwner: staff.role === "owner",
     });
   } catch (e) {
@@ -118,13 +122,18 @@ export async function POST(request: Request) {
         ? z.string().min(1).max(60).parse(body.updatedAt)
         : undefined;
       const record = await persistAppraisal(
-        parsed.data,
+        appraisalForStorage(parsed.data),
         staff.id,
         id,
         updatedAt,
       );
       revalidatePath("/control-room");
-      return response({ record, message: "Appraisal saved." });
+      return response({
+        record,
+        message: parsed.data.market
+          ? "Appraisal and reviewed price saved. Live provider listings are not stored; refresh them when you revisit this vehicle."
+          : "Appraisal saved. No data subscription needed.",
+      });
     }
     if (body.action === "market") {
       const subject = subjectSchema.parse(body.subject);
@@ -144,12 +153,14 @@ export async function POST(request: Request) {
           ownSales,
           connected: false,
           message:
-            "Connect MarketCheck for live estimates and listings. Add book values and comparables below to price this vehicle now.",
+            "No API account needed: add at least three comparable asking prices below for a retail target and buy figure. An optional MarketCheck free-plan connection can retrieve listings.",
         });
+      const market = await fetchMarketSnapshot(subject, key);
       return response({
-        market: await fetchMarketSnapshot(subject, key),
+        market,
         ownSales,
         connected: true,
+        usage: await currentMarketUsage(),
       });
     }
     if (body.action === "sales") {
@@ -183,7 +194,6 @@ export async function POST(request: Request) {
         .regex(/^[A-Za-z0-9_.-]+$/)
         .parse(body.key);
       await marketCheckJson(
-        "/v2/search/car/active",
         new URLSearchParams({
           rows: "1",
           zip: "28562",
@@ -195,8 +205,9 @@ export async function POST(request: Request) {
       await saveMarketConnection(key, staff.id);
       return response({
         connected: true,
+        usage: await currentMarketUsage(),
         message:
-          "MarketCheck connected. Run a market lookup to value this vehicle.",
+          "MarketCheck listings connected. Drive Max calculates pricing from comparable asking prices; paid prediction endpoints are disabled.",
       });
     }
     if (body.action === "applyPrice") {

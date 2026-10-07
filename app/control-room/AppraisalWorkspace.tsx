@@ -34,6 +34,7 @@ import {
   type DecodedVehicle,
 } from "../../lib/vehicle-data";
 import { DEALER_ADMINISTRATION_FEE } from "../../lib/vehicle-pricing";
+import { type MarketUsage } from "../../lib/appraisal-usage";
 
 export type AppraisalVehicle = {
   id: string;
@@ -151,6 +152,7 @@ export default function AppraisalWorkspace({
   const [saved, setSaved] = useState<SavedAppraisal | null>(null);
   const [records, setRecords] = useState<SavedAppraisal[]>([]);
   const [connected, setConnected] = useState(false);
+  const [usage, setUsage] = useState<MarketUsage | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState("");
   const [dirty, setDirty] = useState(false);
@@ -199,6 +201,7 @@ export default function AppraisalWorkspace({
         if (active) {
           setRecords(data.records);
           setConnected(data.connected);
+          setUsage(data.usage);
           setLoaded(true);
         }
       })
@@ -250,6 +253,7 @@ export default function AppraisalWorkspace({
           internalSales: [],
           sale: empty.sale,
           retailOverride: null,
+          reviewedMarketPrice: false,
           market: null,
           costs: { ...current.costs, acquisition: null, retailAdjustment: 0 },
           notes: "",
@@ -382,15 +386,15 @@ export default function AppraisalWorkspace({
           <span className="kicker">Appraisals & pricing</span>
           <h2>Know your number before you make your move.</h2>
           <p className="cr-muted">
-            Book it. Compare it. Work backward to a buy figure that leaves room
-            for profit.
+            Compare asking prices. Set a retail target. Work backward to a buy
+            figure that leaves room for profit. Start free with manual comps.
           </p>
         </div>
         <span className={`av-connection ${connected ? "online" : ""}`}>
           <span />
           {connected
-            ? "MarketCheck connected"
-            : "Manual worksheet · connect market data below"}
+            ? "MarketCheck listings connected"
+            : "Free manual pricing · no account needed"}
         </span>
       </section>
 
@@ -651,8 +655,13 @@ export default function AppraisalWorkspace({
                     ...current,
                     market: result.market as MarketSnapshot | null,
                     internalSales: result.ownSales,
+                    retailOverride: current.reviewedMarketPrice
+                      ? null
+                      : current.retailOverride,
+                    reviewedMarketPrice: false,
                   }));
                   setConnected(result.connected);
+                  if (result.usage) setUsage(result.usage);
                   setNotice(
                     result.message ||
                       "Market lookup complete. Review the comps and exclusions below.",
@@ -664,7 +673,7 @@ export default function AppraisalWorkspace({
               {busy === "market"
                 ? "Finding comparables…"
                 : connected
-                  ? "Run market lookup"
+                  ? "Fetch nearby asking prices"
                   : "Check recorded sales"}
             </button>
             <span className="cr-muted">
@@ -672,9 +681,10 @@ export default function AppraisalWorkspace({
             </span>
           </div>
           <p className="cr-muted">
-            Live comps use non-CPO listings reported with clean titles. AWD and
-            4WD share a search group; confirm the exact drive system on each
-            comp.
+            Optional API searches are limited to 100 miles and use one inventory
+            request. Live comps use non-CPO listings reported with clean titles.
+            AWD and 4WD share a search group; confirm the exact drive system on
+            each comp.
           </p>
         </fieldset>
       </section>
@@ -709,12 +719,21 @@ export default function AppraisalWorkspace({
       <div className="av-stat-grid">
         <article className="av-stat">
           <BarChart3 size={20} />
-          <span>Market retail estimate</span>
-          <strong>{usd(numbers.predictedPrice)}</strong>
+          <span>Comparable retail range</span>
+          <strong className="av-range">
+            {numbers.askingLow === null ? (
+              "—"
+            ) : (
+              <>
+                <span>{usd(numbers.askingLow)}</span>
+                <span>– {usd(numbers.askingHigh)}</span>
+              </>
+            )}
+          </strong>
           <small>
-            {numbers.predictedPrice !== null
-              ? "MarketCheck · VIN, miles & ZIP"
-              : "Connect MarketCheck and run lookup"}
+            {numbers.askingCount >= 3
+              ? "Middle 50% of included asking prices"
+              : "Add at least 3 similar listings for a useful range"}
           </small>
         </article>
         <article className="av-stat">
@@ -793,7 +812,11 @@ export default function AppraisalWorkspace({
                 label="Your retail override ($)"
                 value={draft.retailOverride}
                 onChange={(value) =>
-                  edit((c) => ({ ...c, retailOverride: value }))
+                  edit((c) => ({
+                    ...c,
+                    retailOverride: value,
+                    reviewedMarketPrice: false,
+                  }))
                 }
               />
               <Amount
@@ -1081,8 +1104,8 @@ export default function AppraisalWorkspace({
             <h2>Comparable vehicles</h2>
             <p className="cr-muted">
               {numbers.marketCurrent
-                ? `${draft.market!.totalFound} search matches · up to 50 nearest listings · fetched ${dated(draft.market!.fetchedAt)} · ZIP ${draft.market!.query.zip}, ${draft.market!.query.radius}-mile radius.`
-                : "Add listings and confirmed transactions, or connect live market data."}
+                ? `${draft.market!.totalFound} search matches · ${draft.market!.listings.length} usable listings returned · fetched ${dated(draft.market!.fetchedAt)} · ZIP ${draft.market!.query.zip}, ${draft.market!.query.radius}-mile radius.`
+                : "Enter comparable listings for free. Retail targets and buy figures calculate automatically."}
             </p>
           </div>
           <button
@@ -1101,6 +1124,26 @@ export default function AppraisalWorkspace({
             Add comparable
           </button>
         </div>
+        <div className="av-toolbar">
+          {["cars.com", "autotrader.com", "cargurus.com"].map((site) => (
+            <a
+              key={site}
+              className="text-link"
+              href={`https://www.google.com/search?q=${encodeURIComponent(`site:${site} ${title(draft.subject)} used for sale near ${draft.subject.zip}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Search {site} ↗
+            </a>
+          ))}
+        </div>
+        <p className="cr-muted">
+          No-account workflow: find 3–10 cars with the same year, model, trim,
+          and similar mileage. Use Add comparable to enter each asking price,
+          odometer, source, and listing link. Exclude poor matches; your pricing
+          strategy, recon costs, and profit goal determine the target and buy
+          cap.
+        </p>
         <p className="av-evidence-note">
           Asking prices are advertised prices. Recorded sales come from entered
           transaction records; a listing disappearing does not prove its sale
@@ -1420,21 +1463,23 @@ export default function AppraisalWorkspace({
             </span>
           </summary>
           <div className="cr-form">
-            <h3>Connect a MarketCheck API account</h3>
+            <h3>Optional: connect MarketCheck listings</h3>
             <p>
-              Choose an account with <strong>Inventory Search</strong> and{" "}
-              <strong>MarketCheck Price · US Used Base</strong>. Each lookup
-              uses paid account credits. Successful identical lookups reuse
-              results for up to six hours.
+              MarketCheck advertises a{" "}
+              <strong>$0 plan with 500 calls a month</strong> and a 100-mile
+              radius. Choose that plan and confirm Inventory Search access and
+              any data fees in your account before connecting. Drive Max only
+              requests listings; it calculates retail targets itself and never
+              calls the paid price-prediction endpoint.
             </p>
             <p>
               <a
                 className="text-link"
-                href="https://www.marketcheck.com/apis/"
+                href="https://developers.marketcheck.com/"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                MarketCheck data and API accounts ↗
+                MarketCheck plans and API accounts ↗
               </a>
             </p>
             <form
@@ -1445,6 +1490,7 @@ export default function AppraisalWorkspace({
                   const result = await api({ action: "connect", key });
                   setKey("");
                   setConnected(result.connected);
+                  setUsage(result.usage);
                   setNotice(result.message);
                 });
               }}
@@ -1471,10 +1517,28 @@ export default function AppraisalWorkspace({
               </button>
             </form>
             <small className="cr-muted">
-              The connection check uses one inventory API request. Your key is
-              encrypted and never displayed after saving. Book-value and
-              confirmed market-wide transaction feeds require their own licensed
-              sources.
+              Connection checks and lookups each consume one request. Drive Max
+              stops at 450 requests per calendar month across all staff.
+              Requests made elsewhere also count toward your provider allowance.
+              This limit does not change your MarketCheck subscription or
+              account fees. Your key is encrypted and never displayed after
+              saving.
+            </small>
+            {usage && (
+              <small className="cr-muted">
+                Drive Max requests this month: {usage.used} / {usage.limit}.{" "}
+                Resets{" "}
+                {new Date(usage.resetsAt).toLocaleDateString("en-US", {
+                  timeZone: "UTC",
+                })}{" "}
+                (UTC).
+              </small>
+            )}
+            <small className="cr-muted">
+              Live API listings are refreshed on demand and are not stored in
+              saved appraisals. Saving retains your reviewed price, private
+              costs, manual comps, and recorded sales. Automatic book values and
+              market-wide confirmed transactions need licensed sources.
             </small>
             {connected && (
               <button
@@ -1586,7 +1650,8 @@ export default function AppraisalWorkspace({
         ) : !records.length ? (
           <p className="cr-muted">
             Save your first appraisal to keep the figures, notes, book
-            references, and market snapshot together.
+            references, and reviewed price together. Live API listings are
+            refreshed on demand and are not archived.
           </p>
         ) : (
           <div className="cr-table-wrap">
@@ -1642,8 +1707,9 @@ export default function AppraisalWorkspace({
           </div>
         )}
         <small className="cr-muted">
-          Most recent 200 appraisals. Saved market snapshots keep the date they
-          were retrieved; refresh before making a new purchase decision.
+          Most recent 200 appraisals. Saved prices are your reviewed decisions;
+          fetch current comps before relying on them for a new purchase or price
+          change.
         </small>
       </section>
       {linkedVehicle && (

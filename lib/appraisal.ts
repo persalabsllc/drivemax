@@ -97,6 +97,7 @@ export const appraisalSchema = z
     }),
     strategy: z.enum(["quick", "balanced", "margin"]),
     retailOverride: optionalAmount,
+    reviewedMarketPrice: z.boolean().default(false),
     manualComps: z.array(compSchema).max(100),
     excludedCompIds: z.array(z.string().max(100)).max(250).default([]),
     internalSales: z.array(compSchema).max(200).default([]),
@@ -241,7 +242,9 @@ export function appraisalNumbers(
   }
   if (data.retailOverride !== null) {
     base = data.retailOverride;
-    basis = "Your retail override";
+    basis = data.reviewedMarketPrice
+      ? "Your saved reviewed market price"
+      : "Your retail override";
   }
   const retail =
     base === null
@@ -269,6 +272,8 @@ export function appraisalNumbers(
     soldCount: sold.length,
     medianAsk,
     medianSold,
+    askingLow: quantile(asking, 0.25),
+    askingHigh: quantile(asking, 0.75),
     predictedPrice,
     retail,
     expectedSale,
@@ -280,6 +285,33 @@ export function appraisalNumbers(
     rank,
     rankTotal: asking.length + 1,
     basis,
+  };
+}
+
+// Save the operator's reviewed price, never a reusable archive of API listings.
+export function appraisalForStorage(data: Appraisal): Appraisal {
+  const numbers = appraisalNumbers(data);
+  const reviewedRetail =
+    data.retailOverride === null &&
+    data.titleStatus === "clean" &&
+    numbers.marketCurrent &&
+    Date.now() - Date.parse(data.market!.fetchedAt) <= 86400000 &&
+    numbers.retail !== null
+      ? Math.max(0, numbers.retail - data.costs.retailAdjustment)
+      : data.retailOverride;
+  return {
+    ...data,
+    market: null,
+    retailOverride: reviewedRetail,
+    reviewedMarketPrice:
+      reviewedRetail !== data.retailOverride || data.reviewedMarketPrice,
+    manualComps: data.manualComps.filter((c) => c.origin !== "marketcheck"),
+    internalSales: data.internalSales.filter((c) => c.origin !== "marketcheck"),
+    excludedCompIds: data.excludedCompIds.filter((id) =>
+      [...data.manualComps, ...data.internalSales].some(
+        (c) => c.id === id && c.origin !== "marketcheck",
+      ),
+    ),
   };
 }
 
@@ -324,6 +356,7 @@ export function newAppraisal(): Appraisal {
     },
     strategy: "balanced",
     retailOverride: null,
+    reviewedMarketPrice: false,
     manualComps: [],
     excludedCompIds: [],
     internalSales: [],

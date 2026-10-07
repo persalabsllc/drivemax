@@ -62,6 +62,12 @@
   font-weight: 650;
   max-width: 265px;
 }
+.av-stat strong.av-range {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25em;
+  font-size: 1.3rem;
+}
 .av-connection > span {
   width: 7px;
   height: 7px;

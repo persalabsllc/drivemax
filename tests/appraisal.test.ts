@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
 import {
   appraisalNumbers,
+  appraisalForStorage,
   appraisalSchema,
   compSchema,
   newAppraisal,
@@ -18,6 +19,11 @@ import {
   parsePrediction,
 } from "../lib/appraisal-provider";
 import { decryptMarketKey, encryptMarketKey } from "../lib/appraisal-crypto";
+import {
+  marketUsage,
+  reserveMarketRequest,
+  MARKET_MONTHLY_LIMIT,
+} from "../lib/appraisal-usage";
 
 const staffId = "7c43d6cd-481d-4a1b-9989-465ac7a6317a";
 const recordId = "0e400b44-3e80-4d19-a9f4-4e283be977d6";
@@ -81,6 +87,47 @@ test("pricing strategies follow included comp quartiles and exclusions persist",
     appraisalSchema.parse(JSON.parse(JSON.stringify(data))).excludedCompIds,
     ["asking-18000"],
   );
+});
+test("free manual pricing produces a retail range and buy limit without a provider estimate", () => {
+  const data = fixture();
+  data.manualComps = [comp(12000), comp(15000), comp(18000)];
+  const n = appraisalNumbers(data);
+  assert.equal(n.predictedPrice, null);
+  assert.equal(n.askingLow, 13500);
+  assert.equal(n.askingHigh, 16500);
+  assert.equal(n.retail, 15000);
+  assert.equal(n.maxBuy, 11000);
+});
+test("saving a live comparison retains the reviewed price and adjustments without archiving provider listings", () => {
+  const data = fixture();
+  data.costs.retailAdjustment = -700;
+  data.market = {
+    fetchedAt: new Date().toISOString(),
+    query: { ...data.subject },
+    predictedPrice: null,
+    totalFound: 3,
+    listings: [
+      comp(12000, "asking", { origin: "marketcheck" }),
+      comp(15000, "asking", { origin: "marketcheck" }),
+      comp(18000, "asking", { origin: "marketcheck" }),
+    ],
+    warnings: [],
+  };
+  const before = appraisalNumbers(data);
+  const stored = appraisalSchema.parse(appraisalForStorage(data));
+  assert.equal(stored.market, null);
+  assert.equal(stored.reviewedMarketPrice, true);
+  assert.equal(stored.retailOverride, 15000);
+  assert.equal(appraisalNumbers(stored).retail, before.retail);
+  assert.equal(appraisalNumbers(stored).maxBuy, before.maxBuy);
+  data.titleStatus = "unknown";
+  assert.equal(appraisalForStorage(data).retailOverride, null);
+  data.titleStatus = "clean";
+  data.market.fetchedAt = new Date(Date.now() - 2 * 86400000).toISOString();
+  assert.equal(appraisalForStorage(data).retailOverride, null);
+  data.market.fetchedAt = new Date().toISOString();
+  data.subject.miles += 1000;
+  assert.equal(appraisalForStorage(data).retailOverride, null);
 });
 test("listing prices and sale transaction prices are separate evidence", () => {
   const data = fixture();
@@ -374,6 +421,7 @@ test("appraisal migration saves and reloads private snapshots, denies browser ac
         "appraisal_records",
         "appraisal_connections",
         "appraisal_market_cache",
+        "appraisal_api_usage",
       ])
         await assert.rejects(
           pg.query(`select * from public.${table}`),
@@ -387,6 +435,41 @@ test("appraisal migration saves and reloads private snapshots, denies browser ac
       1,
     );
     await pg.exec("reset role");
+  } finally {
+    await pg.close();
+  }
+});
+test("monthly listing request cap is shared, atomic, and resets by UTC calendar month", async () => {
+  const pg = new PGlite();
+  try {
+    await pg.exec(
+      "create table public.appraisal_api_usage(month text primary key,used integer not null)",
+    );
+    const query = (sql: string, values: (string | number)[]) =>
+      pg.query<{ used: number }>(sql, values);
+    const now = new Date("2026-10-31T23:59:00Z");
+    assert.equal((await marketUsage(query, now)).used, 0);
+    await pg.query(
+      "insert into public.appraisal_api_usage values('2026-10',$1)",
+      [MARKET_MONTHLY_LIMIT - 1],
+    );
+    const results = await Promise.allSettled([
+      reserveMarketRequest(query, now),
+      reserveMarketRequest(query, now),
+    ]);
+    assert.equal(results.filter((r) => r.status === "fulfilled").length, 1);
+    assert.equal(results.filter((r) => r.status === "rejected").length, 1);
+    const usage = await marketUsage(query, now);
+    assert.equal(usage.used, MARKET_MONTHLY_LIMIT);
+    assert.equal(usage.resetsAt, "2026-11-01T00:00:00.000Z");
+    await assert.rejects(
+      reserveMarketRequest(query, now),
+      /monthly Drive Max request limit/,
+    );
+    const nextMonth = new Date("2026-11-01T00:00:01Z");
+    await reserveMarketRequest(query, nextMonth);
+    assert.equal((await marketUsage(query, nextMonth)).used, 1);
+    assert.equal((await marketUsage(query, now)).used, MARKET_MONTHLY_LIMIT);
   } finally {
     await pg.close();
   }

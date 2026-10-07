@@ -23,9 +23,16 @@ create table if not exists public.appraisal_market_cache (
   payload jsonb not null,
   expires_at timestamptz not null
 );
+create table if not exists public.appraisal_api_usage (
+  month text primary key check (month ~ '^[0-9]{4}-[0-9]{2}$'),
+  used integer not null check (used >= 0)
+);
 alter table public.appraisal_records enable row level security;
 alter table public.appraisal_connections enable row level security;
 alter table public.appraisal_market_cache enable row level security;
+alter table public.appraisal_api_usage enable row level security;
 revoke all on public.appraisal_records,public.appraisal_connections,public.appraisal_market_cache from public,anon,authenticated;
 grant all on public.appraisal_records,public.appraisal_connections,public.appraisal_market_cache to service_role;
+revoke all on public.appraisal_api_usage from public,anon,authenticated;
+grant all on public.appraisal_api_usage to service_role;
 commit;

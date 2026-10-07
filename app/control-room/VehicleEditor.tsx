@@ -165,6 +165,14 @@ export default function VehicleEditor({
         <a className="text-link" href="#vehicle-photos">
           Jump to photos
         </a>
+        {vehicle && (
+          <Link
+            className="text-link"
+            href={`/control-room?tab=appraisals&vehicle=${vehicle.id}`}
+          >
+            Appraise / price this vehicle
+          </Link>
+        )}
         {vehicle && vehicle.status !== "archived" && (
           <button
             type="button"

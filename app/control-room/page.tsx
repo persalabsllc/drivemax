@@ -6,6 +6,7 @@ import {
   LogOut,
   Plus,
   ArrowUpRight,
+  ChartNoAxesCombined,
 } from "lucide-react";
 import { db, emailReady, photoUrl, requireStaff } from "../../lib/backend";
 import {
@@ -18,6 +19,9 @@ import {
 import type { Lead, Message, Staff } from "../../lib/crm-types";
 import { logoutAction } from "./actions";
 import VehicleEditor from "./VehicleEditor";
+import AppraisalWorkspace, {
+  type AppraisalVehicle,
+} from "./AppraisalWorkspace";
 import LeadEditor from "./LeadEditor";
 import { leadLabel } from "../../lib/purchase-requests";
 import {
@@ -47,6 +51,23 @@ async function vehicleChoices() {
     if (r.data.length < 1000) return all;
   }
 }
+async function appraisalVehicles() {
+  const all: AppraisalVehicle[] = [];
+  for (let start = 0; ; start += 1000) {
+    const r = await db()
+      .from("vehicles")
+      .select(
+        "id,vin,year,make,model,trim,miles,drivetrain,stock_number,internet_price,updated_at,status",
+      )
+      .neq("status", "archived")
+      .order("created_at", { ascending: false })
+      .order("id")
+      .range(start, start + 999);
+    if (r.error) throw new Error("Could not load appraisal inventory.");
+    all.push(...(r.data as AppraisalVehicle[]));
+    if (r.data.length < 1000) return all;
+  }
+}
 
 export const dynamic = "force-dynamic";
 const one = (v: string | string[] | undefined) =>
@@ -58,7 +79,11 @@ export default async function ControlRoom({
 }) {
   const user = await requireStaff();
   const p = await searchParams;
-  const tab = one(p.tab) || "overview";
+  const tab = ["overview", "inventory", "leads", "appraisals"].includes(
+    one(p.tab),
+  )
+    ? one(p.tab)
+    : "overview";
   const page = Math.max(1, Math.min(10000, Number(one(p.page)) || 1));
   const q = one(p.q).slice(0, 100);
   const status = one(p.status);
@@ -111,29 +136,39 @@ export default async function ControlRoom({
     query = query.eq("status", status);
   if (base === "leads" && requestType)
     query = query.eq("details->>purpose", requestType);
-  const [list, inventoryCount, newCount, followupCount, staffResult, choices] =
-    await Promise.all([
-      query.range((page - 1) * 30, page * 30 - 1),
-      db()
-        .from("vehicles")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "available"),
-      db()
-        .from("leads")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "new"),
-      db()
-        .from("leads")
-        .select("id", { count: "exact", head: true })
-        .lte("follow_up_at", new Date().toISOString())
-        .in("status", ["new", "contacted", "appointment"]),
-      db()
-        .from("staff")
-        .select("id,name,email,role")
-        .eq("active", true)
-        .order("name"),
-      tab === "leads" ? vehicleChoices() : Promise.resolve([] as LeadVehicle[]),
-    ]);
+  const [
+    list,
+    inventoryCount,
+    newCount,
+    followupCount,
+    staffResult,
+    choices,
+    valuationVehicles,
+  ] = await Promise.all([
+    query.range((page - 1) * 30, page * 30 - 1),
+    db()
+      .from("vehicles")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "available"),
+    db()
+      .from("leads")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "new"),
+    db()
+      .from("leads")
+      .select("id", { count: "exact", head: true })
+      .lte("follow_up_at", new Date().toISOString())
+      .in("status", ["new", "contacted", "appointment"]),
+    db()
+      .from("staff")
+      .select("id,name,email,role")
+      .eq("active", true)
+      .order("name"),
+    tab === "leads" ? vehicleChoices() : Promise.resolve([] as LeadVehicle[]),
+    tab === "appraisals"
+      ? appraisalVehicles()
+      : Promise.resolve([] as AppraisalVehicle[]),
+  ]);
   if (
     [list, inventoryCount, newCount, followupCount, staffResult].some(
       (r) => r.error,
@@ -183,6 +218,7 @@ export default async function ControlRoom({
           {[
             ["overview", "Overview", LayoutDashboard],
             ["inventory", "Inventory", CarFront],
+            ["appraisals", "Appraisals & pricing", ChartNoAxesCombined],
             ["leads", "Lead inbox", Inbox],
           ].map(([key, label, Icon]) => {
             const C = Icon as typeof CarFront;
@@ -220,9 +256,11 @@ export default async function ControlRoom({
             <h1>
               {tab === "inventory"
                 ? "Inventory"
-                : tab === "leads"
-                  ? "Lead inbox"
-                  : "Good to have you in the driver’s seat."}
+                : tab === "appraisals"
+                  ? "Appraisals & pricing"
+                  : tab === "leads"
+                    ? "Lead inbox"
+                    : "Good to have you in the driver’s seat."}
             </h1>
           </div>
           <Link
@@ -232,23 +270,32 @@ export default async function ControlRoom({
             <Plus size={17} /> Add vehicle
           </Link>
         </header>
-        <div className="cr-metrics">
-          <Link href="/control-room?tab=inventory&status=available">
-            <span>Available vehicles</span>
-            <strong>{inventoryCount.count || 0}</strong>
-            <small>On the website</small>
-          </Link>
-          <Link href="/control-room?tab=leads&status=new">
-            <span>New inquiries</span>
-            <strong>{newCount.count || 0}</strong>
-            <small>Ready for a first response</small>
-          </Link>
-          <Link href="/control-room?tab=leads">
-            <span>Follow-ups due</span>
-            <strong>{followupCount.count || 0}</strong>
-            <small>Open leads due now</small>
-          </Link>
-        </div>
+        {tab !== "appraisals" && (
+          <div className="cr-metrics">
+            <Link href="/control-room?tab=inventory&status=available">
+              <span>Available vehicles</span>
+              <strong>{inventoryCount.count || 0}</strong>
+              <small>On the website</small>
+            </Link>
+            <Link href="/control-room?tab=leads&status=new">
+              <span>New inquiries</span>
+              <strong>{newCount.count || 0}</strong>
+              <small>Ready for a first response</small>
+            </Link>
+            <Link href="/control-room?tab=leads">
+              <span>Follow-ups due</span>
+              <strong>{followupCount.count || 0}</strong>
+              <small>Open leads due now</small>
+            </Link>
+          </div>
+        )}
+        {tab === "appraisals" && (
+          <AppraisalWorkspace
+            vehicles={valuationVehicles}
+            initialVehicleId={vehicleId}
+            isOwner={user.role === "owner"}
+          />
+        )}
         {tab === "overview" && (
           <div className="cr-panel">
             <span className="kicker">Your daily workflow</span>
@@ -268,6 +315,13 @@ export default async function ControlRoom({
                 <h3>Open the lead inbox →</h3>
                 <p>Conversations, notes, owners, and follow-ups.</p>
               </Link>
+              <Link className="cr-launch" href="/control-room?tab=appraisals">
+                <ChartNoAxesCombined />
+                <h3>Appraise & price →</h3>
+                <p>
+                  Trade values, market comps, buy limits, and retail targets.
+                </p>
+              </Link>
             </div>
             <p className="cr-status-help">
               Email sending & receiving:{" "}
@@ -277,7 +331,7 @@ export default async function ControlRoom({
             </p>
           </div>
         )}
-        {tab !== "overview" && (
+        {(tab === "inventory" || tab === "leads") && (
           <div className="cr-panel">
             <form className="cr-filters">
               <input type="hidden" name="tab" value={tab} />
@@ -484,6 +538,13 @@ export default async function ControlRoom({
                                 aria-label={`Add photos to ${vehicleTitle(v)}, stock ${v.stock_number}`}
                               >
                                 Add photos
+                              </Link>
+                              <Link
+                                className="button button-secondary"
+                                href={`/control-room?tab=appraisals&vehicle=${v.id}`}
+                                aria-label={`Appraise ${vehicleTitle(v)}, stock ${v.stock_number}`}
+                              >
+                                Appraise / price
                               </Link>
                             </div>
                           </td>

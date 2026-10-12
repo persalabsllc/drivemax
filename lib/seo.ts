@@ -45,7 +45,7 @@ export const PUBLIC_PAGES = [
   {
     path: "/reviews",
     label: "Customer reviews",
-    description: "Selected customer review excerpts and links to the originals.",
+    description: "Customer reviews and recommendations from Google and Facebook.",
   },
   {
     path: "/about/staff",

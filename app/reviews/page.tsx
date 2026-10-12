@@ -7,7 +7,7 @@ import ReviewCard from "../_components/ReviewCard";
 export const metadata = pageMetadata({
   title: "Customer Reviews in New Bern, NC",
   description:
-    "Read selected positive Google review excerpts from Drive Max Used Cars customers, with first names, original review dates, and links to the full reviews.",
+    "Read positive Google reviews and Facebook recommendations from Drive Max Used Cars customers, in their own words, with first names and original review dates.",
   path: "/reviews",
 });
 
@@ -48,9 +48,8 @@ export default function ReviewsPage() {
             <span className="kicker">Shared in their own words</span>
             <h2 id="featured-reviews-heading">Customer highlights.</h2>
             <p>
-              Selected positive reviews from Google. These excerpts preserve the
-              original wording, with each customer’s first name and review month
-              and year. Follow any card to read the full review.
+              Selected positive reviews and recommendations from Google and
+              Facebook, shared in our customers’ own words.
             </p>
           </div>
           <div className="reviews-grid">

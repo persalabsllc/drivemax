@@ -1,4 +1,4 @@
-/* Customer review excerpts; shared by the home and reviews pages. */
+/* Customer reviews and recommendations; shared by the home and reviews pages. */
 .review-highlights {
   background: linear-gradient(180deg, #fff 0%, var(--blue-50) 100%);
 }
@@ -54,6 +54,14 @@
   display: inline-flex;
   gap: 3px;
   color: #b97508;
+}
+.review-recommendation {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--blue-700);
+  font-size: 13px;
+  font-weight: 750;
 }
 .review-quote-icon {
   color: var(--blue-600);

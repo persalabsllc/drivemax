@@ -19,7 +19,8 @@ export default function ReviewHighlights() {
               In their words.
             </h2>
             <p>
-              Selected positive Google review excerpts, quoted word for word.
+              Selected positive feedback from Google and Facebook, in our
+              customers’ own words.
             </p>
           </div>
           <Link className="button button-secondary" href="/reviews">

@@ -148,9 +148,6 @@ export default function StaffPage() {
                     sizes="(max-width: 760px) calc(100vw - 40px), (max-width: 980px) 46vw, 370px"
                   />
                   <div className="staff-team-content">
-                    <span className="staff-profile-example">
-                      Fictional profile
-                    </span>
                     <h4 id={`${id}-name`}>{name}</h4>
                     <p className="staff-team-title">{role}</p>
                     <p className="staff-team-bio">{bio}</p>

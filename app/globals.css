@@ -564,36 +564,36 @@ main[id], main [id] { scroll-margin-top: 124px; }
 .owner-bio h3 { margin: 12px 0 23px; font-size: clamp(27px, 3vw, 36px); letter-spacing: -.035em; line-height: 1.15; }
 .owner-bio p { color: #526173; }
 .owner-bio .owner-invitation { padding-left: 20px; border-left: 3px solid var(--blue-600); color: var(--navy-900); font-weight: 600; margin-bottom: 0; }
-.staff-profile { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); align-items: center; gap: clamp(24px, 4vw, 48px); padding: clamp(24px, 3vw, 40px); border: 1px solid var(--line); border-radius: 24px; background: #fff; box-shadow: var(--shadow-sm); }
-.staff-profile-photo { display: block; width: 100%; height: auto; border-radius: 16px; }
-.staff-profile-details { min-width: 0; }
-.staff-profile-title { margin: 0 0 8px; color: var(--blue-700); font-size: 15px; font-weight: 750; }
-.staff-profile h3 { margin: 0 0 12px; font-size: clamp(30px, 3.5vw, 42px); line-height: 1.1; letter-spacing: -.035em; }
+.staff-directory-overview { padding: 28px 0; border-bottom: 1px solid var(--line); background: #fff; }
+.staff-department-nav { display: flex; flex-wrap: wrap; gap: 10px; }
+.staff-department-nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 17px; border: 1px solid var(--line); border-radius: 999px; color: var(--blue-700); font-size: 14px; font-weight: 700; }
+.staff-department-nav a:hover { background: var(--blue-50); border-color: var(--blue-600); }
+.staff-directory-note { max-width: 950px; margin: 18px 0 0; color: var(--muted); font-size: 13px; line-height: 1.65; }
+.staff-category-section { padding-block: 54px; scroll-margin-top: 130px; }
+.staff-category-header { display: flex; align-items: flex-start; gap: 18px; max-width: 780px; margin-bottom: 28px; }
+.staff-category-header h2 { margin: 0 0 9px; font-size: clamp(28px, 3.5vw, 38px); line-height: 1.2; letter-spacing: -.03em; }
+.staff-category-header p { margin: 0; color: var(--muted); line-height: 1.65; }
+.staff-role-icon { display: grid; place-items: center; flex: 0 0 58px; width: 58px; height: 58px; border-radius: 15px; background: var(--blue-50); color: var(--blue-700); }
 .staff-profile-email { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; max-width: 100%; color: var(--blue-700); font-size: 15px; font-weight: 650; }
 .staff-profile-email svg { flex: 0 0 19px; }
 .staff-profile-email span { min-width: 0; overflow-wrap: anywhere; }
 .staff-profile-email:hover { text-decoration: underline; text-underline-offset: 4px; }
-.staff-profile-bio p { margin: 18px 0 0; color: var(--muted); line-height: 1.75; }
-.staff-profile-bio .staff-profile-invitation { margin-top: 24px; padding-left: 18px; border-left: 3px solid var(--blue-600); color: var(--navy-900); }
 .staff-team-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
 .staff-team-card { min-width: 0; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--line); border-radius: 20px; background: #fff; box-shadow: var(--shadow-sm); }
-.staff-team-category { display: flex; align-items: center; gap: 10px; padding: 18px 24px; color: var(--blue-700); }
-.staff-team-category h3 { margin: 0; color: var(--navy-900); font-size: 20px; }
 .staff-team-photo { display: block; width: 100%; height: auto; }
 .staff-team-content { display: flex; flex-direction: column; align-items: flex-start; flex: 1; padding: 24px; }
-.staff-profile-example { padding: 5px 9px; border-radius: 6px; background: var(--blue-50); color: var(--blue-700); font-size: 12px; font-weight: 700; }
-.staff-team-content h4 { margin: 16px 0 6px; font-size: 27px; line-height: 1.2; letter-spacing: -.025em; }
+.staff-team-content h3 { margin: 0 0 6px; font-size: 27px; line-height: 1.2; letter-spacing: -.025em; }
 .staff-team-title { margin: 0; color: var(--blue-700); font-size: 14px; font-weight: 700; }
 .staff-team-bio { flex: 1; margin: 18px 0 20px; color: var(--muted); font-size: 15px; line-height: 1.75; }
+.staff-team-bio p { margin: 0; }
+.staff-team-bio p + p { margin-top: 16px; }
+.staff-bio-more { margin-top: 12px; }
+.staff-bio-more summary { width: fit-content; min-height: 44px; padding-block: 10px; color: var(--blue-700); font-weight: 700; cursor: pointer; }
+.staff-bio-more summary:hover { text-decoration: underline; text-underline-offset: 4px; }
+.staff-bio-more > div { padding-top: 8px; }
 .staff-team-content .staff-profile-email { border-top: 1px solid var(--line); padding-top: 14px; font-size: 14px; }
-.staff-department { padding: 28px; border: 1px solid var(--line); border-radius: 18px; background: #fff; }
-.staff-role-icon { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 15px; background: var(--blue-50); color: var(--blue-700); margin-bottom: 26px; }
-.staff-department .kicker { font-size: 11px; letter-spacing: .08em; }
-.staff-department h3 { font-size: 24px; line-height: 1.2; letter-spacing: -.025em; margin: 10px 0 14px; }
-.staff-department p { color: var(--muted); margin: 0; font-size: 15px; }
-.staff-mechanics { display: flex; align-items: flex-start; gap: 24px; margin-top: 28px; }
-.staff-mechanics .staff-role-icon { flex: 0 0 58px; margin-bottom: 0; }
-.staff-join { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-top: 42px; padding: 30px; border-radius: 18px; background: var(--blue-50); }
+.staff-join-section { padding-top: 0; }
+.staff-join { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 30px; border-radius: 18px; background: var(--blue-50); }
 .staff-join h2 { margin: 0 0 7px; font-size: 25px; letter-spacing: -.03em; line-height: 1.2; }
 .staff-join p { margin: 0; color: var(--muted); }
 .staff-join .button { flex-shrink: 0; }
@@ -606,9 +606,8 @@ main[id], main [id] { scroll-margin-top: 124px; }
   .staff-team-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
-  .staff-profile { grid-template-columns: 1fr; }
+  .staff-category-section { padding-block: 40px; }
   .staff-team-grid { grid-template-columns: 1fr; }
-  .staff-mechanics { flex-direction: column; }
   .staff-join { align-items: flex-start; flex-direction: column; }
   .staff-join .button { width: 100%; }
   .owner-monogram { width: 80px; height: 80px; font-size: 32px; margin-bottom: 24px; }

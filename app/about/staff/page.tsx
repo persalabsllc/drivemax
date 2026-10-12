@@ -1,8 +1,10 @@
 import { pageMetadata } from "../../../lib/seo";
+import { staffDepartments, type StaffProfile } from "../../../lib/staff";
 import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
+  BriefcaseBusiness,
   CarFront,
   Mail,
   ReceiptText,
@@ -13,43 +15,53 @@ import {
 export const metadata = pageMetadata({
   title: "Meet the staff",
   description:
-    "Meet Kyle Kratoville, General Manager at Drive Max Used Cars in New Bern, and get to know the people behind your dealership experience.",
+    "Explore the Sales, Management, Accounting, Detail, and Mechanics departments at Drive Max Used Cars in New Bern and find the right person to contact.",
   path: "/about/staff",
 });
 
-// Fictional department concepts. Keep the visible disclosure with these profiles.
-const illustrativeProfiles = [
-  {
-    id: "sales",
-    department: "Sales",
-    name: "Alex Carter",
-    role: "Sales Consultant",
-    icon: CarFront,
-    image: "/staff/alex-carter-illustrative.webp",
-    bio:
-      "Alex is a car enthusiast who enjoys weekend road trips and easy conversations. His approach is simple: listen first, answer questions clearly, and help shoppers find a vehicle that fits everyday life.",
-  },
-  {
-    id: "accounting",
-    department: "Accounting",
-    name: "Morgan Ellis",
-    role: "Accounting Coordinator",
-    icon: ReceiptText,
-    image: "/staff/morgan-ellis-illustrative.webp",
-    bio:
-      "Morgan likes a tidy spreadsheet almost as much as a good cup of coffee. A weekend gardener with a calm, friendly approach, she believes paperwork should feel straightforward and every question deserves a clear answer.",
-  },
-  {
-    id: "detail",
-    department: "Detail",
-    name: "Jordan Bennett",
-    role: "Detail Technician",
-    icon: Sparkles,
-    image: "/staff/jordan-bennett-illustrative.webp",
-    bio:
-      "Jordan enjoys bringing out the best in a vehicle, from clean glass to the finishing touches inside. A music lover and hands-on hobbyist, he takes pride in the little details that make a car feel ready for its next chapter.",
-  },
-];
+const departmentIcons = {
+  sales: CarFront,
+  management: BriefcaseBusiness,
+  accounting: ReceiptText,
+  detail: Sparkles,
+  mechanics: Wrench,
+};
+
+function StaffCard({ profile }: { profile: StaffProfile }) {
+  return (
+    <article className="staff-team-card" aria-labelledby={profile.id + "-name"}>
+      <Image
+        className="staff-team-photo"
+        src={profile.image}
+        alt={profile.imageAlt}
+        width={800}
+        height={800}
+        sizes="(max-width: 760px) calc(100vw - 40px), (max-width: 980px) 46vw, 370px"
+      />
+      <div className="staff-team-content">
+        <h3 id={profile.id + "-name"}>{profile.name}</h3>
+        <p className="staff-team-title">{profile.role}</p>
+        <div className="staff-team-bio">
+          <p>{profile.bio[0]}</p>
+          {profile.bio.length > 1 ? (
+            <details className="staff-bio-more">
+              <summary>More about {profile.firstName}</summary>
+              <div>
+                {profile.bio.slice(1).map((paragraph) => (
+                  <p key={paragraph}>{paragraph}</p>
+                ))}
+              </div>
+            </details>
+          ) : null}
+        </div>
+        <a className="staff-profile-email" href={"mailto:" + profile.email}>
+          <Mail size={19} aria-hidden="true" />
+          <span>{profile.email}</span>
+        </a>
+      </div>
+    </article>
+  );
+}
 
 export default function StaffPage() {
   return (
@@ -64,118 +76,69 @@ export default function StaffPage() {
           </p>
         </div>
       </section>
-      <section className="section" aria-labelledby="management-heading">
+
+      <div className="staff-directory-overview">
         <div className="container">
-          <div className="section-heading">
-            <span className="kicker">Here to help</span>
-            <h2 id="management-heading">Management</h2>
-          </div>
-          <article className="staff-profile" aria-labelledby="kyle-name">
-            <Image
-              className="staff-profile-photo"
-              src="/staff/kyle-kratoville.webp"
-              alt="Kyle Kratoville wearing a Drive Max Used Cars polo"
-              width={800}
-              height={800}
-              sizes="(max-width: 760px) calc(100vw - 88px), (max-width: 1200px) 40vw, 440px"
-            />
-            <div className="staff-profile-details">
-              <p className="staff-profile-title">General Manager</p>
-              <h3 id="kyle-name">Kyle Kratoville</h3>
-              <a
-                className="staff-profile-email"
-                href="mailto:kyle@drivemaxusedcars.com"
-              >
-                <Mail size={19} aria-hidden="true" />
-                <span>kyle@drivemaxusedcars.com</span>
+          <nav className="staff-department-nav" aria-label="Staff departments">
+            {staffDepartments.map((department) => (
+              <a key={department.id} href={"#" + department.id}>
+                {department.name}
               </a>
-              <div className="staff-profile-bio">
-                <p>
-                  Born and raised on Long Island, New York, Kyle made New Bern
-                  home on July 4, 2012. He still jokes that the city’s fireworks
-                  were a welcome party just for him. With 14 years in the car
-                  business, he loves every part of it, especially meeting new
-                  people.
-                </p>
-                <p>
-                  Outside the dealership, Kyle enjoys boating on the Neuse
-                  River, getting on the air as a ham radio operator, and
-                  tending to his fish tanks. At home, two dogs and a cat help
-                  keep life interesting.
-                </p>
-                <p className="staff-profile-invitation">
-                  Have a question about buying, selling, or leasing a vehicle?
-                  Want to share your experience with Drive Max Used Cars? Give
-                  Kyle a call or send him an email. He’s always happy to help.
-                </p>
-              </div>
-            </div>
-          </article>
+            ))}
+          </nav>
+          <p className="staff-directory-note">
+            Alex Carter, Morgan Ellis, and Jordan Bennett are illustrative
+            profiles with fictional names and bios and AI-generated portraits.
+            All emails reach the Drive Max team.
+          </p>
         </div>
-      </section>
-      <section
-        className="section section-muted"
-        aria-labelledby="departments-heading"
-      >
-        <div className="container">
-          <div className="section-heading">
-            <span className="kicker">Every detail matters</span>
-            <h2 id="departments-heading">Explore our departments.</h2>
-            <p>
-              These three illustrative profiles use fictional names, bios, and
-              AI-generated portraits to introduce each department. All emails
-              reach the Drive Max team.
-            </p>
-          </div>
-          <div className="staff-team-grid">
-            {illustrativeProfiles.map(
-              ({ id, department, name, role, icon: Icon, image, bio }) => (
-                <article
-                  className="staff-team-card"
-                  key={id}
-                  aria-labelledby={`${id}-name`}
+      </div>
+
+      {staffDepartments.map((department, index) => {
+        const Icon = departmentIcons[department.id];
+
+        return (
+          <section
+            className={
+              "section staff-category-section" +
+              (index % 2 === 0 ? " section-muted" : "")
+            }
+            id={department.id}
+            aria-labelledby={department.id + "-heading"}
+            key={department.id}
+          >
+            <div className="container">
+              <div className="staff-category-header">
+                <div className="staff-role-icon">
+                  <Icon size={27} aria-hidden="true" />
+                </div>
+                <div>
+                  <h2 id={department.id + "-heading"}>{department.name}</h2>
+                  <p>{department.description}</p>
+                </div>
+              </div>
+              {department.profiles.length > 0 ? (
+                <div className="staff-team-grid">
+                  {department.profiles.map((profile) => (
+                    <StaffCard key={profile.id} profile={profile} />
+                  ))}
+                </div>
+              ) : (
+                <a
+                  className="text-link"
+                  href="mailto:sales@drivemaxusedcars.com"
                 >
-                  <div className="staff-team-category">
-                    <Icon aria-hidden="true" size={22} />
-                    <h3>{department}</h3>
-                  </div>
-                  <Image
-                    className="staff-team-photo"
-                    src={image}
-                    alt={`AI-generated portrait of fictional ${department.toLowerCase()} profile ${name}, wearing a black Nike polo with the Drive Max logo`}
-                    width={800}
-                    height={800}
-                    sizes="(max-width: 760px) calc(100vw - 40px), (max-width: 980px) 46vw, 370px"
-                  />
-                  <div className="staff-team-content">
-                    <h4 id={`${id}-name`}>{name}</h4>
-                    <p className="staff-team-title">{role}</p>
-                    <p className="staff-team-bio">{bio}</p>
-                    <a
-                      className="staff-profile-email"
-                      href="mailto:sales@drivemaxusedcars.com"
-                    >
-                      <Mail size={19} aria-hidden="true" />
-                      <span>sales@drivemaxusedcars.com</span>
-                    </a>
-                  </div>
-                </article>
-              ),
-            )}
-          </div>
-          <article className="staff-department staff-mechanics">
-            <div className="staff-role-icon">
-              <Wrench aria-hidden="true" size={27} />
+                  Contact our team about vehicle preparation
+                  <ArrowRight size={18} aria-hidden="true" />
+                </a>
+              )}
             </div>
-            <div>
-              <span className="kicker">Care under the hood</span>
-              <h3>Mechanics</h3>
-              <p>
-                Vehicle preparation, maintenance, and repair work that help
-                keep the focus on quality.
-              </p>
-            </div>
-          </article>
+          </section>
+        );
+      })}
+
+      <section className="section staff-join-section">
+        <div className="container">
           <div className="staff-join">
             <div>
               <h2>Good people make the difference.</h2>

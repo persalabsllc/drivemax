@@ -18,7 +18,7 @@ export type StaffDepartment = {
 
 // Add future colleagues to the appropriate profiles array. Every department
 // uses the same card and responsive grid, including departments currently empty.
-// Alex, Morgan, Jordan, Lauren, and Rick are fictional concepts; retain the directory notice.
+// Alex, Morgan, Jordan, Lauren, and Rick are fictional concepts.
 export const staffDepartments: readonly StaffDepartment[] = [
   {
     id: "sales",

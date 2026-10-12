@@ -87,9 +87,9 @@ export default function StaffPage() {
             ))}
           </nav>
           <p className="staff-directory-note">
-            Alex Carter, Morgan Ellis, and Jordan Bennett are illustrative
-            profiles with fictional names and bios and AI-generated portraits.
-            All emails reach the Drive Max team.
+            Alex Carter, Morgan Ellis, Jordan Bennett, Lauren Hayes, and Rick
+            Lawson are illustrative profiles with fictional names and bios and
+            AI-generated portraits. All emails reach the Drive Max team.
           </p>
         </div>
       </div>

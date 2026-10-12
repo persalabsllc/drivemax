@@ -18,7 +18,7 @@ export type StaffDepartment = {
 
 // Add future colleagues to the appropriate profiles array. Every department
 // uses the same card and responsive grid, including departments currently empty.
-// Alex, Morgan, and Jordan are fictional concepts; retain the directory notice.
+// Alex, Morgan, Jordan, Lauren, and Rick are fictional concepts; retain the directory notice.
 export const staffDepartments: readonly StaffDepartment[] = [
   {
     id: "sales",
@@ -60,6 +60,19 @@ export const staffDepartments: readonly StaffDepartment[] = [
           "Born and raised on Long Island, New York, Kyle made New Bern home on July 4, 2012. He still jokes that the city’s fireworks were a welcome party just for him. With 14 years in the car business, he loves every part of it, especially meeting new people.",
           "Outside the dealership, Kyle enjoys boating on the Neuse River, getting on the air as a ham radio operator, and tending to his fish tanks. At home, two dogs and a cat help keep life interesting.",
           "Have a question about buying, selling, or leasing a vehicle? Want to share your experience with Drive Max Used Cars? Give Kyle a call or send him an email. He’s always happy to help.",
+        ],
+      },
+      {
+        id: "lauren-hayes",
+        name: "Lauren Hayes",
+        firstName: "Lauren",
+        role: "Internet Sales Manager",
+        email: "sales@drivemaxusedcars.com",
+        image: "/staff/lauren-hayes-illustrative.webp",
+        imageAlt:
+          "AI-generated portrait of fictional Internet Sales Manager Lauren Hayes, wearing a black Nike polo with the Drive Max logo",
+        bio: [
+          "Lauren enjoys a good coffee, beach walks, and making complicated things feel simple. She helps online shoppers get clear answers, narrow down their options, and plan a visit that fits their schedule—with a friendly conversation along the way.",
         ],
       },
     ],
@@ -111,6 +124,20 @@ export const staffDepartments: readonly StaffDepartment[] = [
     name: "Mechanics",
     description:
       "Vehicle preparation, maintenance, and repair work that help keep the focus on quality.",
-    profiles: [],
+    profiles: [
+      {
+        id: "rick-lawson",
+        name: "Rick Lawson",
+        firstName: "Rick",
+        role: "Mechanic",
+        email: "sales@drivemaxusedcars.com",
+        image: "/staff/rick-lawson-illustrative.webp",
+        imageAlt:
+          "AI-generated portrait of fictional mechanic Rick Lawson, wearing a charcoal button-down work shirt with Rick and Drive Max Used Cars patches",
+        bio: [
+          "Rick is happiest with a project in the garage and classic rock on the radio. Away from his toolbox, he enjoys a quiet afternoon fishing. He brings a patient, practical approach to vehicle care and likes explaining the details in plain language.",
+        ],
+      },
+    ],
   },
 ];

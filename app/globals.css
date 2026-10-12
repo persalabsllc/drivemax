@@ -564,7 +564,18 @@ main[id], main [id] { scroll-margin-top: 124px; }
 .owner-bio h3 { margin: 12px 0 23px; font-size: clamp(27px, 3vw, 36px); letter-spacing: -.035em; line-height: 1.15; }
 .owner-bio p { color: #526173; }
 .owner-bio .owner-invitation { padding-left: 20px; border-left: 3px solid var(--blue-600); color: var(--navy-900); font-weight: 600; margin-bottom: 0; }
-.staff-departments { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+.staff-profile { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); align-items: center; gap: clamp(24px, 4vw, 48px); padding: clamp(24px, 3vw, 40px); border: 1px solid var(--line); border-radius: 24px; background: #fff; box-shadow: var(--shadow-sm); }
+.staff-profile-photo { display: block; width: 100%; height: auto; border-radius: 16px; }
+.staff-profile-details { min-width: 0; }
+.staff-profile-title { margin: 0 0 8px; color: var(--blue-700); font-size: 15px; font-weight: 750; }
+.staff-profile h3 { margin: 0 0 12px; font-size: clamp(30px, 3.5vw, 42px); line-height: 1.1; letter-spacing: -.035em; }
+.staff-profile-email { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; max-width: 100%; color: var(--blue-700); font-size: 15px; font-weight: 650; }
+.staff-profile-email svg { flex: 0 0 19px; }
+.staff-profile-email span { min-width: 0; overflow-wrap: anywhere; }
+.staff-profile-email:hover { text-decoration: underline; text-underline-offset: 4px; }
+.staff-profile-bio p { margin: 18px 0 0; color: var(--muted); line-height: 1.75; }
+.staff-profile-bio .staff-profile-invitation { margin-top: 24px; padding-left: 18px; border-left: 3px solid var(--blue-600); color: var(--navy-900); }
+.staff-departments { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
 .staff-department { padding: 28px; border: 1px solid var(--line); border-radius: 18px; background: #fff; }
 .staff-role-icon { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 15px; background: var(--blue-50); color: var(--blue-700); margin-bottom: 26px; }
 .staff-department .kicker { font-size: 11px; letter-spacing: .08em; }
@@ -583,6 +594,7 @@ main[id], main [id] { scroll-margin-top: 124px; }
   .staff-departments { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
+  .staff-profile { grid-template-columns: 1fr; }
   .staff-departments { grid-template-columns: 1fr; }
   .staff-join { align-items: flex-start; flex-direction: column; }
   .staff-join .button { width: 100%; }

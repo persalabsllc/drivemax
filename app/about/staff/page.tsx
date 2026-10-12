@@ -1,9 +1,10 @@
 import { pageMetadata } from "../../../lib/seo";
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
-  BriefcaseBusiness,
   CarFront,
+  Mail,
   ReceiptText,
   Sparkles,
   Wrench,
@@ -12,19 +13,12 @@ import {
 export const metadata = pageMetadata({
   title: "Meet the staff",
   description:
-    "Get to know the roles behind Drive Max Used Cars in New Bern, from management and sales to vehicle preparation and accounting.",
+    "Meet Kyle Kratoville, General Manager at Drive Max Used Cars in New Bern, and get to know the people behind your dealership experience.",
   path: "/about/staff",
 });
 
-// Add individual staff profiles and approved photos as they are provided.
+// Add individual profiles to the remaining departments as they are provided.
 const departments = [
-  {
-    title: "Management",
-    label: "Keeping things moving",
-    icon: BriefcaseBusiness,
-    description:
-      "Guidance through the purchase process, help understanding your options, and a direct point of contact for questions or concerns.",
-  },
   {
     title: "Sales staff",
     label: "Finding your next vehicle",
@@ -66,6 +60,55 @@ export default function StaffPage() {
             Get to know the people and the work behind your Drive Max
             experience.
           </p>
+        </div>
+      </section>
+      <section className="section" aria-labelledby="management-heading">
+        <div className="container">
+          <div className="section-heading">
+            <span className="kicker">Here to help</span>
+            <h2 id="management-heading">Management</h2>
+          </div>
+          <article className="staff-profile" aria-labelledby="kyle-name">
+            <Image
+              className="staff-profile-photo"
+              src="/staff/kyle-kratoville.webp"
+              alt="Kyle Kratoville wearing a Drive Max Used Cars polo"
+              width={800}
+              height={800}
+              sizes="(max-width: 760px) calc(100vw - 88px), (max-width: 1200px) 40vw, 440px"
+            />
+            <div className="staff-profile-details">
+              <p className="staff-profile-title">General Manager</p>
+              <h3 id="kyle-name">Kyle Kratoville</h3>
+              <a
+                className="staff-profile-email"
+                href="mailto:kyle@drivemaxusedcars.com"
+              >
+                <Mail size={19} aria-hidden="true" />
+                <span>kyle@drivemaxusedcars.com</span>
+              </a>
+              <div className="staff-profile-bio">
+                <p>
+                  Born and raised on Long Island, New York, Kyle made New Bern
+                  home on July 4, 2012. He still jokes that the city’s fireworks
+                  were a welcome party just for him. With 14 years in the car
+                  business, he loves every part of it, especially meeting new
+                  people.
+                </p>
+                <p>
+                  Outside the dealership, Kyle enjoys boating on the Neuse
+                  River, getting on the air as a ham radio operator, and
+                  tending to his fish tanks. At home, two dogs and a cat help
+                  keep life interesting.
+                </p>
+                <p className="staff-profile-invitation">
+                  Have a question about buying, selling, or leasing a vehicle?
+                  Want to share your experience with Drive Max Used Cars? Give
+                  Kyle a call or send him an email. He’s always happy to help.
+                </p>
+              </div>
+            </div>
+          </article>
         </div>
       </section>
       <section className="section">

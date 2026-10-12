@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 
 const links = [
+  { href: "/reviews", label: "Customer reviews" },
   { href: "/about/staff", label: "Meet the staff" },
   { href: "/about/employment", label: "Employment" },
   { href: "/about", label: "About" },

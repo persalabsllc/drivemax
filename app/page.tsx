@@ -3,6 +3,7 @@ import Link from "next/link";
 import FeaturedInventory from "./_components/FeaturedInventory";
 import BusinessHours from "./_components/BusinessHours";
 import HomepageInventory from "./_components/HomepageInventory";
+import ReviewHighlights from "./_components/ReviewHighlights";
 import { photoUrl, publicInventory } from "../lib/backend";
 import { featuredHomepageVehicles } from "../lib/homepage-inventory";
 import { dealershipSchema, jsonLd, pageMetadata } from "../lib/seo";
@@ -240,6 +241,8 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      <ReviewHighlights />
 
       <section className="section finance-feature">
         <div className="container finance-feature-grid">

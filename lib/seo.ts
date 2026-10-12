@@ -43,6 +43,11 @@ export const PUBLIC_PAGES = [
     description: "Our family-owned dealership and approach to service.",
   },
   {
+    path: "/reviews",
+    label: "Customer reviews",
+    description: "Selected customer review excerpts and links to the originals.",
+  },
+  {
     path: "/about/staff",
     label: "Meet the staff",
     description: "Meet Kyle and get to know our team’s roles.",

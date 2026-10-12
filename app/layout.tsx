@@ -1,4 +1,5 @@
 import "./globals.css";
+import "./reviews.css";
 import type { Metadata, Viewport } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -141,6 +142,7 @@ export default function RootLayout({
             <div className="footer-column">
               <h2>Dealership</h2>
               <Link href="/about">About Drive Max</Link>
+              <Link href="/reviews">Customer reviews</Link>
               <Link href="/about/staff">Meet the staff</Link>
               <Link href="/about/employment">Employment</Link>
               <Link href="/areas-we-serve">Areas we serve</Link>

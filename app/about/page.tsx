@@ -56,6 +56,9 @@ export default function AboutPage() {
               <Link className="button button-secondary" href="/about/staff">
                 Meet the staff
               </Link>
+              <Link className="text-link" href="/reviews">
+                Read customer reviews <ArrowRight aria-hidden="true" size={17} />
+              </Link>
             </div>
           </div>
           <aside className="story-highlight purchase-promise">

@@ -17,35 +17,37 @@ export const metadata = pageMetadata({
   path: "/about/staff",
 });
 
-// Add individual profiles to the remaining departments as they are provided.
-const departments = [
+// Fictional department concepts. Keep the visible disclosure with these profiles.
+const illustrativeProfiles = [
   {
-    title: "Sales staff",
-    label: "Finding your next vehicle",
+    id: "sales",
+    department: "Sales",
+    name: "Alex Carter",
+    role: "Sales Consultant",
     icon: CarFront,
-    description:
-      "Vehicle questions, test drives, and help finding the right fit for your needs and budget.",
+    image: "/staff/alex-carter-illustrative.webp",
+    bio:
+      "Alex is a car enthusiast who enjoys weekend road trips and easy conversations. His approach is simple: listen first, answer questions clearly, and help shoppers find a vehicle that fits everyday life.",
   },
   {
-    title: "Mechanics",
-    label: "Care under the hood",
-    icon: Wrench,
-    description:
-      "Vehicle preparation, maintenance, and repair work that help keep the focus on quality.",
-  },
-  {
-    title: "Detail technicians",
-    label: "The finishing touches",
-    icon: Sparkles,
-    description:
-      "Interior and exterior care, with attention to the details that make picking up your vehicle feel special.",
-  },
-  {
-    title: "Accounting",
-    label: "Taking care of the details",
+    id: "accounting",
+    department: "Accounting",
+    name: "Morgan Ellis",
+    role: "Accounting Coordinator",
     icon: ReceiptText,
-    description:
-      "Purchase records, billing questions, and coordination of the paperwork that keeps a transaction organized.",
+    image: "/staff/morgan-ellis-illustrative.webp",
+    bio:
+      "Morgan likes a tidy spreadsheet almost as much as a good cup of coffee. A weekend gardener with a calm, friendly approach, she believes paperwork should feel straightforward and every question deserves a clear answer.",
+  },
+  {
+    id: "detail",
+    department: "Detail",
+    name: "Jordan Bennett",
+    role: "Detail Technician",
+    icon: Sparkles,
+    image: "/staff/jordan-bennett-illustrative.webp",
+    bio:
+      "Jordan enjoys bringing out the best in a vehicle, from clean glass to the finishing touches inside. A music lover and hands-on hobbyist, he takes pride in the little details that make a car feel ready for its next chapter.",
   },
 ];
 
@@ -111,28 +113,72 @@ export default function StaffPage() {
           </article>
         </div>
       </section>
-      <section className="section">
+      <section
+        className="section section-muted"
+        aria-labelledby="departments-heading"
+      >
         <div className="container">
           <div className="section-heading">
             <span className="kicker">Every detail matters</span>
-            <h2>The work behind your next set of keys.</h2>
+            <h2 id="departments-heading">Explore our departments.</h2>
             <p>
-              From your first conversation to the finishing touches, these are
-              the roles that support your experience.
+              These three illustrative profiles use fictional names, bios, and
+              AI-generated portraits to introduce each department. All emails
+              reach the Drive Max team.
             </p>
           </div>
-          <div className="staff-departments">
-            {departments.map(({ title, label, icon: Icon, description }) => (
-              <article className="staff-department" key={title}>
-                <div className="staff-role-icon">
-                  <Icon aria-hidden="true" size={27} />
-                </div>
-                <span className="kicker">{label}</span>
-                <h3>{title}</h3>
-                <p>{description}</p>
-              </article>
-            ))}
+          <div className="staff-team-grid">
+            {illustrativeProfiles.map(
+              ({ id, department, name, role, icon: Icon, image, bio }) => (
+                <article
+                  className="staff-team-card"
+                  key={id}
+                  aria-labelledby={`${id}-name`}
+                >
+                  <div className="staff-team-category">
+                    <Icon aria-hidden="true" size={22} />
+                    <h3>{department}</h3>
+                  </div>
+                  <Image
+                    className="staff-team-photo"
+                    src={image}
+                    alt={`AI-generated portrait of fictional ${department.toLowerCase()} profile ${name}, wearing a black Nike polo with the Drive Max logo`}
+                    width={800}
+                    height={800}
+                    sizes="(max-width: 760px) calc(100vw - 40px), (max-width: 980px) 46vw, 370px"
+                  />
+                  <div className="staff-team-content">
+                    <span className="staff-profile-example">
+                      Fictional profile
+                    </span>
+                    <h4 id={`${id}-name`}>{name}</h4>
+                    <p className="staff-team-title">{role}</p>
+                    <p className="staff-team-bio">{bio}</p>
+                    <a
+                      className="staff-profile-email"
+                      href="mailto:sales@drivemaxusedcars.com"
+                    >
+                      <Mail size={19} aria-hidden="true" />
+                      <span>sales@drivemaxusedcars.com</span>
+                    </a>
+                  </div>
+                </article>
+              ),
+            )}
           </div>
+          <article className="staff-department staff-mechanics">
+            <div className="staff-role-icon">
+              <Wrench aria-hidden="true" size={27} />
+            </div>
+            <div>
+              <span className="kicker">Care under the hood</span>
+              <h3>Mechanics</h3>
+              <p>
+                Vehicle preparation, maintenance, and repair work that help
+                keep the focus on quality.
+              </p>
+            </div>
+          </article>
           <div className="staff-join">
             <div>
               <h2>Good people make the difference.</h2>

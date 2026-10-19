@@ -15,7 +15,7 @@ import {
 } from "../../lib/backend";
 import { leadStatuses, vehicleSchema, vehicleSlug } from "../../lib/inventory";
 import { takeSlot } from "../../lib/rate-limit";
-import { leadEmailFrom, leadReplyDomain } from "../../lib/email-config";
+import { dealershipEmail, leadEmailFrom } from "../../lib/email-config";
 import {
   leadVehicleColumns,
   updateVehicleAssignment,
@@ -339,7 +339,7 @@ export async function addMessage(form: FormData): Promise<ActionResult> {
           to: existing?.recipient || lead.email,
           subject: existing?.subject || subject,
           text: v.body,
-          replyTo: `lead+${lead.id}@${leadReplyDomain()}`,
+          replyTo: dealershipEmail,
         },
         { idempotencyKey: `lead-message-${v.id}` },
       );

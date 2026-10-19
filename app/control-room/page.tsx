@@ -9,6 +9,7 @@ import {
   ChartNoAxesCombined,
 } from "lucide-react";
 import { db, emailReady, photoUrl, requireStaff } from "../../lib/backend";
+import { dealershipEmail, notificationTransport } from "../../lib/email-config";
 import {
   vehicleTitle,
   money,
@@ -324,10 +325,16 @@ export default async function ControlRoom({
               </Link>
             </div>
             <p className="cr-status-help">
-              Email sending & receiving:{" "}
+              CRM email sending:{" "}
               {emailReady()
-                ? "Connected."
+                ? `Configured. Customer replies go to ${dealershipEmail}.`
                 : "Awaiting dealership email connection."}
+            </p>
+            <p className="cr-status-help">
+              Website email alerts to {dealershipEmail}:{" "}
+              {notificationTransport()
+                ? "Configured."
+                : "Awaiting mailbox credentials. Check the lead inbox for submissions."}
             </p>
           </div>
         )}

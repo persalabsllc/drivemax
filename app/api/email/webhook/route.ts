@@ -1,7 +1,11 @@
+import { after } from "next/server";
 import { Resend, type WebhookEventPayload } from "resend";
 import { backendReady, db, emailReady } from "../../../../lib/backend";
 import { mailbox, replyLeadId } from "../../../../lib/email-routing";
 import { leadReplyDomain } from "../../../../lib/email-config";
+import { dispatchLeadNotificationsSafely } from "../../../../lib/lead-notifications";
+
+export const maxDuration = 60;
 
 export async function POST(request: Request) {
   if (!backendReady() || !emailReady())
@@ -72,6 +76,7 @@ export async function POST(request: Request) {
         .eq("id", id)
         .lt("updated_at", event.created_at);
       if (updated.error) throw updated.error;
+      after(() => dispatchLeadNotificationsSafely(id));
       return Response.json({ ok: true });
     }
     const states: Record<string, string> = {
@@ -90,8 +95,24 @@ export async function POST(request: Request) {
         .maybeSingle();
       if (known.error) throw known.error;
       // A provider event can arrive before the send response is stored. Let Resend retry.
-      if (!known.data)
-        return new Response("Send record not ready", { status: 503 });
+      if (!known.data) {
+        const notification = await db()
+          .from("lead_notifications")
+          .select("id")
+          .eq("provider_id", event.data.email_id)
+          .maybeSingle();
+        if (notification.error) throw notification.error;
+        if (!notification.data)
+          return new Response("Send record not ready", { status: 503 });
+        if (state !== "delivered") {
+          const failed = await db()
+            .from("lead_notifications")
+            .update({ last_error: `Provider reported ${state}` })
+            .eq("id", notification.data.id);
+          if (failed.error) throw failed.error;
+        }
+        return Response.json({ ok: true });
+      }
       const eligible =
         state === "delivered"
           ? ["sent", "pending", "failed"]

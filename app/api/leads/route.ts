@@ -1,4 +1,6 @@
+import { after } from "next/server";
 import { backendReady, db } from "../../../lib/backend";
+import { dispatchLeadNotificationsSafely } from "../../../lib/lead-notifications";
 import { leadSchema } from "../../../lib/inventory";
 import { takeSlot } from "../../../lib/rate-limit";
 import { purchaseSummary } from "../../../lib/purchase-requests";
@@ -8,6 +10,8 @@ import {
   leadVehicleColumns,
   type LeadVehicle,
 } from "../../../lib/lead-vehicles";
+
+export const maxDuration = 60;
 
 export async function POST(request: Request) {
   if (!backendReady())
@@ -85,8 +89,10 @@ export async function POST(request: Request) {
       }
     }
     payload = captureContactNotice(payload, new Date().toISOString());
-    const { error } = await db().rpc("submit_lead", { payload });
+    const { data: leadId, error } = await db().rpc("submit_lead", { payload });
     if (error) throw error;
+    // The database queues the alert in the same transaction as the inquiry.
+    after(() => dispatchLeadNotificationsSafely(leadId));
     return Response.json(
       { ok: true },
       { status: 201, headers: { "Cache-Control": "no-store" } },

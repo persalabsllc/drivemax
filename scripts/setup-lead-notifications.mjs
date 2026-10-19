@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import pg from "pg";
 
 // Production builds apply this additive migration before moving the live alias.
@@ -7,12 +8,25 @@ if (
   process.env.VERCEL_ENV === "production" &&
   process.env.CONTROL_ROOM_ENABLED === "true"
 ) {
-  const connectionString =
+  let connectionString =
     process.env.POSTGRES_URL || process.env.POSTGRES_URL_NON_POOLING;
   if (!connectionString)
     throw new Error(
       "Notification setup requires the production database connection.",
     );
+  const databaseUrl = new URL(connectionString);
+  if (databaseUrl.hostname.endsWith(".pooler.supabase.com")) {
+    // Supabase's pooler uses its own CA. Verify that CA and the hostname;
+    // do not disable TLS verification to work around the missing trust anchor.
+    databaseUrl.searchParams.set("sslmode", "verify-full");
+    databaseUrl.searchParams.set(
+      "sslrootcert",
+      fileURLToPath(
+        new URL("../certs/supabase-root-2021.crt", import.meta.url),
+      ),
+    );
+    connectionString = databaseUrl.toString();
+  }
   const client = new pg.Client({
     connectionString,
     connectionTimeoutMillis: 15000,

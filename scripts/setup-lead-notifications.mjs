@@ -40,11 +40,15 @@ if (
       console.log("Dealership notification outbox already installed.");
     }
     await client.query("commit");
-  } catch {
+  } catch (error) {
     await client.query("rollback").catch(() => {});
     // Provider errors can contain connection information; keep build logs generic.
+    const code =
+      typeof error?.code === "string" && /^[A-Z0-9_]+$/.test(error.code)
+        ? error.code
+        : "UNKNOWN";
     console.error(
-      "Notification database setup failed; production deployment stopped.",
+      `Notification database setup failed (${code}); production deployment stopped.`,
     );
     process.exitCode = 1;
   } finally {

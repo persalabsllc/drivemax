@@ -22,12 +22,13 @@ export default function PrivacyPolicy() {
       <section className="page-section">
         <article className="container policy-copy">
           <p className="policy-updated">
-            Effective and last updated: September 7, 2026
+            Effective and last updated: October 20, 2026
           </p>
           <p>
-            This policy covers drivemaxusedcars.com and inquiries submitted
-            through this website. “We,” “us,” and “our” mean Drive Max Used Cars
-            LLC in New Bern, North Carolina.
+            This policy covers drivemaxusedcars.com, inquiries submitted
+            through this website, and our customer care messaging program.
+            “We,” “us,” and “our” mean Drive Max Used Cars LLC in New Bern,
+            North Carolina.
           </p>
 
           <h2>Information we collect</h2>
@@ -71,22 +72,90 @@ export default function PrivacyPolicy() {
             for unrelated third-party marketing.
           </p>
 
-          <h2>When we share information</h2>
+          <h2 id="data-sharing">Data Sharing</h2>
+          <ul>
+            <li>
+              <p>
+                Customer data is not shared with 3rd parties for promotional or
+                marketing purposes.
+              </p>
+            </li>
+            <li>
+              <p>
+                Mobile opt-in and consent are never shared with anyone for any
+                purpose. Any information sharing that may be mentioned elsewhere
+                in this policy excludes mobile opt-in data.
+              </p>
+            </li>
+          </ul>
           <p>
-            Authorized dealership staff and service providers may process
-            information needed to operate our services, including website
-            hosting through Vercel, database and authentication services through
-            Supabase, and email services through Resend and Namecheap Private
-            Email. We may disclose information as needed to comply with law,
-            protect people or property, or handle a business transfer subject to
-            applicable privacy protections.
+            Subject to the exclusions above, authorized dealership staff and
+            service providers may process information needed to operate our
+            services, including website hosting through Vercel, database and
+            authentication services through Supabase, and email services through
+            Resend and Namecheap Private Email. We may disclose information as
+            needed to comply with law, protect people or property, or handle a
+            business transfer subject to applicable privacy protections and the
+            mobile opt-in and consent exclusions above.
           </p>
-          <p>
-            We do not sell website inquiry information or share mobile numbers
-            or text-message consent records with third parties for their own
-            marketing. This does not prevent operational service providers from
-            processing information on our behalf.
-          </p>
+          <p>We do not sell website inquiry information.</p>
+
+          <h2 id="messaging-program-terms">
+            Messaging Program Terms and Conditions
+          </h2>
+          <ol>
+            <li>
+              <p>
+                The messaging program consists of general customer care
+                messaging to answer questions and provide support to customers.
+                Messages will be sent from{" "}
+                <a href="tel:+12525410040">(252) 541-0040</a>.
+              </p>
+            </li>
+            <li>
+              <p>
+                You can cancel the SMS service at any time. Just text 'STOP' to
+                the phone number from which you received messages. After you
+                send the SMS message 'STOP' to us, we will send you an SMS
+                message to confirm that you have been unsubscribed. After this,
+                you will no longer receive SMS messages from us. If you want to
+                join again, just sign up as you did the first time and we will
+                start sending SMS messages to you again.
+              </p>
+            </li>
+            <li>
+              <p>
+                If you are experiencing issues with the messaging program you
+                can reply with the keyword HELP for more assistance, or you can
+                get help directly at{" "}
+                <a href="mailto:sales@drivemaxusedcars.com">
+                  sales@drivemaxusedcars.com
+                </a>.
+              </p>
+            </li>
+            <li>
+              <p>Carriers are not liable for delayed or undelivered messages.</p>
+            </li>
+            <li>
+              <p>
+                As always, message and data rates may apply for any messages
+                sent to you from us and to us from you. Message frequency will
+                vary based on communication needs. If you have any questions
+                about your text plan or data plan, it is best to contact your
+                wireless provider.
+              </p>
+            </li>
+            <li>
+              <p>
+                If you have any questions regarding privacy, please read our
+                privacy policy details contained in the rest of this page or
+                contact us at{" "}
+                <a href="mailto:sales@drivemaxusedcars.com">
+                  sales@drivemaxusedcars.com
+                </a>
+              </p>
+            </li>
+          </ol>
 
           <h2>Cookies, VIN tools, and other websites</h2>
           <p>

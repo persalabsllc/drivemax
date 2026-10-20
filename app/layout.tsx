@@ -3,11 +3,12 @@ import "./reviews.css";
 import type { Metadata, Viewport } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { Mail, MapPin } from "lucide-react";
+import { Mail, MapPin, Phone } from "lucide-react";
 import MobileNav from "./_components/MobileNav";
 import AboutNav from "./_components/AboutNav";
 import { SITE_URL } from "../lib/seo";
 import BusinessHours from "./_components/BusinessHours";
+import { CONTACT_NOTICE_PARAGRAPHS } from "../lib/contact-notice";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -66,19 +67,23 @@ export default function RootLayout({
         <a className="skip-link" href="#main-content">
           Skip to main content
         </a>
-        <div className="announcement-bar">
-          <div className="container announcement-inner">
-            <span>
-              <MapPin aria-hidden="true" size={15} />
-              6210 Old US Hwy 70 West, New Bern, NC
-            </span>
-            <Link href="mailto:sales@drivemaxusedcars.com">
-              <Mail aria-hidden="true" size={15} />
-              sales@drivemaxusedcars.com
-            </Link>
-          </div>
-        </div>
         <header className="site-header">
+          <div className="announcement-bar">
+            <div className="container announcement-inner">
+              <span>
+                <MapPin aria-hidden="true" size={15} />
+                6210 Old US Hwy 70 West, New Bern, NC
+              </span>
+              <a className="header-phone" href="tel:+12525410040">
+                <Phone aria-hidden="true" size={19} />
+                Call us: (252) 541-0040
+              </a>
+              <Link href="mailto:sales@drivemaxusedcars.com">
+                <Mail aria-hidden="true" size={15} />
+                sales@drivemaxusedcars.com
+              </Link>
+            </div>
+          </div>
           <div className="container header-inner">
             <Link
               href="/"
@@ -149,6 +154,10 @@ export default function RootLayout({
             </div>
             <div className="footer-column footer-contact">
               <h2>Get in touch</h2>
+              <a className="footer-phone" href="tel:+12525410040">
+                <Phone aria-hidden="true" size={21} />
+                (252) 541-0040
+              </a>
               <a
                 href="https://www.google.com/maps/dir/?api=1&destination=6210+Old+US+Hwy+70+West+New+Bern+NC+28562"
                 target="_blank"
@@ -183,13 +192,9 @@ export default function RootLayout({
               law.
             </p>
             <p>
-              Submitting a website request authorizes Drive Max Used Cars LLC to
-              call, text, or email you about your inquiry and related follow-up
-              unless you opt out. Message and data rates may apply. You may opt
-              out by telling our team, emailing sales@drivemaxusedcars.com, or
-              replying STOP to a text you receive. Consent is not a condition of
-              purchase and does not enroll you in recurring automated marketing.
-              See our <Link href="/privacy-policy">Privacy Policy</Link>.
+              {CONTACT_NOTICE_PARAGRAPHS.join(" ")} Consent is not a condition
+              of purchase. Message and data rates may apply. See our{" "}
+              <Link href="/privacy-policy">Privacy Policy</Link>.
             </p>
           </div>
           <div className="container footer-bottom">

@@ -5,7 +5,11 @@ import type { FormEvent } from "react";
 import { ArrowRight } from "lucide-react";
 import { leadVehicleTitle, type LeadVehicle } from "../../lib/lead-vehicles";
 import { isValidLeadPhone, phoneValidationMessage } from "../../lib/lead-phone";
-import { CONTACT_NOTICE_TEXT } from "../../lib/contact-notice";
+import {
+  CONTACT_NOTICE_TEXT,
+  smsConsentSummary,
+  smsPreferenceError,
+} from "../../lib/contact-notice";
 import ContactNotice from "./ContactNotice";
 
 type LeadFormKind = "vehicle" | "contact" | "finance" | "employment";
@@ -32,6 +36,7 @@ const labels: Record<string, string> = {
   experience: "Experience",
   preferredVisit: "Preferred visit (awaiting confirmation)",
   contactNoticeVersion: "Website contact notice version",
+  smsConsent: "Customer care text message consent",
 };
 
 function Field({
@@ -137,6 +142,15 @@ export default function LeadForm({
       );
       return;
     }
+    const consentError = smsPreferenceError(
+      preferredContact,
+      formData.get("smsConsent"),
+      formData.get("contactNoticeVersion"),
+    );
+    if (consentError) {
+      showError(consentError, ["smsConsent"]);
+      return;
+    }
 
     setInvalidFields([]);
     if (online) {
@@ -176,8 +190,11 @@ export default function LeadForm({
       return;
     }
     const details = Array.from(formData.entries())
-      .filter(([, value]) => String(value).trim())
+      .filter(([key, value]) => key !== "smsConsent" && String(value).trim())
       .map(([key, value]) => `${labels[key] || key}: ${String(value).trim()}`);
+    details.push(
+      `Customer care text message consent: ${smsConsentSummary(formData.get("smsConsent"))}`,
+    );
     if (vehicle)
       details.unshift(
         `${testDrive ? "Test-drive request" : "Vehicle inquiry"}: ${vehicleName}`,
@@ -263,7 +280,7 @@ export default function LeadForm({
         />
         <Field
           id={`${kind}-phone`}
-          label="Phone number"
+          label="Phone number (mobile for texts)"
           name="phone"
           type="tel"
           placeholder="(252) 555-0123"
@@ -430,7 +447,10 @@ export default function LeadForm({
         </div>
       </div>
 
-      <ContactNotice id={`${kind}-contact-notice`} />
+      <ContactNotice
+        id={`${kind}-contact-notice`}
+        disabled={busy || submitted}
+      />
 
       <div className="form-footer">
         <p className="form-help">

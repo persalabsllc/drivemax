@@ -2,7 +2,11 @@ import { z } from "zod";
 import { VIN_PATTERN } from "./vehicle-data";
 import { isValidLeadPhone, phoneValidationMessage } from "./lead-phone";
 import { totalVehiclePrice } from "./vehicle-pricing";
-import { CONTACT_NOTICE_VERSION } from "./contact-notice";
+import {
+  CONTACT_NOTICE_VERSION,
+  LEGACY_CONTACT_NOTICE_VERSION,
+  smsPreferenceError,
+} from "./contact-notice";
 import {
   vehicleConditions,
   titleStatuses,
@@ -116,7 +120,10 @@ export function schemaAvailability(status: Vehicle["status"]) {
 export const leadSchema = z
   .object({
     requestId: z.string().uuid(),
-    contactNoticeVersion: z.literal(CONTACT_NOTICE_VERSION).optional(),
+    contactNoticeVersion: z
+      .enum([CONTACT_NOTICE_VERSION, LEGACY_CONTACT_NOTICE_VERSION])
+      .optional(),
+    smsConsent: z.enum(["yes", "no"]).optional(),
     kind: z.enum(["vehicle", "contact", "finance", "employment"]),
     vehicleId: z.union([z.string().uuid(), z.literal("")]).optional(),
     name: z.string().trim().min(2).max(120),
@@ -165,6 +172,17 @@ export const leadSchema = z
     sellerZip: z.string().trim().max(10).optional(),
   })
   .superRefine((v, ctx) => {
+    const consentError = smsPreferenceError(
+      v.preferredContact,
+      v.smsConsent,
+      v.contactNoticeVersion,
+    );
+    if (consentError)
+      ctx.addIssue({
+        code: "custom",
+        path: ["smsConsent"],
+        message: consentError,
+      });
     if (
       v.purpose &&
       v.purpose !== "purchase-offer" &&

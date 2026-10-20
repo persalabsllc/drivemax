@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { addMessage, saveLead } from "./actions";
 import { leadStatuses } from "../../lib/inventory";
-import { contactNoticeKeys } from "../../lib/contact-notice";
+import { contactNoticeKeys, smsConsentSummary } from "../../lib/contact-notice";
 import {
   isVehicleSnapshotKey,
   type LeadVehicle,
@@ -137,9 +137,14 @@ export default function LeadEditor({
           ))}
         </dl>
       )}
+      <div className="cr-contact-notice" role="note">
+        <strong>Customer care text message consent</strong>
+        <p>{smsConsentSummary(lead.details.smsConsent)}</p>
+      </div>
       {lead.details.contactNoticeText && (
         <details className="cr-contact-notice">
           <summary>Website inquiry contact notice</summary>
+          {lead.details.smsConsentText && <p>{lead.details.smsConsentText}</p>}
           <p>{lead.details.contactNoticeText}</p>
           <p>
             Version: {lead.details.contactNoticeVersion}

@@ -275,7 +275,7 @@ export default function SellVehicleForm({ online }: { online: boolean }) {
             />
           </div>
           <div className="field">
-            <label htmlFor="sell-phone">Phone number</label>
+            <label htmlFor="sell-phone">Phone number (mobile for texts)</label>
             <input
               id="sell-phone"
               name="phone"
@@ -301,7 +301,8 @@ export default function SellVehicleForm({ online }: { online: boolean }) {
           email reply.
         </p>
         <p className="form-help">
-          Any purchase offer is confirmed after a vehicle inspection and title review.
+          Any purchase offer is confirmed after a vehicle inspection and title
+          review.
         </p>
         <ContactNotice id="sell-contact-notice" />
         <div className="form-footer">

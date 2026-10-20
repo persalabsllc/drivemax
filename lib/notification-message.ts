@@ -1,5 +1,6 @@
 import { dealershipEmail, leadEmailFrom } from "./email-config";
 import { leadLabel, purchaseLabels } from "./purchase-requests";
+import { smsConsentSummary } from "./contact-notice";
 
 export type NotificationPayload = {
   leadId: string;
@@ -47,6 +48,7 @@ export function notificationMessage(payload: NotificationPayload) {
       `Email: ${payload.email || "Not provided"}`,
       `Phone: ${payload.phone}`,
       `Preferred contact: ${payload.preferredContact}`,
+      `Customer care text message consent: ${smsConsentSummary(payload.details.smsConsent)}`,
       "",
       ...Object.entries(detailLabels).flatMap(([key, title]) =>
         payload.details[key] ? [`${title}: ${payload.details[key]}`] : [],

@@ -3,6 +3,11 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
 import {
+  CONTACT_NOTICE_VERSION,
+  captureContactNotice,
+} from "../lib/contact-notice";
+import { leadSchema } from "../lib/inventory";
+import {
   notificationMessage,
   type NotificationPayload,
 } from "../lib/notification-message";
@@ -123,6 +128,22 @@ test("purchase, financing, employment, and test-drive details survive in readabl
   assert.equal(injection.to, "sales@drivemaxusedcars.com");
 });
 
+test("staff notifications distinguish SMS opt-in, decline, and missing consent", () => {
+  for (const [smsConsent, expected] of [
+    ["yes", "Yes — customer care texts only"],
+    ["no", "No — do not send text messages"],
+    ["not_provided", "Not provided — do not send text messages"],
+  ]) {
+    const message = notificationMessage({
+      ...example,
+      details: { smsConsent },
+    });
+    assert.ok(
+      message.text.includes(`Customer care text message consent: ${expected}`),
+    );
+  }
+});
+
 test("delivery failures retain the alert for retry; accepted IDs reconcile without resending", async () => {
   const patches: Record<string, string | null>[] = [];
   const now = () => new Date("2026-10-19T12:00:00Z");
@@ -199,16 +220,21 @@ test("database queues all intake atomically, deduplicates retries, isolates clai
           "utf8",
         ),
       );
-    const payload = {
-      requestId: leadId,
-      kind: "contact",
-      name: example.name,
-      email: example.email,
-      phone: example.phone,
-      preferredContact: "Email",
-      message: "Original inquiry",
-      website: "",
-    };
+    const payload = captureContactNotice(
+      leadSchema.parse({
+        requestId: leadId,
+        kind: "contact",
+        name: example.name,
+        email: example.email,
+        phone: example.phone,
+        preferredContact: "Email",
+        message: "Original inquiry",
+        website: "",
+        contactNoticeVersion: CONTACT_NOTICE_VERSION,
+        smsConsent: "no",
+      }),
+      "2026-10-20T15:00:00.000Z",
+    );
     for (const message of [
       "Original inquiry",
       "Altered retry must not replace the original",
@@ -223,6 +249,28 @@ test("database queues all intake atomically, deduplicates retries, isolates clai
     assert.equal(alerts.rows[0].payload.body, "Original inquiry");
     assert.equal(alerts.rows[0].payload.isReply, false);
     assert.equal(alerts.rows[0].payload.email, example.email);
+    assert.equal(alerts.rows[0].payload.details.smsConsent, "no");
+    assert.equal(
+      alerts.rows[0].payload.details.contactNoticeVersion,
+      CONTACT_NOTICE_VERSION,
+    );
+    assert.equal(
+      alerts.rows[0].payload.details.contactNoticeSubmittedAt,
+      "2026-10-20T15:00:00.000Z",
+    );
+    assert.match(
+      notificationMessage(alerts.rows[0].payload).text,
+      /No — do not send text messages/,
+    );
+    const savedConsent = await pg.query<{ details: Record<string, string> }>(
+      "select details from public.leads where id=$1",
+      [leadId],
+    );
+    assert.equal(savedConsent.rows[0].details.smsConsent, "no");
+    assert.equal(
+      savedConsent.rows[0].details.smsConsentText,
+      "No, I do not want to receive any text messages from Drive Max Used Cars",
+    );
 
     const claim = await pg.query<{ id: string; claim_token: string }>(
       "select * from public.claim_lead_notification($1)",

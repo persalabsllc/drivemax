@@ -1,5 +1,5 @@
 import { pageMetadata } from "../../lib/seo";
-import { Mail, MapPin } from "lucide-react";
+import { Mail, MapPin, Phone } from "lucide-react";
 import LeadForm from "../_components/ConnectedLeadForm";
 import BusinessHours from "../_components/BusinessHours";
 
@@ -27,6 +27,19 @@ export default function ContactPage() {
       <section className="page-section">
         <div className="container content-split content-split-wide">
           <div>
+            <div className="info-card contact-phone-card">
+              <div className="info-card-icon">
+                <Phone aria-hidden="true" />
+              </div>
+              <h2>Call Drive Max</h2>
+              <a className="contact-phone-number" href="tel:+12525410040">
+                (252) 541-0040
+              </a>
+              <p>
+                Questions about a vehicle or your next visit? Give our team a
+                call.
+              </p>
+            </div>
             <div className="contact-cards">
               <div className="info-card">
                 <div className="info-card-icon">

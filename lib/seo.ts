@@ -211,6 +211,7 @@ export const dealershipSchema = {
       url: SITE_URL,
       logo: absoluteUrl("/drive-max-logo-transparent.webp"),
       email: "sales@drivemaxusedcars.com",
+      telephone: "+1-252-541-0040",
       foundingDate: "2019",
       description: `Family-owned used car dealership in New Bern, North Carolina, offering quality used vehicles, financing options, and personal service. ${APPOINTMENT_NOTE}`,
       openingHoursSpecification: REGULAR_OPENING_HOURS,

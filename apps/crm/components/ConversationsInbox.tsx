@@ -57,8 +57,9 @@ export function ConversationsInbox({
         </div>
       </div>
       <div className="ops-connection">
-        Email and SMS providers are not connected. Prepare drafts now; sending
-        and automatic receipt remain disabled.
+        {ws.email_connection?.connected
+          ? "Email is connected. Send from customer profiles; replies appear here and in Needs attention. SMS is available for drafts."
+          : "Email is currently unavailable. Saved drafts stay unsent. SMS is available for drafts."}
       </div>
       <div className="table-scroll">
         <table>

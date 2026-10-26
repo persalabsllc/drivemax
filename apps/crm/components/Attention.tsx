@@ -131,6 +131,13 @@ export function AttentionCenter({
           details that need correcting.
         </p>
       )}
+      {!!feed.emailQueue?.pending && (
+        <p className="website-intake-status intake-pending" role="status">
+          {feed.emailQueue.pending} email
+          {feed.emailQueue.pending === 1 ? " is" : "s are"} queued for delivery.
+          Delivery failures appear here when they need attention.
+        </p>
+      )}
       <div className="attention-list">
         {feed.items.slice(0, expanded ? 100 : 6).map((item) => (
           <article
@@ -171,7 +178,9 @@ export function AttentionCenter({
         ))}
         {!feed.items.length && (
           <p className="attention-empty">
-            {feed.websiteIntake?.pending || feed.websiteInventory?.pending
+            {feed.websiteIntake?.pending ||
+            feed.websiteInventory?.pending ||
+            feed.emailQueue?.pending
               ? "Website updates are still being processed. Review any notices above."
               : "You’re caught up. New replies and leads will appear here."}
           </p>

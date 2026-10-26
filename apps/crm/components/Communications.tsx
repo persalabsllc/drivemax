@@ -1,5 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import {
+  appendSignature,
+  personalSignature,
+  renderEmailTemplate,
+} from "../lib/email";
 import { Mail, MessageSquare, Phone, Plus, Send, FileText } from "lucide-react";
 import {
   type Workspace,
@@ -17,12 +22,13 @@ import { Modal } from "./ui";
 export type RunCommand = (
   c: Command,
   message?: string,
-) => Promise<{ ok: boolean; id?: string }>;
+) => Promise<{ ok: boolean; id?: string; revision?: number }>;
 export type Compose = {
   channel: "email" | "sms";
   draft?: Message;
   task?: Task;
   quote?: Quote;
+  reply?: Message;
   opportunity_id?: string | null;
 };
 export function MessageComposer({
@@ -32,6 +38,7 @@ export function MessageComposer({
   run,
   busy,
   onClose,
+  onRefresh,
 }: {
   ws: Workspace;
   customer: Customer;
@@ -39,182 +46,359 @@ export function MessageComposer({
   run: RunCommand;
   busy: boolean;
   onClose: () => void;
+  onRefresh?: () => Promise<void>;
 }) {
-  const { channel, draft, task, quote } = compose;
-  const [id] = useState(() => draft?.id ?? crypto.randomUUID()),
-    [recipient, setRecipient] = useState(
-      draft?.recipient ??
-        (channel === "email" ? customer.email : customer.phone),
-    ),
-    [subject, setSubject] = useState(
-      draft?.subject ??
-        (quote ? `Your Drive Max quote · ${quote.vehicle}` : ""),
-    ),
-    [body, setBody] = useState(
-      draft?.body ?? (quote ? quoteMessage(quote, customer) : ""),
-    ),
-    [error, setError] = useState("");
+  const { channel, draft, task, quote, reply } = compose;
+  const [id] = useState(() => draft?.id ?? crypto.randomUUID());
+  const [recipient, setRecipient] = useState(
+    draft?.recipient ??
+      reply?.recipient ??
+      (channel === "email" ? customer.email : customer.phone),
+  );
+  const [subject, setSubject] = useState(
+    draft?.subject ??
+      (reply
+        ? /^re:/i.test(reply.subject)
+          ? reply.subject
+          : `Re: ${reply.subject}`
+        : quote
+          ? `Your Drive Max quote · ${quote.vehicle}`
+          : ""),
+  );
+  const [body, setBody] = useState(
+    draft?.body ??
+      (channel === "email"
+        ? appendSignature(
+            quote ? quoteMessage(quote, customer) : "",
+            personalSignature(ws),
+          )
+        : quote
+          ? quoteMessage(quote, customer)
+          : ""),
+  );
+  const [error, setError] = useState(""),
+    [templateId, setTemplateId] = useState(""),
+    [sending, setSending] = useState(false),
+    [resultStatus, setResultStatus] = useState("");
+  const lock = useRef(false);
   const stored = ws.messages?.find((m) => m.id === id),
     revision = stored?.revision ?? draft?.revision ?? 0;
+  const connected =
+    channel === "email" && ws.email_connection?.connected === true;
+  const blocked = channel === "email" && customer.email_opt_out;
+  const opportunityId =
+    compose.opportunity_id ??
+    quote?.opportunity_id ??
+    draft?.opportunity_id ??
+    task?.opportunity_id ??
+    reply?.opportunity_id ??
+    null;
+  const submit = async (send: boolean) => {
+    if (lock.current) return;
+    if (send && (!connected || blocked)) return;
+    lock.current = true;
+    setSending(true);
+    setError("");
+    try {
+      if (
+        channel === "email" &&
+        (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient) || !subject.trim())
+      )
+        throw Error("Enter a valid email address and subject.");
+      if (channel === "sms" && recipient.replace(/\D/g, "").length < 10)
+        throw Error("Enter a phone number with area code.");
+      if (
+        !body.trim() ||
+        (send && body.trim() === personalSignature(ws).trim())
+      )
+        throw Error("Write a message above your signature.");
+      const result = await run(
+        {
+          type: "save_message",
+          id,
+          revision,
+          customer_id: customer.id,
+          opportunity_id: opportunityId,
+          task_id: task?.id ?? draft?.task_id ?? null,
+          quote_id: quote?.id ?? draft?.quote_id ?? null,
+          channel,
+          recipient,
+          subject,
+          body,
+        },
+        send ? "Email draft saved" : "Draft saved · nothing has been sent",
+      );
+      if (!result.ok)
+        throw Error(
+          "Draft could not be saved. Refresh if it was edited elsewhere, then try again.",
+        );
+      if (!send) {
+        onClose();
+        return;
+      }
+      const response = await fetch("/api/messages/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          revision: result.revision ?? (stored || draft ? revision + 1 : 0),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok)
+        throw Error(
+          data.error || "Email could not be queued. Your draft is saved.",
+        );
+      setResultStatus(data.status);
+      await onRefresh?.();
+    } catch (e) {
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Could not prepare the email. Check its status before trying again.",
+      );
+    } finally {
+      lock.current = false;
+      setSending(false);
+    }
+  };
   return (
     <Modal
       title={channel === "sms" ? "Text message" : "Email message"}
       subtitle={`${customer.name}${task ? " · " + task.title : ""}`}
       wide
-      onClose={onClose}
+      onClose={() => {
+        if (!sending) onClose();
+      }}
     >
-      <form
-        className="modal-form"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setError("");
-          if (
-            channel === "email" &&
-            !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)
-          ) {
-            setError("Enter a valid email address.");
-            return;
-          }
-          if (channel === "sms" && recipient.replace(/\D/g, "").length < 10) {
-            setError("Enter a phone number with area code.");
-            return;
-          }
-          const result = await run(
-            {
-              type: "save_message",
-              id,
-              revision,
-              customer_id: customer.id,
-              opportunity_id:
-                compose.opportunity_id ??
-                quote?.opportunity_id ??
-                draft?.opportunity_id ??
-                task?.opportunity_id ??
-                null,
-              task_id: task?.id ?? draft?.task_id ?? null,
-              quote_id: quote?.id ?? draft?.quote_id ?? null,
-              channel,
-              recipient,
-              subject,
-              body,
-            },
-            "Draft saved · nothing has been sent",
-          );
-          if (result.ok) onClose();
-          else
-            setError(
-              "Draft could not be saved. Refresh if it was edited elsewhere, then try again.",
-            );
-        }}
-      >
-        <div className="ops-connection">
-          <span className="ops-status-dot" />{" "}
-          {channel === "sms" ? "SMS" : "Email"} is not connected. You can
-          prepare and save a draft now. Drafts will not send automatically when
-          a provider is connected.
+      {resultStatus ? (
+        <div className="modal-form email-send-result">
+          <h3>
+            {resultStatus === "queued"
+              ? "Email queued for delivery"
+              : "Email already sent"}
+          </h3>
+          <p>
+            The message is in this customer's email thread and activity. Its
+            delivery status will update there.
+          </p>
+          <button className="btn primary" onClick={onClose}>
+            Done
+          </button>
         </div>
-        <label>
-          To
-          <input
-            type={channel === "email" ? "email" : "tel"}
-            required
-            maxLength={250}
-            value={recipient}
-            onChange={(e) => setRecipient(e.target.value)}
-          />
-        </label>
-        {channel === "email" && (
+      ) : (
+        <form
+          className="modal-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void submit(
+              (e.nativeEvent as SubmitEvent).submitter?.getAttribute(
+                "data-intent",
+              ) === "send",
+            );
+          }}
+        >
+          <div
+            className={`ops-connection ${connected ? "email-connected" : ""}`}
+          >
+            {connected ? (
+              <>
+                Sending from {ws.email_connection?.sender}. Customer replies
+                return to this profile.
+              </>
+            ) : (
+              <>
+                {channel === "sms"
+                  ? "SMS is not connected."
+                  : ws.email_connection?.reason ||
+                    "Email is not connected."}{" "}
+                You can save a draft. Saved drafts never send automatically.
+              </>
+            )}
+          </div>
+          {blocked && (
+            <p className="form-error">
+              Email is stopped at this customer's request. You can still prepare
+              a draft.
+            </p>
+          )}
+          {channel === "email" && (
+            <div className="email-template-picker">
+              <label>
+                Email template
+                <select
+                  aria-label="Email template"
+                  value={templateId}
+                  onChange={(e) => setTemplateId(e.target.value)}
+                >
+                  <option value="">Write your own or select a template</option>
+                  {[...(ws.email_templates ?? [])]
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                className="btn small"
+                disabled={!templateId || sending}
+                onClick={() => {
+                  const t = ws.email_templates?.find(
+                    (t) => t.id === templateId,
+                  );
+                  if (!t) return;
+                  const rendered = renderEmailTemplate(
+                    t,
+                    ws,
+                    customer,
+                    ws.opportunities.find((o) => o.id === opportunityId),
+                  );
+                  setSubject(rendered.subject);
+                  setBody(
+                    appendSignature(rendered.body, personalSignature(ws)),
+                  );
+                }}
+              >
+                Use template
+              </button>
+              <small>
+                Replaces the current subject and message. Review before sending.
+              </small>
+            </div>
+          )}
           <label>
-            Subject
+            To
             <input
+              type={channel === "email" ? "email" : "tel"}
               required
               maxLength={250}
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
+              value={recipient}
+              onChange={(e) => setRecipient(e.target.value)}
+              disabled={sending}
             />
           </label>
-        )}
-        {(quote || draft?.quote_id) && (
-          <div className="ops-quote-attachment">
-            <FileText size={16} />
-            Customer quote saved with draft ·{" "}
-            {quote?.vehicle ??
-              ws.quotes.find((q) => q.id === draft?.quote_id)?.vehicle}
-            <small>
-              The saved customer quote is retained. Internal costs, ACV and
-              commissions are excluded from customer copy.
+          {channel === "email" && (
+            <label>
+              Subject
+              <input
+                required
+                maxLength={250}
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                disabled={sending}
+              />
+            </label>
+          )}
+          {(quote || draft?.quote_id) && (
+            <div className="ops-quote-attachment">
+              <FileText size={16} />
+              <span>
+                Customer quote PDF
+                {channel === "email"
+                  ? " will be attached when sent"
+                  : " saved with draft"}{" "}
+                ·{" "}
+                {quote?.vehicle ??
+                  ws.quotes.find((q) => q.id === draft?.quote_id)?.vehicle}
+              </span>
+              <small>
+                Internal costs, trade ACV and commissions are excluded from the
+                customer copy.
+              </small>
+              <button
+                className="text-btn"
+                type="button"
+                onClick={async () => {
+                  const q =
+                    quote ?? ws.quotes.find((q) => q.id === draft?.quote_id);
+                  if (q)
+                    try {
+                      await (
+                        await import("../lib/quote-export")
+                      ).downloadCustomerQuote(q, customer);
+                    } catch {
+                      setError("Could not generate the quote PDF. Try again.");
+                    }
+                }}
+              >
+                Preview / download quote PDF
+              </button>
+            </div>
+          )}
+          <label>
+            Message
+            <textarea
+              aria-label="Message"
+              rows={channel === "email" ? 12 : 7}
+              required
+              maxLength={16000}
+              value={body}
+              disabled={sending}
+              onChange={(e) => setBody(e.target.value)}
+            />
+          </label>
+          {channel === "email" && (
+            <small className="ops-help">
+              Your signature is included in new emails and can be edited here.
+              Change the default in Settings → Email & follow-up.
             </small>
+          )}
+          {error && (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          )}
+          <div className="ops-actions">
             <button
-              className="text-btn"
-              type="button"
-              onClick={async () => {
-                const q =
-                  quote ?? ws.quotes.find((q) => q.id === draft?.quote_id);
-                if (q) {
-                  try {
-                    await (
-                      await import("../lib/quote-export")
-                    ).downloadCustomerQuote(q, customer);
-                  } catch {
-                    setError("Could not generate the quote PDF. Try again.");
-                  }
-                }
-              }}
+              className="btn"
+              data-intent="draft"
+              disabled={busy || sending}
             >
-              Download quote PDF
+              Save draft
+            </button>
+            {draft && (
+              <button
+                type="button"
+                className="btn"
+                disabled={busy || sending}
+                onClick={async () => {
+                  if (
+                    (
+                      await run(
+                        { type: "delete_message_draft", id, revision },
+                        "Draft discarded",
+                      )
+                    ).ok
+                  )
+                    onClose();
+                }}
+              >
+                Discard draft
+              </button>
+            )}
+            <button
+              className="btn primary"
+              data-intent="send"
+              disabled={busy || sending || !connected || !!blocked}
+              title={
+                connected
+                  ? "Send this email to the customer"
+                  : "Connect email to enable sending"
+              }
+            >
+              <Send size={15} />
+              {sending
+                ? "Preparing…"
+                : connected
+                  ? "Send email"
+                  : "Send · not connected"}
             </button>
           </div>
-        )}
-        <label>
-          Message
-          <textarea
-            rows={channel === "email" ? 10 : 7}
-            required
-            maxLength={16000}
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-          />
-        </label>
-        {error && (
-          <p className="form-error" role="alert">
-            {error}
-          </p>
-        )}
-        <div className="ops-actions">
-          <button className="btn primary" disabled={busy}>
-            Save draft
-          </button>
-          {draft && (
-            <button
-              type="button"
-              className="btn"
-              disabled={busy}
-              onClick={async () => {
-                if (
-                  (
-                    await run(
-                      { type: "delete_message_draft", id, revision },
-                      "Draft discarded",
-                    )
-                  ).ok
-                )
-                  onClose();
-              }}
-            >
-              Discard draft
-            </button>
-          )}
-          <button
-            type="button"
-            className="btn"
-            disabled
-            title="Connect a provider to enable sending"
-          >
-            <Send size={15} />
-            Send · not connected
-          </button>
-        </div>
-      </form>
+        </form>
+      )}
     </Modal>
   );
 }
@@ -223,13 +407,20 @@ export function Communications({
   customer,
   channel,
   onCompose,
+  run,
+  busy,
+  onRefresh,
 }: {
   ws: Workspace;
   customer: Customer;
   channel: "sms" | "email";
   onCompose: (c: Compose) => void;
+  run?: RunCommand;
+  busy?: boolean;
+  onRefresh?: () => Promise<void>;
 }) {
-  const [scope, setScope] = useState("all");
+  const [scope, setScope] = useState("all"),
+    [preference, setPreference] = useState(false);
   const messages = (ws.messages ?? [])
     .filter(
       (m) =>
@@ -285,6 +476,72 @@ export function Communications({
           Compose {channel === "sms" ? "text" : "email"}
         </button>
       </div>
+      {channel === "email" && (
+        <div className="email-preference">
+          <span>
+            {customer.email_opt_out
+              ? "Email stopped at customer request"
+              : "Email follow-up allowed"}
+          </span>
+          {run && (
+            <button className="text-btn" onClick={() => setPreference(true)}>
+              {customer.email_opt_out
+                ? "Record renewed permission"
+                : "Stop email follow-up"}
+            </button>
+          )}
+          {onRefresh && (
+            <button
+              className="btn small"
+              disabled={busy}
+              onClick={() => void onRefresh()}
+            >
+              Refresh conversation
+            </button>
+          )}
+        </div>
+      )}
+      {preference && run && (
+        <Modal
+          title="Customer email preference"
+          subtitle={customer.name}
+          onClose={() => setPreference(false)}
+        >
+          <div className="modal-form">
+            <p>
+              {customer.email_opt_out
+                ? "Only restore email follow-up if this customer has asked to receive emails again. Provider blocks for bounces or complaints will remain in place."
+                : "Record that this customer has requested no further emails. This stops new sends and pending emails for the customer."}
+            </p>
+            <div className="ops-actions">
+              <button className="btn" onClick={() => setPreference(false)}>
+                Cancel
+              </button>
+              <button
+                className="btn primary"
+                disabled={busy}
+                onClick={async () => {
+                  if (
+                    (
+                      await run(
+                        {
+                          type: "set_email_opt_out",
+                          customer_id: customer.id,
+                          opted_out: !customer.email_opt_out,
+                        },
+                        "Email preference updated",
+                      )
+                    ).ok
+                  )
+                    setPreference(false);
+                }}
+              >
+                {customer.email_opt_out ? "Restore permission" : "Stop emails"}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
       <label className="ops-thread-filter">
         Conversation scope
         <select value={scope} onChange={(e) => setScope(e.target.value)}>
@@ -326,6 +583,7 @@ export function Communications({
             </header>
             {m?.subject && <h4>{m.subject}</h4>}
             <p>{m?.body ?? log?.body}</p>
+            {m?.error && <p className="email-delivery-note">{m.error}</p>}
             <footer>
               {m ? (
                 <>
@@ -347,7 +605,11 @@ export function Communications({
                     <button
                       className="text-btn"
                       onClick={() =>
-                        onCompose({ channel, opportunity_id: m.opportunity_id })
+                        onCompose({
+                          channel,
+                          opportunity_id: m.opportunity_id,
+                          reply: m,
+                        })
                       }
                     >
                       Reply

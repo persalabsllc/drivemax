@@ -20,6 +20,7 @@ import {
   type Command,
   type Opportunity,
   type Quote,
+  type Task,
   opportunityOpen,
   opportunityCustomer,
   dayKey,
@@ -33,12 +34,21 @@ import { Avatar, Badge, Modal, Empty } from "./ui";
 import { CustomerForm } from "./CustomerForm";
 import { OpportunityForm } from "./OpportunityForm";
 import { InsuranceForm } from "./InsuranceForm";
+import {
+  Communications,
+  MessageComposer,
+  CustomerTasks,
+  TaskAction,
+  type Compose,
+} from "./Communications";
+import { DealRecap } from "./DealRecap";
 import { Desking } from "./Desking";
 import dynamic from "next/dynamic";
 const SoldPack = dynamic(() => import("./SoldPack").then((m) => m.SoldPack), {
   ssr: false,
 });
-type Tab = "Activity" | "Details" | "Desking" | "Insurance";
+type Tab =
+  "Activity" | "Details" | "Desking" | "Insurance" | "Texts" | "Emails";
 export function CustomerProfile({
   ws,
   customer,
@@ -62,6 +72,10 @@ export function CustomerProfile({
   initialTab?: Tab;
   initialOpportunityId?: string | null;
 }) {
+  const [compose, setCompose] = useState<Compose | null>(null),
+    [taskAction, setTaskAction] = useState<Task | null>(null),
+    [recap, setRecap] = useState<string | null>(null),
+    [unwindReason, setUnwindReason] = useState("");
   const opportunities = ws.opportunities
       .filter((o) => o.customer_id === customer.id)
       .sort((a, b) => b.created_at.localeCompare(a.created_at)),
@@ -72,6 +86,7 @@ export function CustomerProfile({
     ),
     [tab, setTab] = useState<Tab>(initialTab),
     [modal, setModal] = useState<
+      | "unwind"
       | "customer"
       | "new-opportunity"
       | "edit-opportunity"
@@ -153,6 +168,7 @@ export function CustomerProfile({
             {customer.email || "No email added"}
           </span>
         </div>
+        <CustomerTasks ws={ws} customer={customer} onTask={setTaskAction} />
         <section className="opportunity-section">
           <div className="desk-section-head">
             <div>
@@ -358,8 +374,52 @@ export function CustomerProfile({
             </div>
           </div>
         )}
+        {o && (
+          <div className="ops-deal-history">
+            {o.status === "sold" && manager && (
+              <button
+                className="btn small ops-danger"
+                onClick={() => {
+                  setUnwindReason("");
+                  setModal("unwind");
+                }}
+              >
+                Unwind sold deal
+              </button>
+            )}
+            {(ws.sales ?? [])
+              .filter((s) => s.opportunity_id === o.id)
+              .sort((a, b) => b.created_at.localeCompare(a.created_at))
+              .map((s) => (
+                <div key={s.id}>
+                  <span>
+                    {s.status === "sold" ? "Sold" : "Sold, then unwound"} ·{" "}
+                    {s.sold_on}
+                    {s.status === "unwound" ? " · " + s.unwind_reason : ""}
+                  </span>
+                  {manager && (
+                    <button
+                      className="btn small"
+                      onClick={() => setRecap(s.id)}
+                    >
+                      Deal recap / commissions
+                    </button>
+                  )}
+                </div>
+              ))}
+          </div>
+        )}
         <div className="profile-tabs">
-          {(["Activity", "Details", "Desking", "Insurance"] as Tab[])
+          {(
+            [
+              "Activity",
+              "Details",
+              "Desking",
+              "Insurance",
+              "Texts",
+              "Emails",
+            ] as Tab[]
+          )
             .filter((t) => !!o || t !== "Desking")
             .map((t) => (
               <button
@@ -375,6 +435,15 @@ export function CustomerProfile({
           <p className="form-error profile-error" role="alert">
             {error}
           </p>
+        )}
+        {(tab === "Texts" || tab === "Emails") && (
+          <Communications
+            key={tab}
+            ws={ws}
+            customer={customer}
+            channel={tab === "Texts" ? "sms" : "email"}
+            onCompose={setCompose}
+          />
         )}
         {tab === "Activity" && (
           <div className="profile-body">
@@ -629,6 +698,9 @@ export function CustomerProfile({
             busy={busy}
             onSave={(p) => run(p, "Desking version saved")}
             onPrint={(q) => onPrintQuote(effective, q)}
+            onShare={(q, channel) =>
+              setCompose({ channel, quote: q, opportunity_id: o.id })
+            }
             onEdit={() => setModal("edit-opportunity")}
           />
         )}
@@ -671,6 +743,7 @@ export function CustomerProfile({
                   await run(
                     {
                       type: "create_task",
+                      channel: String(data.get("channel") || "call") as "call",
                       ...(manager
                         ? {
                             assigned_to:
@@ -690,6 +763,15 @@ export function CustomerProfile({
                 setModal(null);
             }}
           >
+            <label>
+              Follow-up action
+              <select name="channel" defaultValue="call">
+                <option value="call">Call</option>
+                <option value="sms">Text message</option>
+                <option value="email">Email</option>
+                <option value="task">General task</option>
+              </select>
+            </label>
             <label>
               Task
               <input name="title" required minLength={2} maxLength={250} />
@@ -720,6 +802,97 @@ export function CustomerProfile({
             )}
             <button className="btn primary" disabled={busy}>
               Add task
+            </button>
+          </form>
+        </Modal>
+      )}
+      {compose && (
+        <MessageComposer
+          key={compose.draft?.id ?? (compose.quote?.id ?? "") + compose.channel}
+          ws={ws}
+          customer={customer}
+          compose={compose}
+          run={run}
+          busy={busy}
+          onClose={() => setCompose(null)}
+        />
+      )}
+      {taskAction && (
+        <TaskAction
+          ws={ws}
+          customer={customer}
+          task={taskAction}
+          run={run}
+          busy={busy}
+          onCompose={setCompose}
+          onClose={() => setTaskAction(null)}
+        />
+      )}
+      {recap && (
+        <DealRecap
+          ws={ws}
+          saleId={recap}
+          run={run}
+          busy={busy}
+          onClose={() => setRecap(null)}
+        />
+      )}
+      {modal === "unwind" && o && (
+        <Modal
+          title="Unwind sold deal"
+          subtitle={o.title}
+          onClose={() => setModal(null)}
+        >
+          <form
+            className="modal-form"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (
+                (
+                  await run(
+                    {
+                      type: "unwind_sale",
+                      opportunity_id: o.id,
+                      reason: unwindReason,
+                    },
+                    "Deal unwound · vehicle returned to inventory",
+                  )
+                ).ok
+              ) {
+                setModal(null);
+                setTab("Activity");
+              }
+            }}
+          >
+            <p>
+              This reopens the opportunity, returns the sold vehicle to
+              inventory, and cancels its remaining sold follow-ups. The original
+              sale and paperwork stay in history. Its trade is returned unless
+              it is already committed to another deal or sold wholesale.
+            </p>
+            <p>
+              Original commissions remain recorded; paid amounts appear as
+              recovery balances. Confirm that the vehicle and trade can be
+              returned before proceeding.
+            </p>
+            <label>
+              Reason
+              <textarea
+                required
+                minLength={3}
+                maxLength={2000}
+                value={unwindReason}
+                onChange={(e) => setUnwindReason(e.target.value)}
+                placeholder="Financing fell through, marked sold by mistake…"
+              />
+            </label>
+            {error && (
+              <p className="form-error" role="alert">
+                {error}
+              </p>
+            )}
+            <button className="btn primary" disabled={busy}>
+              Confirm unwind
             </button>
           </form>
         </Modal>

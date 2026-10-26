@@ -1,3 +1,4 @@
+import { productsTotal } from "../lib/operations";
 import { type Customer, type Quote, fullMoney, quoteMath } from "../lib/model";
 import { deskingPaymentOptions } from "../lib/desking";
 import { financePayment } from "../lib/finance";
@@ -26,7 +27,7 @@ export function PriceQuotePrint({
     ["Selling price", values.price],
     ["Document fee", values.docFee],
     ["Taxable add-ons", values.addOns ?? 0],
-    ["Service contract", values.serviceContract ?? 0],
+    ["Protection products", productsTotal(values)],
     ["Highway-use tax", totals.tax],
     ["Other taxes", values.otherTaxes ?? 0],
     ["Title / registration", values.titleFee],

@@ -91,18 +91,29 @@ export async function workspace(
     "inventory",
     "opportunities",
     "staff",
+    "sales",
+    "trades",
+    "commissions",
+    "messages",
   ] as const;
   // Pages are fetched fully in batches; never silently truncate the customer book.
   async function all(table: string) {
+    if (table === "trades" && !canManage(s.role)) return [];
     const rows: unknown[] = [];
     for (let start = 0; ; start += 1000) {
       let query = d
         .from("dmcrm_" + table)
-        .select("*")
+        .select(
+          table === "sales" && !canManage(s.role)
+            ? "id,org_id,opportunity_id,customer_id,sold_on,status,unwound_at,unwind_reason"
+            : "*",
+        )
         .eq("org_id", s.org_id);
       // Never deliver another salesperson's tasks to the browser, exports, or planner.
       if (table === "tasks" && !canManage(s.role))
         query = query.eq("assigned_to", s.staff_id);
+      if (table === "commissions" && !canManage(s.role))
+        query = query.eq("staff_id", s.staff_id);
       const { data, error } = await query.order("id").range(start, start + 999);
       if (error) throw new Error("CRM records unavailable");
       rows.push(...data);

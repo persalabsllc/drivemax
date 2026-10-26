@@ -1,6 +1,13 @@
 "use client";
 import { useState } from "react";
-import { Printer, Car, ArrowLeftRight, Save } from "lucide-react";
+import {
+  Printer,
+  Car,
+  ArrowLeftRight,
+  Save,
+  Mail,
+  MessageSquare,
+} from "lucide-react";
 import { deskingDefaults, deskingPaymentOptions } from "../lib/desking";
 import {
   type Customer,
@@ -16,6 +23,8 @@ import {
 import { financePayment } from "../lib/finance";
 import { type InventoryVehicle, vehicleName } from "../lib/vehicles";
 import { VehicleFacts } from "./VehicleFields";
+import { FIProducts } from "./FIProducts";
+import { productsTotal } from "../lib/operations";
 export function Desking({
   customer,
   opportunity,
@@ -24,6 +33,7 @@ export function Desking({
   busy,
   onSave,
   onPrint,
+  onShare,
   onEdit,
 }: {
   customer: Customer;
@@ -35,8 +45,10 @@ export function Desking({
     c: Extract<Command, { type: "save_quote" }>,
   ) => Promise<{ ok: boolean }>;
   onPrint: (q: Quote) => void;
+  onShare?: (q: Quote, channel: "email" | "sms") => void;
   onEdit: () => void;
 }) {
+  const [productsOpen, setProductsOpen] = useState(false);
   const saved = quotes
       .filter((q) => q.opportunity_id === opportunity.id)
       .sort((a, b) => b.created_at.localeCompare(a.created_at)),
@@ -110,6 +122,21 @@ export function Desking({
   );
   return (
     <div className="profile-body desking">
+      {productsOpen && (
+        <FIProducts
+          products={draft.products}
+          legacy={draft.serviceContract ?? 0}
+          readOnly={readOnly}
+          onClose={() => setProductsOpen(false)}
+          onSave={(products) =>
+            setDraft({
+              ...draft,
+              products,
+              serviceContract: productsTotal({ ...draft, products }),
+            })
+          }
+        />
+      )}
       <div className="desk-section-head">
         <div>
           <span className="eyebrow">
@@ -210,7 +237,17 @@ export function Desking({
               {field("price", "Selling price")}
               {field("docFee", "Document fee")}
               {field("addOns", "Accessories / taxable add-ons")}
-              {field("serviceContract", "Separately stated service contract")}
+              <div className="ops-product-summary">
+                <small>F&I products</small>
+                <strong>{fullMoney(productsTotal(draft))}</strong>
+                <button
+                  type="button"
+                  className="btn small"
+                  onClick={() => setProductsOpen(true)}
+                >
+                  {readOnly ? "View products" : "Edit product details"}
+                </button>
+              </div>
               {field("titleFee", "Title / registration fees")}
               {field("otherTaxes", "Other verified taxes")}
             </div>
@@ -489,6 +526,18 @@ export function Desking({
               · {fullMoney(quoteMath(q.values).balance)} balance
             </span>
           </div>
+          {onShare && (
+            <div className="ops-actions">
+              <button className="btn small" onClick={() => onShare(q, "email")}>
+                <Mail size={14} />
+                Email quote
+              </button>
+              <button className="btn small" onClick={() => onShare(q, "sms")}>
+                <MessageSquare size={14} />
+                Text quote
+              </button>
+            </div>
+          )}
           <button className="btn small" onClick={() => onPrint(q)}>
             <Printer size={14} />
             Print quote

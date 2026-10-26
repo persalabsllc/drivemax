@@ -1,5 +1,7 @@
+import type { FIProduct } from "./operations";
 export type FinanceOption = { months: number; apr: number };
 export type FinanceValues = {
+  products?: FIProduct[];
   price: number;
   docFee: number;
   tax: number;
@@ -56,7 +58,9 @@ export function calculateQuote(v: FinanceValues) {
     v.price +
       v.docFee +
       (v.addOns || 0) +
-      (v.serviceContract || 0) +
+      (v.products
+        ? cents(v.products.reduce((s, p) => s + p.price, 0))
+        : v.serviceContract || 0) +
       (v.otherTaxes || 0) +
       tax +
       v.titleFee -

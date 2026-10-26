@@ -2,6 +2,8 @@ import type { Command, Opportunity, Workspace } from "./model";
 import { clearFIPaperwork } from "./fi-paperwork";
 import {
   emptyAccounting,
+  calculatedCommission,
+  newDefaultCommissions,
   productsTotal,
   type Sale,
   type TradeIntake,
@@ -43,6 +45,11 @@ function recordSale(s: Workspace, o: Opportunity, stamp: string) {
     unwind_reason: "",
   };
   s.sales!.push(sale);
+  const salesperson = s.staff.find(
+    (member) => member.id === sale.snapshot.salesperson?.id,
+  );
+  if (salesperson)
+    s.commissions!.push(...newDefaultCommissions(sale, salesperson));
   const t = q?.trade_snapshot ?? o.trade;
   if (t) {
     if (
@@ -220,8 +227,13 @@ export function demoOperations(
         p.commissions.map((c) => {
           const staff = s.staff.find((m) => m.id === c.staff_id);
           if (!staff) throw Error("Select a dealership team member");
+          const calculated = calculatedCommission(sale, c);
+          if (calculated.amount < c.paid_amount)
+            throw Error(
+              "Default commission is below the paid amount. Review costs or keep the agreed amount as a manual entry.",
+            );
           return {
-            ...c,
+            ...calculated,
             org_id: s.org.id,
             sale_id: sale.id,
             staff_name: staff.name,

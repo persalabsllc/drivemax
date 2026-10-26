@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import { Users, Plus, Copy } from "lucide-react";
+import { useId, useState } from "react";
+import { Users, Plus, Copy, KeyRound, Eye, EyeOff } from "lucide-react";
 import {
   type Workspace,
   type Staff,
@@ -8,13 +8,16 @@ import {
   canManage,
 } from "../lib/model";
 import { Modal } from "./ui";
+import { staffSchema, staffPasswordSchema, mayManageStaff } from "../lib/team";
 export function TeamSettings({
   ws,
   busy,
   error,
   demo,
   run,
+  onAccountChanged,
 }: {
+  onAccountChanged: () => Promise<void>;
   ws: Workspace;
   busy: boolean;
   error: string;
@@ -25,14 +28,41 @@ export function TeamSettings({
     [deactivate, setDeactivate] = useState<Staff | null>(null),
     [link, setLink] = useState<{ name: string; url: string } | null>(null),
     [notice, setNotice] = useState(""),
-    [linkBusy, setLinkBusy] = useState<string | null>(null);
+    [linkBusy, setLinkBusy] = useState<string | null>(null),
+    [passwordTarget, setPasswordTarget] = useState<Staff | null>(null),
+    [accountBusy, setAccountBusy] = useState(false),
+    [accountError, setAccountError] = useState("");
   const manager = canManage(ws.member.role),
     owner = ws.member.role === "owner";
   const canEdit = (m: Staff) =>
-    manager &&
-    m.role !== "owner" &&
-    m.user_id !== ws.member.id &&
-    (owner || m.role === "sales");
+    mayManageStaff({ role: ws.member.role, user_id: ws.member.id }, m);
+  async function account(input: unknown) {
+    setAccountBusy(true);
+    setAccountError("");
+    try {
+      if (demo) {
+        setNotice("Demo only. No real login or password was changed.");
+        return true;
+      }
+      const r = await fetch("/api/team/account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      const data = await r.json();
+      if (!r.ok) throw Error(data.error);
+      setNotice(data.message);
+      await onAccountChanged();
+      return true;
+    } catch (e) {
+      setAccountError(
+        e instanceof Error ? e.message : "Could not update the account.",
+      );
+      return false;
+    } finally {
+      setAccountBusy(false);
+    }
+  }
   async function setup(m: Staff) {
     setNotice("");
     if (demo) {
@@ -69,10 +99,13 @@ export function TeamSettings({
         {manager && (
           <button
             className="btn primary small"
-            onClick={() => setEditing("new")}
+            onClick={() => {
+              setAccountError("");
+              setEditing("new");
+            }}
           >
             <Plus size={14} />
-            Add team member
+            Add user
           </button>
         )}
       </div>
@@ -90,6 +123,7 @@ export function TeamSettings({
           <thead>
             <tr>
               <th>Name / email</th>
+              {manager && <th>Phone</th>}
               <th>Role</th>
               <th>Access</th>
               {manager && <th>Open tasks</th>}
@@ -103,6 +137,7 @@ export function TeamSettings({
                   <strong>{m.name}</strong>
                   <span className="subtext">{m.email || "Owner account"}</span>
                 </td>
+                {manager && <td>{m.phone || "Not recorded"}</td>}
                 <td>
                   {m.role === "sales"
                     ? "Salesperson"
@@ -138,10 +173,26 @@ export function TeamSettings({
                     <div className="team-row-actions">
                       <button
                         className="btn small"
-                        onClick={() => setEditing(m)}
+                        onClick={() => {
+                          setAccountError("");
+                          setEditing(m);
+                        }}
                       >
                         Edit
                       </button>
+                      {m.active && (!m.user_id || m.password_managed) && (
+                        <button
+                          className="btn small"
+                          disabled={busy || accountBusy}
+                          onClick={() => {
+                            setAccountError("");
+                            setPasswordTarget(m);
+                          }}
+                        >
+                          <KeyRound size={13} />{" "}
+                          {m.user_id ? "Reset password" : "Set password"}
+                        </button>
+                      )}
                       {m.active && !m.user_id && (
                         <button
                           className="btn small"
@@ -188,79 +239,114 @@ export function TeamSettings({
       </div>
       {manager && (
         <p className="fine-print">
-          Add a team member, then create a private setup link so they can choose
-          their password. Share the link directly; no invitation email is sent
-          automatically.
+          Create a login with an initial password, or share a private setup
+          link. Phone and address details are visible to managers only.
+          Notification delivery will be connected in a future update.
         </p>
       )}
+      <div className="team-commission-defaults">
+        <strong>Commission defaults</strong>
+        <span>
+          25% of front gross, excluding doc fee and pack · 5% of F&I gross
+        </span>
+        <p>
+          New sold deals assign both to the salesperson. Edit recipients or use
+          a manual amount in the deal recap. Missing costs stay pending;
+          recorded commissions keep their amounts.
+        </p>
+      </div>
       {editing && (
         <Modal
-          title={editing === "new" ? "Add team member" : "Edit team member"}
-          subtitle="Name, login email, and CRM role."
-          onClose={() => setEditing(null)}
+          title={editing === "new" ? "Add user" : "Edit user"}
+          subtitle="Staff contact information and dealership access."
+          onClose={() => {
+            if (!accountBusy && !busy) setEditing(null);
+          }}
+        >
+          <TeamMemberForm
+            key={editing === "new" ? "new" : editing.id}
+            member={editing}
+            owner={owner}
+            busy={busy || accountBusy}
+            error={accountError || error}
+            onSave={async (staff, password) => {
+              if (editing === "new" && password && !demo) {
+                if (await account({ action: "create", staff, password }))
+                  setEditing(null);
+              } else {
+                const result = await run(
+                  {
+                    type: "save_staff",
+                    ...(editing !== "new" ? { id: editing.id } : {}),
+                    staff,
+                  },
+                  "Team member saved",
+                );
+                if (result.ok) {
+                  setEditing(null);
+                  setNotice(
+                    demo
+                      ? "Demo user saved. No real login was created."
+                      : editing === "new"
+                        ? "Team member saved. Use Set password or Create setup link to activate their login."
+                        : "Staff contact details updated.",
+                  );
+                }
+              }
+            }}
+          />
+        </Modal>
+      )}
+      {passwordTarget && (
+        <Modal
+          title={`${passwordTarget.user_id ? "Reset" : "Set"} password for ${passwordTarget.name}`}
+          subtitle={passwordTarget.email}
+          onClose={() => {
+            if (!accountBusy) setPasswordTarget(null);
+          }}
         >
           <form
             className="modal-form"
             onSubmit={async (e) => {
               e.preventDefault();
               const f = new FormData(e.currentTarget);
+              const password = String(f.get("password"));
+              const parsed = staffPasswordSchema.safeParse(password);
+              if (!parsed.success) {
+                setAccountError(parsed.error.issues[0].message);
+                return;
+              }
+              if (password !== f.get("confirm_password")) {
+                setAccountError("Passwords must match.");
+                return;
+              }
               if (
-                (
-                  await run(
-                    {
-                      type: "save_staff",
-                      ...(editing !== "new" ? { id: editing.id } : {}),
-                      staff: {
-                        name: String(f.get("name")),
-                        email: String(f.get("email")),
-                        role: String(f.get("role")) as "sales" | "manager",
-                      },
-                    },
-                    "Team member saved",
-                  )
-                ).ok
+                await account({
+                  action: "set_password",
+                  staff_id: passwordTarget.id,
+                  password,
+                })
               )
-                setEditing(null);
+                setPasswordTarget(null);
             }}
           >
-            <label>
-              Name
-              <input
-                name="name"
-                required
-                minLength={2}
-                maxLength={120}
-                defaultValue={editing === "new" ? "" : editing.name}
-              />
-            </label>
-            <label>
-              Email
-              <input
-                name="email"
-                type="email"
-                required
-                maxLength={250}
-                readOnly={editing !== "new" && !!editing.user_id}
-                defaultValue={editing === "new" ? "" : editing.email}
-              />
-            </label>
-            <label>
-              Role
-              <select
-                name="role"
-                defaultValue={editing === "new" ? "sales" : editing.role}
-              >
-                <option value="sales">Salesperson · own tasks</option>
-                {owner && <option value="manager">Manager · all tasks</option>}
-              </select>
-            </label>
-            {error && <p className="form-error">{error}</p>}
-            <div className="modal-footer">
-              <span>Owner access stays protected.</span>
-              <button className="btn primary" disabled={busy}>
-                Save team member
-              </button>
-            </div>
+            <p className="fine-print">
+              The new password takes effect immediately. Share it privately with
+              this team member. No email or text will be sent.
+            </p>
+            <PasswordFields />
+            {accountError && (
+              <p className="form-error" role="alert">
+                {accountError}
+              </p>
+            )}
+            <button className="btn primary" disabled={accountBusy}>
+              {accountBusy
+                ? "Updating…"
+                : passwordTarget.user_id
+                  ? "Reset password"
+                  : "Create login"}
+            </button>
           </form>
         </Modal>
       )}
@@ -358,5 +444,215 @@ export function TeamSettings({
         </Modal>
       )}
     </section>
+  );
+}
+
+function PasswordFields() {
+  const [show, setShow] = useState(false);
+  const hint = useId();
+  const passwordId = useId();
+  return (
+    <div className="team-password-fields">
+      <div>
+        <label htmlFor={passwordId}>New password</label>
+        <div className="login-password">
+          <input
+            id={passwordId}
+            name="password"
+            type={show ? "text" : "password"}
+            required
+            minLength={12}
+            maxLength={128}
+            autoComplete="new-password"
+            aria-describedby={hint}
+          />
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label={show ? "Hide password" : "Show password"}
+            aria-pressed={show}
+            onClick={() => setShow(!show)}
+          >
+            {show ? <EyeOff size={17} /> : <Eye size={17} />}
+          </button>
+        </div>
+      </div>
+      <label>
+        Confirm password
+        <input
+          name="confirm_password"
+          type={show ? "text" : "password"}
+          required
+          minLength={12}
+          maxLength={128}
+          autoComplete="new-password"
+        />
+      </label>
+      <p className="fine-print" id={hint}>
+        At least 12 characters. Passwords cannot be viewed after saving.
+      </p>
+    </div>
+  );
+}
+
+function TeamMemberForm({
+  member,
+  owner,
+  busy,
+  error,
+  onSave,
+}: {
+  member: Staff | "new";
+  owner: boolean;
+  busy: boolean;
+  error: string;
+  onSave: (
+    staff: ReturnType<typeof staffSchema.parse>,
+    password?: string,
+  ) => Promise<void>;
+}) {
+  const [loginMode, setLoginMode] = useState("password"),
+    [validation, setValidation] = useState("");
+  const m = member === "new" ? null : member;
+  const fields = [
+    [
+      "first_name",
+      "First name",
+      m?.first_name ?? m?.name.split(" ")[0] ?? "",
+      60,
+      "given-name",
+    ],
+    [
+      "last_name",
+      "Last name",
+      m?.last_name ?? m?.name.split(" ").slice(1).join(" ") ?? "",
+      60,
+      "family-name",
+    ],
+    ["address1", "Street address", m?.address1 ?? "", 250, "address-line1"],
+    [
+      "address2",
+      "Apartment / suite (optional)",
+      m?.address2 ?? "",
+      250,
+      "address-line2",
+    ],
+    ["city", "City", m?.city ?? "", 100, "address-level2"],
+    ["state", "State", m?.state || "NC", 2, "address-level1"],
+    ["zip", "ZIP code", m?.zip ?? "", 10, "postal-code"],
+  ] as const;
+  return (
+    <form
+      className="modal-form"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        setValidation("");
+        const f = new FormData(e.currentTarget);
+        const parsed = staffSchema.safeParse(Object.fromEntries(f));
+        if (!parsed.success) {
+          setValidation(parsed.error.issues[0].message);
+          return;
+        }
+        const password =
+          !m && loginMode === "password"
+            ? String(f.get("password"))
+            : undefined;
+        if (password && password !== f.get("confirm_password")) {
+          setValidation("Passwords must match.");
+          return;
+        }
+        await onSave(parsed.data, password);
+      }}
+    >
+      <div className="ops-form-grid team-contact-grid">
+        {fields.slice(0, 2).map(([name, label, value, max, autocomplete]) => (
+          <label key={name}>
+            {label}
+            <input
+              name={name}
+              required
+              maxLength={max}
+              defaultValue={value}
+              autoComplete={autocomplete}
+            />
+          </label>
+        ))}
+        <label>
+          Email
+          <input
+            name="email"
+            type="email"
+            required
+            maxLength={250}
+            readOnly={!!m?.user_id}
+            defaultValue={m?.email ?? ""}
+            autoComplete="email"
+          />
+        </label>
+        <label>
+          Phone number
+          <input
+            name="phone"
+            type="tel"
+            required
+            maxLength={30}
+            defaultValue={m?.phone ?? ""}
+            autoComplete="tel"
+            placeholder="(252) 555-0123"
+          />
+        </label>
+        {fields.slice(2).map(([name, label, value, max, autocomplete]) => (
+          <label key={name}>
+            {label}
+            <input
+              name={name}
+              required={name !== "address2"}
+              maxLength={max}
+              defaultValue={value}
+              autoComplete={autocomplete}
+            />
+          </label>
+        ))}
+        <label>
+          Role
+          <select name="role" defaultValue={m?.role ?? "sales"}>
+            <option value="sales">Salesperson · own tasks</option>
+            {owner && <option value="manager">Manager · all tasks</option>}
+          </select>
+        </label>
+      </div>
+      {!m && (
+        <>
+          <label>
+            Login setup
+            <select
+              value={loginMode}
+              onChange={(e) => setLoginMode(e.target.value)}
+            >
+              <option value="password">Set initial password now</option>
+              <option value="link">
+                Let user choose through a private setup link
+              </option>
+            </select>
+          </label>
+          {loginMode === "password" && <PasswordFields />}
+        </>
+      )}
+      {(validation || error) && (
+        <p className="form-error" role="alert">
+          {validation || error}
+        </p>
+      )}
+      <div className="modal-footer">
+        <span>Staff contact details stay private to managers.</span>
+        <button className="btn primary" disabled={busy}>
+          {busy
+            ? "Saving…"
+            : !m && loginMode === "password"
+              ? "Create user & login"
+              : "Save user"}
+        </button>
+      </div>
+    </form>
   );
 }

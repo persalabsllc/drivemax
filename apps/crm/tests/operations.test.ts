@@ -509,7 +509,7 @@ test("profit calculations use actual costs and exclude tax, deposits and payoffs
   assert.equal(m.back, 1150);
   assert.equal(m.gross, 4649);
   assert.equal(m.net, 4149);
-  assert.equal(m.payableFront, 3099);
+  assert.equal(m.payableFront, 2700);
   assert.equal(m.commissionBalance, 300);
   assert.equal(
     saleMath({

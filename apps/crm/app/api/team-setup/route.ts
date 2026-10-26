@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
         email: staff.email,
         password: p.password,
         email_confirm: true,
+        app_metadata: { dmcrm_org_id: invite.org_id },
       });
       if (error || !data.user)
         return json(

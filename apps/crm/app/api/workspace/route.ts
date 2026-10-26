@@ -78,6 +78,8 @@ export async function POST(req: NextRequest) {
                         "Previously paid commissions must be retained",
                         "Select a dealership team member",
                         "Duplicate commission entry",
+                        "Default commission is below the paid amount. Review costs or keep the agreed amount as a manual entry.",
+                        "Enter first and last name, email, phone and a complete address",
                         "Trade changed in another session. Reload before saving.",
                         "This trade disposition is read-only",
                         "Edit this vehicle through its current inventory or deal",

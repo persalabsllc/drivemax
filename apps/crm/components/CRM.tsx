@@ -1249,6 +1249,7 @@ export default function CRM({
             {view === "Workspace" && (
               <>
                 <TeamSettings
+                  onAccountChanged={refresh}
                   ws={ws}
                   busy={busy}
                   error={error}

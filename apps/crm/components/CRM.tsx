@@ -1,69 +1,2012 @@
-'use client';
-import {useState,useMemo} from 'react';
-import {LayoutDashboard,Users,DoorOpen,CalendarDays,FileText,Car,MessageSquare,Settings,Search,Plus,ChevronRight,ChevronLeft,ArrowUpRight,ArrowRight,Clock,Check,Phone,Mail,StickyNote,LogOut,CheckCircle2,Download,Printer,Menu,X,ShieldCheck,Database,Link2,CalendarCheck,Gift,Target,TrendingUp,RefreshCw} from 'lucide-react';
-import {type Workspace,type Customer,type Task,type Quote,type QuoteValues,type Command,dayKey,addDays,addMonths,isOpenTask,money,fullMoney,quoteMath,defaultQuote,demoCommand} from '../lib/model';
-import {Avatar,Badge,Modal,Empty,SectionTitle,Go} from './ui';
-import {signOut} from '../app/login/actions';
+"use client";
+import { useState, useMemo } from "react";
+import {
+  LayoutDashboard,
+  Users,
+  DoorOpen,
+  CalendarDays,
+  FileText,
+  Car,
+  MessageSquare,
+  Settings,
+  Search,
+  Plus,
+  ChevronRight,
+  ChevronLeft,
+  ArrowUpRight,
+  ArrowRight,
+  Clock,
+  Check,
+  Phone,
+  Mail,
+  StickyNote,
+  LogOut,
+  CheckCircle2,
+  Download,
+  Printer,
+  Menu,
+  X,
+  ShieldCheck,
+  Database,
+  Link2,
+  CalendarCheck,
+  Gift,
+  Target,
+  TrendingUp,
+  RefreshCw,
+} from "lucide-react";
+import {
+  type Workspace,
+  type Customer,
+  type Task,
+  type Quote,
+  type QuoteValues,
+  type Command,
+  dayKey,
+  addDays,
+  addMonths,
+  isOpenTask,
+  money,
+  fullMoney,
+  quoteMath,
+  defaultQuote,
+  demoCommand,
+} from "../lib/model";
+import { Avatar, Badge, Modal, Empty, SectionTitle, Go } from "./ui";
+import { CustomerForm } from "./CustomerForm";
+import { InventoryView, InventoryForm } from "./Inventory";
+import { Desking } from "./Desking";
+import { Showroom, visitStatus } from "./Showroom";
+import { type InventoryVehicle, vehicleName } from "../lib/vehicles";
+import { signOut } from "../app/login/actions";
 
-type View='Overview'|'Customers'|'Showroom'|'Planner'|'Deals & quotes'|'Appraisals'|'Conversations'|'Workspace';
-const nav=[{name:'Overview',icon:LayoutDashboard},{name:'Customers',icon:Users},{name:'Showroom',icon:DoorOpen},{name:'Planner',icon:CalendarDays},{name:'Deals & quotes',icon:FileText},{name:'Appraisals',icon:Car},{name:'Conversations',icon:MessageSquare}] as const;
-const time=(d:string)=>new Date(d).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/New_York'});
-const dateLabel=(d:string)=>new Date(d+'T12:00:00Z').toLocaleDateString('en-US',{month:'short',day:'numeric'});
-const taskLabel=(t:Task)=>t.kind.replaceAll('_',' ');
-export default function CRM({initial,demo}:{initial:Workspace;demo:boolean}){
- const [ws,setWs]=useState(initial),[view,setView]=useState<View>('Overview'),[search,setSearch]=useState(''),[stage,setStage]=useState('all'),[selected,setSelected]=useState<string|null>(null),[profileTab,setProfileTab]=useState<'Activity'|'Details'|'Quotes'>('Activity'),[modal,setModal]=useState<'customer'|'task'|'call'|'sold'|null>(null),[edit,setEdit]=useState<Customer|null>(null),[busy,setBusy]=useState(false),[toast,setToast]=useState(''),[error,setError]=useState(''),[note,setNote]=useState(''),[showDate,setShowDate]=useState(dayKey()),[showFilter,setShowFilter]=useState('all'),[planDate,setPlanDate]=useState(dayKey()),[planMode,setPlanMode]=useState<'Day'|'Week'|'Month'>('Week'),[mobileNav,setMobileNav]=useState(false),[quoteDraft,setQuoteDraft]=useState<QuoteValues>(defaultQuote),[quoteVehicle,setQuoteVehicle]=useState(''),[printData,setPrintData]=useState<{customer:Customer;quote?:Quote;pack?:boolean}|null>(null);
- const today=dayKey(),customer=ws.customers.find(c=>c.id===selected),openTasks=ws.tasks.filter(isOpenTask),todayVisits=ws.visits.filter(v=>dayKey(v.arrived_at)===today),overdue=openTasks.filter(t=>t.due_date<today),soldMonth=ws.customers.filter(c=>c.sold_on?.startsWith(today.slice(0,7))),active=ws.visits.filter(v=>!v.departed_at);
- const findCustomer=(id:string|null)=>ws.customers.find(c=>c.id===id);
- function navigate(v:View){setView(v);setMobileNav(false);setSearch('');}
- function openCustomer(c:Customer){setSelected(c.id);setProfileTab('Activity');setNote('');const q=ws.quotes.filter(q=>q.customer_id===c.id).sort((a,b)=>b.created_at.localeCompare(a.created_at))[0];setQuoteDraft(q?.values??defaultQuote);setQuoteVehicle(q?.vehicle??c.vehicle_interest);setError('');}
- async function run(command:Command,message='Saved'){setBusy(true);setError('');try{let id:string|undefined;if(demo){const next=demoCommand(ws,command);setWs(next);if(command.type==='create_customer')id=next.customers[0].id;}else{const r=await fetch('/api/workspace',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(command)});const data=await r.json();if(!r.ok)throw new Error(data.error);setWs(data.workspace);id=data.id;}setToast(message);setTimeout(()=>setToast(''),4000);return {ok:true,id};}catch(e){setError(e instanceof Error?e.message:'Could not save. Please try again.');return {ok:false};}finally{setBusy(false);}}
- async function refresh(){if(demo){setToast('Demo workspace · sample information');return;}setBusy(true);try{const r=await fetch('/api/workspace',{cache:'no-store'});if(!r.ok)throw Error('Could not refresh. Please sign in again if your session expired.');setWs(await r.json());setToast('Workspace refreshed');setTimeout(()=>setToast(''),3000);}catch(e){setError((e as Error).message)}finally{setBusy(false)}}
- function exportData(){const blob=new Blob([JSON.stringify(ws,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`drive-max-crm-${today}.json`;a.click();URL.revokeObjectURL(url);}
- function print(customer:Customer,quote?:Quote,pack=false){setPrintData({customer,quote,pack});setTimeout(()=>window.print(),80);}
- const filteredCustomers=useMemo(()=>ws.customers.filter(c=>(stage==='all'||c.status===stage)&&[c.name,c.email,c.phone,c.vehicle_interest,c.trade_vehicle].join(' ').toLowerCase().includes(search.toLowerCase())).sort((a,b)=>b.updated_at.localeCompare(a.updated_at)),[ws.customers,stage,search]);
- const taskRow=(t:Task)=>{const c=findCustomer(t.customer_id);return <div className="task-row" key={t.id}><button className="task-check" disabled={busy} aria-label={`Complete ${t.title}`} onClick={()=>run({type:'complete_task',id:t.id},'Task completed')}><Check size={13}/></button><button className="task-content" disabled={!c} onClick={()=>c&&openCustomer(c)}><strong>{t.title}</strong><span>{c?.name??'Dealership task'} <i>·</i> {taskLabel(t)}</span></button><span className={`task-date ${t.due_date<today?'late':''}`}>{t.due_date<today?'Overdue':t.due_date===today?'Today':dateLabel(t.due_date)}</span></div>};
- const visitCard=(v:Workspace['visits'][number])=>{const c=findCustomer(v.customer_id);if(!c)return null;return <article className="visit-card" key={v.id}><div className="visit-top"><Avatar name={c.name}/><div><button className="name-button" onClick={()=>openCustomer(c)}>{c.name}</button><span>{c.source}</span></div><Badge value={v.departed_at?'left':'here'}/></div><div className="visit-vehicle"><Car size={17}/><span>{c.vehicle_interest||'Vehicle to be selected'}</span></div><div className="visit-times"><span><Clock size={13}/>Arrived {time(v.arrived_at)}</span>{v.outcome==='sold'?<Badge value="sold"/>:<span>{v.departed_at?'Left '+time(v.departed_at):'In showroom'}</span>}</div><div className="visit-actions"><button className="btn small" onClick={()=>openCustomer(c)}>Open profile<ArrowUpRight size={13}/></button>{!v.departed_at&&<button className="text-btn muted" disabled={busy} onClick={()=>run({type:'check_out',id:v.id},'Customer checked out')}>Check out</button>}</div></article>};
- return <>
- <div className="app-shell">
- {mobileNav&&<button className="nav-scrim" aria-label="Close navigation" onClick={()=>setMobileNav(false)}/>}
- <aside className={`sidebar ${mobileNav?'mobile-open':''}`}><div className="brand"><img src="/drive-max-logo.webp" alt="Drive Max Used Cars"/><span>DEALERSHIP WORKSPACE</span></div><div className="dealership-switch"><span className="dealer-icon">DM</span><div><strong>Drive Max</strong><small>New Bern, North Carolina</small></div><ShieldCheck size={16}/></div><div className="nav-label">YOUR SALES DAY</div><nav aria-label="Main navigation">{nav.map(({name,icon:Icon})=><button key={name} className={view===name?'nav-item active':'nav-item'} onClick={()=>navigate(name)}><Icon size={19}/><span>{name}</span>{name==='Showroom'&&active.length>0&&<b>{active.length}</b>}{name==='Planner'&&overdue.length>0&&<span className="nav-dot"/>}</button>)}</nav><div className="sidebar-bottom"><div className="sidebar-note"><span className="pulse-dot"/><div><strong>{demo?'Explore your next chapter':'Your dealership, connected'}</strong><p>{demo?'Try the workflow with sample customers.':'Every relationship has a next step.'}</p></div></div><button className={view==='Workspace'?'nav-item active':'nav-item'} onClick={()=>navigate('Workspace')}><Settings size={18}/>Workspace</button><div className="sidebar-user"><Avatar name={ws.member.name} size="small"/><div><strong>{ws.member.name}</strong><small>{demo?'Demo workspace':'Dealership owner'}</small></div>{demo?<a href="/login" aria-label="Sign in"><LogOut size={17}/></a>:<form action={signOut}><button aria-label="Sign out" type="submit"><LogOut size={17}/></button></form>}</div></div></aside>
- <div className="workspace"><header className="topbar"><button className="mobile-menu icon-btn" aria-label="Open navigation" onClick={()=>setMobileNav(true)}><Menu size={21}/></button><div className="breadcrumb">Workspace<ChevronRight size={13}/><strong>{view}</strong></div><div className="topbar-actions"><label className="global-search"><Search size={16}/><input aria-label="Search customers" placeholder="Search customers…" value={search} onChange={e=>{setSearch(e.target.value);setView('Customers')}}/></label><button className="icon-btn refresh-btn" aria-label="Refresh workspace" onClick={refresh} disabled={busy}><RefreshCw size={17}/></button><span className="top-avatar"><Avatar name={ws.member.name} size="small"/></span></div></header>
- {demo&&<div className="demo-banner"><span><span className="demo-pill">DEMO</span>Sample customers. Changes reset when you refresh.</span><a href="/login">Open your live workspace<ArrowRight size={13}/></a></div>}
- <main className="content">{error&&<div className="error-notice" role="alert">{error}<button onClick={()=>setError('')} aria-label="Dismiss error"><X size={15}/></button></div>}
- <div className="page-heading"><div><div className="eyebrow">{view==='Overview'?new Date(today+'T12:00:00Z').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}):'DRIVE MAX CRM'}</div><h1>{view==='Overview'?`Good to see you, ${ws.member.name.split(' ')[0]}.`:view==='Workspace'?'Made for your dealership.':view}</h1><p>{({Overview:'Your sales day, in focus. Let’s move a few opportunities forward.',Customers:'Know the person. Remember the conversation. Find the next step.',Showroom:'Every visit counts. See who’s here and how their visit went.',Planner:'A thoughtful follow-up starts with a clear plan.','Deals & quotes':'Build the proposal. Keep the history. Move the deal forward.',Appraisals:'Keep your trade conversations and working values together.',Conversations:'One place for the conversation, from first hello to follow-up.',Workspace:'A focused foundation, with room for your next chapter.'})[view]}</p></div><button className="btn primary" onClick={()=>{setEdit(null);setModal('customer')}}><Plus size={17}/>Add customer</button></div>
- {view==='Overview'&&<>
- <div className="stat-grid"><Stat title="In the showroom" value={active.length} sub={`${todayVisits.length} total visits today`} icon={<DoorOpen/>} color="red" onClick={()=>navigate('Showroom')}/><Stat title="Follow-ups due" value={openTasks.filter(t=>t.due_date<=today).length} sub={overdue.length?`${overdue.length} need a little attention`:'You’re up to date'} icon={<CalendarCheck/>} color="amber" onClick={()=>navigate('Planner')}/><Stat title="Active customers" value={ws.customers.filter(c=>!['sold','lost'].includes(c.status)).length} sub="Open opportunities in your book" icon={<Users/>} color="blue" onClick={()=>navigate('Customers')}/><Stat title="Sold this month" value={soldMonth.length} sub="Relationships worth celebrating" icon={<CheckCircle2/>} color="green" onClick={()=>{navigate('Customers');setStage('sold')}}/></div>
- <div className="dashboard-grid"><section className="panel"><SectionTitle title="Your next moves" subtitle="The conversations that deserve your attention." action={<Go onClick={()=>navigate('Planner')}>View planner</Go>}/><div className="panel-tabs"><span className="selected">Due & overdue <b>{openTasks.filter(t=>t.due_date<=today).length}</b></span><span>Keep the momentum going</span></div><div className="task-list">{openTasks.filter(t=>t.due_date<=today).sort((a,b)=>a.due_date.localeCompare(b.due_date)).slice(0,5).map(taskRow)}{!openTasks.some(t=>t.due_date<=today)&&<Empty title="A clear runway." body="You’re caught up. Add a task or plan your next conversation." action={<button className="btn small" onClick={()=>setModal('task')}>Plan a follow-up</button>}/>}</div></section><section className="momentum-card"><div className="eyebrow">RELATIONSHIPS, NOT JUST RECORDS</div><h2>Every customer.<br/>A next step.</h2><p>A great experience carries on long after the keys change hands.</p><div className="momentum-number">{openTasks.filter(t=>['birthday','anniversary','sold_followup'].includes(t.kind)).length}<span>relationship reminders<br/>on your calendar</span></div><button onClick={()=>navigate('Planner')}>See what’s coming up<ArrowUpRight size={18}/></button><div className="decor-rings"/></section></div>
- <section className="panel showroom-preview"><SectionTitle title="On the floor" subtitle="A live view of the people in your showroom." action={<Go onClick={()=>navigate('Showroom')}>Open showroom</Go>}/>{active.length?<div className="visit-grid">{active.slice(0,3).map(visitCard)}</div>:<Empty title="Ready for your next visitor." body="Check a customer in from their profile when they arrive." action={<button className="btn small" onClick={()=>navigate('Customers')}>Open customers</button>}/>}</section>
- <div className="dashboard-bottom"><section className="panel"><SectionTitle title="Opportunity snapshot" subtitle="A little clarity on where conversations stand."/>{(['new','working','appointment','sold'] as const).map(s=><button className="pipeline-row" key={s} onClick={()=>{navigate('Customers');setStage(s)}}><Badge value={s}/><span className="pipeline-track"><span className={s} style={{width:`${ws.customers.length?Math.max(3,ws.customers.filter(c=>c.status===s).length/ws.customers.length*100):0}%`}}/></span><strong>{ws.customers.filter(c=>c.status===s).length}</strong></button>)}</section><section className="panel"><SectionTitle title="Recent activity" subtitle="The latest moments across your customer book."/><div className="recent-list">{ws.activities.slice().sort((a,b)=>b.created_at.localeCompare(a.created_at)).slice(0,3).map(a=><button key={a.id} onClick={()=>{const c=findCustomer(a.customer_id);if(c)openCustomer(c)}}><span className="activity-icon">{a.kind==='call'?<Phone size={15}/>:<StickyNote size={15}/>}</span><div><strong>{findCustomer(a.customer_id)?.name}</strong><p>{a.body}</p><small>{dateLabel(dayKey(a.created_at))} · {time(a.created_at)}</small></div></button>)}{!ws.activities.length&&<p className="muted-copy">Your team’s activity will appear here as you work.</p>}</div></section></div>
- </>}
- {view==='Customers'&&<section className="panel"><div className="table-toolbar"><div className="segmented">{['all','new','working','appointment','sold','lost'].map(s=><button key={s} onClick={()=>setStage(s)} className={stage===s?'chosen':''}>{s==='all'?'All customers':s}</button>)}</div><span>{filteredCustomers.length} customers</span></div>{filteredCustomers.length?<div className="table-scroll"><table><thead><tr><th>Customer</th><th>Vehicle of interest</th><th>Stage</th><th>Source</th><th>Added</th><th/></tr></thead><tbody>{filteredCustomers.map(c=><tr key={c.id}><td><button className="customer-cell" onClick={()=>openCustomer(c)}><Avatar name={c.name}/><span><strong>{c.name}</strong><small>{c.phone||c.email||'Contact details to add'}</small></span></button></td><td><div className="vehicle-cell"><Car size={15}/>{c.vehicle_interest||'Not selected'}</div>{c.trade_vehicle&&<small className="subtext">Trade: {c.trade_vehicle}</small>}</td><td><Badge value={c.status}/></td><td>{c.source}</td><td>{dateLabel(dayKey(c.created_at))}</td><td><button className="icon-btn" aria-label={`Open ${c.name}`} onClick={()=>openCustomer(c)}><ArrowUpRight size={17}/></button></td></tr>)}</tbody></table></div>:<Empty title={search?'No matching customers.':'Your next relationship starts here.'} body={search?'Try a name, phone number, email, or vehicle.':'Add your first customer and keep their whole story in one place.'} action={<button className="btn primary" onClick={()=>{setEdit(null);setModal('customer')}}><Plus size={16}/>Add customer</button>}/>}</section>}
- {view==='Showroom'&&<><div className="view-controls"><div className="date-control"><button aria-label="Previous day" onClick={()=>setShowDate(addDays(showDate,-1))}><ChevronLeft size={18}/></button><input aria-label="Showroom date" type="date" value={showDate} onChange={e=>e.target.value&&setShowDate(e.target.value)}/><button aria-label="Next day" onClick={()=>setShowDate(addDays(showDate,1))}><ChevronRight size={18}/></button><button onClick={()=>setShowDate(today)}>Today</button></div><div className="segmented">{['all','here','left','sold'].map(s=><button className={showFilter===s?'chosen':''} key={s} onClick={()=>setShowFilter(s)}>{s==='all'?'All visitors':s==='here'?'Still here':s}</button>)}</div></div><div className="showroom-summary"><span><b>{ws.visits.filter(v=>dayKey(v.arrived_at)===showDate).length}</b> visits</span><span><i className="dot green"/>{ws.visits.filter(v=>dayKey(v.arrived_at)===showDate&&!v.departed_at).length} still here</span><span><i className="dot gray"/>{ws.visits.filter(v=>dayKey(v.arrived_at)===showDate&&v.departed_at).length} left</span><span><i className="dot red"/>{ws.visits.filter(v=>dayKey(v.arrived_at)===showDate&&v.outcome==='sold').length} sold</span></div><div className="visit-grid full">{ws.visits.filter(v=>dayKey(v.arrived_at)===showDate&&(showFilter==='all'||showFilter==='here'&&!v.departed_at||showFilter==='left'&&v.departed_at||showFilter==='sold'&&v.outcome==='sold')).map(visitCard)}</div>{!ws.visits.some(v=>dayKey(v.arrived_at)===showDate)&&<section className="panel"><Empty title="No visits on this day." body="Open a customer profile and select Check in when they arrive." action={<button className="btn" onClick={()=>navigate('Customers')}>Find a customer</button>}/></section>}</>}
- {view==='Planner'&&<><div className="view-controls"><div className="date-control"><button aria-label="Previous period" onClick={()=>setPlanDate(planMode==='Month'?addMonths(planDate,-1):addDays(planDate,planMode==='Day'?-1:-7))}><ChevronLeft size={18}/></button><input aria-label="Planner date" type="date" value={planDate} onChange={e=>e.target.value&&setPlanDate(e.target.value)}/><button aria-label="Next period" onClick={()=>setPlanDate(planMode==='Month'?addMonths(planDate,1):addDays(planDate,planMode==='Day'?1:7))}><ChevronRight size={18}/></button><button onClick={()=>setPlanDate(today)}>Today</button></div><div className="planner-actions"><div className="segmented">{(['Day','Week','Month'] as const).map(m=><button key={m} className={planMode===m?'chosen':''} onClick={()=>setPlanMode(m)}>{m}</button>)}</div><button className="btn" onClick={()=>setModal('task')}><Plus size={15}/>Add task</button></div></div>{overdue.length>0&&<section className="panel overdue-panel"><SectionTitle title={`${overdue.length} overdue ${overdue.length===1?'follow-up':'follow-ups'}`} subtitle="A small nudge can start the conversation again."/>{overdue.map(taskRow)}</section>}<Planner mode={planMode} date={planDate} today={today} tasks={openTasks} taskRow={taskRow} open={t=>{const c=findCustomer(t.customer_id);if(c)openCustomer(c)}} onDay={d=>{setPlanDate(d);setPlanMode('Day')}}/></>}
- {view==='Deals & quotes'&&<section className="panel"><SectionTitle title="Saved proposals" subtitle="Each saved quote keeps its own version of the numbers."/>{ws.quotes.length?<div className="table-scroll"><table><thead><tr><th>Customer / vehicle</th><th>Sale price</th><th>Estimated balance</th><th>Created</th><th/></tr></thead><tbody>{ws.quotes.slice().sort((a,b)=>b.created_at.localeCompare(a.created_at)).map(q=>{const c=findCustomer(q.customer_id);return <tr key={q.id}><td><button className="name-button" onClick={()=>c&&openCustomer(c)}>{c?.name}</button><small className="subtext">{q.vehicle}</small></td><td>{money(q.values.price)}</td><td>{money(quoteMath(q.values).balance)}</td><td>{dateLabel(dayKey(q.created_at))}</td><td><button className="btn small" onClick={()=>c&&print(c,q)}><Printer size={14}/>Print quote</button></td></tr>})}</tbody></table></div>:<Empty title="A good proposal starts with a customer." body="Open a customer profile, then choose Quotes to build your first proposal." action={<button className="btn" onClick={()=>navigate('Customers')}>Open customers</button>}/>}<div className="panel-foot">Preliminary quotes only. Tax and title amounts are entered manually and must be verified.</div></section>}
- {view==='Appraisals'&&<><section className="info-banner"><Car size={23}/><div><strong>Your working trade desk</strong><p>Record your ACV and estimated reconditioning in a customer’s quote. Live book values and VIN data are future integrations.</p></div></section><div className="visit-grid full">{ws.customers.filter(c=>c.trade_vehicle).map(c=>{const q=ws.quotes.filter(q=>q.customer_id===c.id).sort((a,b)=>b.created_at.localeCompare(a.created_at))[0];return <section className="panel trade-card" key={c.id}><div className="trade-icon"><Car size={26}/></div><h3>{c.trade_vehicle}</h3><p>{c.name}</p><div className="trade-values"><div><small>Working ACV</small><strong>{q?money(q.values.acv):'—'}</strong></div><div><small>Est. reconditioning</small><strong>{q?money(q.values.recon):'—'}</strong></div></div><button className="btn" onClick={()=>{openCustomer(c);setProfileTab('Quotes')}}>Open trade worksheet<ArrowUpRight size={14}/></button></section>})}</div>{!ws.customers.some(c=>c.trade_vehicle)&&<section className="panel"><Empty title="Room for the next trade." body="Add a trade-in to a customer profile to start a working appraisal."/></section>}</>}
- {view==='Conversations'&&<section className="panel connection-page"><span className="connection-icon"><MessageSquare size={32}/></span><span className="eyebrow">THE NEXT PIECE OF THE WORKSPACE</span><h2>Keep every conversation together.</h2><p>Two-way email and texting will live here once the providers are connected. For now, save notes and call outcomes directly on each customer.</p><div className="integration-grid"><div><Mail/><h3>Email conversations</h3><p>Sending, replies, attachments, and delivery status.</p><Badge value="not connected"/></div><div><MessageSquare/><h3>Business texting</h3><p>A dedicated number, consent preferences, and opt-outs.</p><Badge value="not connected"/></div><div><Phone/><h3>Phone history</h3><p>Manual call logging is ready in customer profiles.</p><Badge value="manual logging"/></div></div><button className="btn" onClick={()=>navigate('Customers')}>Open customer profiles<ArrowRight size={16}/></button></section>}
- {view==='Workspace'&&<><div className="settings-grid"><section className="panel"><SectionTitle title="Your dealership" subtitle="The first workspace in a foundation built to grow."/><dl className="settings-list"><dt>Name</dt><dd>{ws.org.name}</dd><dt>Account</dt><dd>{ws.member.name}</dd><dt>Role</dt><dd className="capitalize">{ws.member.role}</dd><dt>Timezone</dt><dd>Eastern Time</dd><dt>Environment</dt><dd><Badge value={demo?'demo':'live'}/></dd></dl></section><section className="panel"><SectionTitle title="Your data stays yours" subtitle="Download a copy of your workspace whenever you need it."/><p className="muted-copy">Customer profiles, visits, notes, tasks, and saved quotes are included in your export.</p><button className="btn" onClick={exportData}><Download size={16}/>Export workspace</button><div className="security-line"><ShieldCheck size={16}/>Server-checked dealership access</div><div className="security-line"><Database size={16}/>{demo?'Sample data held only in this tab':'Saved in dedicated CRM tables'}</div></section></div><section className="panel"><SectionTitle title="What’s ready — and what’s next"/><div className="roadmap-grid"><div><CheckCircle2/><h3>The working foundation</h3><p>Customer profiles, showroom visits, notes and calls, planner, quotes, trade worksheets, and printable deal summaries.</p></div><div><Link2/><h3>Connected conversations</h3><p>Email, SMS, website lead intake, and automatic call history are the next integration stage.</p></div><div><Users/><h3>A product for more dealers</h3><p>Dealership membership and data boundaries are in place. Self-service onboarding, billing, and team management come later.</p></div></div></section></>}
- <footer className="workspace-footer"><span>DRIVE MAX CRM <i>·</i> Built around relationships.</span><span>{demo?'Interactive demo':'Foundation release'} <span className="dot green"/></span></footer>
- </main></div></div>
- {toast&&<div className="toast" role="status"><CheckCircle2 size={18}/>{toast}</div>}
- {customer&&<Modal title="Customer profile" subtitle="The whole relationship, in one place." onClose={()=>setSelected(null)} wide><div className="profile-top"><Avatar name={customer.name} size="large"/><div><h2>{customer.name}</h2><div className="profile-tags"><Badge value={customer.status}/><span>{customer.source}</span></div></div><button className="btn small" onClick={()=>{setEdit(customer);setModal('customer')}}>Edit profile</button></div><div className="profile-contact"><span><Phone size={14}/>{customer.phone||'No phone added'}</span><span><Mail size={14}/>{customer.email||'No email added'}</span></div><div className="profile-actions"><button className="btn primary small" disabled={busy||ws.visits.some(v=>v.customer_id===customer.id&&!v.departed_at)} onClick={()=>run({type:'check_in',customer_id:customer.id},'Checked into the showroom')}><DoorOpen size={15}/>{ws.visits.some(v=>v.customer_id===customer.id&&!v.departed_at)?'In showroom':'Check in'}</button><button className="btn small" onClick={()=>setModal('call')}><Phone size={14}/>Log call</button><button className="btn small" onClick={()=>setModal('task')}><CalendarDays size={14}/>Add task</button><button className="btn small" onClick={()=>print(customer,undefined,true)}><Printer size={14}/>Deal summary</button>{customer.status!=='sold'&&<button className="btn small success" onClick={()=>setModal('sold')}><CheckCircle2 size={14}/>Mark sold</button>}</div><div className="profile-vehicles"><div><small>VEHICLE OF INTEREST</small><strong><Car size={16}/>{customer.vehicle_interest||'Not selected yet'}</strong></div><div><small>TRADE-IN</small><strong>{customer.trade_vehicle||'No trade-in added'}</strong></div></div><div className="profile-tabs">{(['Activity','Details','Quotes'] as const).map(t=><button key={t} className={profileTab===t?'active':''} onClick={()=>setProfileTab(t)}>{t}</button>)}</div>{error&&<p className="form-error" role="alert">{error}</p>}
- {profileTab==='Activity'&&<div className="profile-body"><form className="note-composer" onSubmit={async e=>{e.preventDefault();if((await run({type:'add_activity',customer_id:customer.id,kind:'note',body:note},'Note added')).ok)setNote('')}}><label htmlFor="customer-note">Keep the conversation moving.</label><textarea id="customer-note" placeholder="Add a note, remember a detail, or capture the next step…" value={note} onChange={e=>setNote(e.target.value)} maxLength={8000} required/><div><span>Private to your dealership</span><button className="btn primary small" disabled={busy||!note.trim()}><Plus size={14}/>Add note</button></div></form><h3 className="timeline-title">Relationship timeline</h3><div className="timeline">{ws.activities.filter(a=>a.customer_id===customer.id).sort((a,b)=>b.created_at.localeCompare(a.created_at)).map(a=><article key={a.id}><span className={`timeline-dot ${a.kind}`}>{a.kind==='call'?<Phone size={14}/>:a.kind==='system'?<Check size={14}/>:<StickyNote size={14}/>}</span><div><header><strong>{a.kind==='call'?'Phone call':a.kind==='system'?'Customer update':'Note added'}</strong><time>{dateLabel(dayKey(a.created_at))} · {time(a.created_at)}</time></header><p>{a.body}</p><small>{a.created_by}</small></div></article>)}</div>{!ws.activities.some(a=>a.customer_id===customer.id)&&<p className="muted-copy">Add the first note to start this customer’s story.</p>}</div>}
- {profileTab==='Details'&&<div className="profile-body"><dl className="settings-list"><dt>Birthday</dt><dd>{customer.birthday?dateLabel(customer.birthday):'Not added'}</dd><dt>Added</dt><dd>{dateLabel(dayKey(customer.created_at))}</dd><dt>Purchase date</dt><dd>{customer.sold_on?dateLabel(customer.sold_on):'Not sold'}</dd></dl><SectionTitle title="Upcoming tasks"/>{openTasks.filter(t=>t.customer_id===customer.id).sort((a,b)=>a.due_date.localeCompare(b.due_date)).map(taskRow)}<SectionTitle title="Visit history"/>{ws.visits.filter(v=>v.customer_id===customer.id).map(v=><div className="visit-history" key={v.id}><span>{dateLabel(dayKey(v.arrived_at))} · {time(v.arrived_at)}</span><Badge value={v.departed_at?'left':'here'}/><Badge value={v.outcome}/></div>)}</div>}
- {profileTab==='Quotes'&&<div className="profile-body"><form onSubmit={async e=>{e.preventDefault();await run({type:'save_quote',customer_id:customer.id,vehicle:quoteVehicle,values:quoteDraft},'Quote saved')}}><label>Vehicle description<input value={quoteVehicle} onChange={e=>setQuoteVehicle(e.target.value)} required maxLength={250}/></label><div className="quote-fields">{([['price','Selling price'],['docFee','Document fee'],['tax','Tax — enter verified amount'],['titleFee','Title / registration fees'],['tradeAllowance','Trade allowance'],['payoff','Trade payoff'],['downPayment','Cash down'],['apr','Illustrative APR %'],['months','Term (months)']] as [keyof QuoteValues,string][]).map(([key,label])=><label key={key}>{label}<input type="number" min={key==='months'?1:0} max={key==='months'?120:key==='apr'?50:1000000} step={key==='months'?1:.01} value={quoteDraft[key]} onChange={e=>setQuoteDraft({...quoteDraft,[key]:Number(e.target.value)})} required/></label>)}</div><div className="quote-estimate"><div><span>Estimated balance</span><strong>{fullMoney(quoteMath(quoteDraft).balance)}</strong></div><div><span>Illustrative monthly payment</span><strong>{fullMoney(quoteMath(quoteDraft).payment)}</strong></div></div><p className="fine-print">Preliminary estimate, subject to lender approval and verified taxes/fees. This is not a financing commitment.</p><details className="trade-details"><summary>Internal trade appraisal</summary><div className="quote-fields">{([['acv','Your actual cash value'],['recon','Estimated reconditioning']] as const).map(([key,label])=><label key={key}>{label}<input type="number" min="0" max="1000000" step=".01" value={quoteDraft[key]} onChange={e=>setQuoteDraft({...quoteDraft,[key]:Number(e.target.value)})}/></label>)}</div><p className="fine-print">Internal values are excluded from customer-facing printouts.</p></details><button className="btn primary" disabled={busy}><FileText size={16}/>Save quote version</button></form><SectionTitle title="Saved versions"/>{ws.quotes.filter(q=>q.customer_id===customer.id).sort((a,b)=>b.created_at.localeCompare(a.created_at)).map(q=><div className="saved-quote" key={q.id}><div><strong>{q.vehicle}</strong><span>{dateLabel(dayKey(q.created_at))} · {time(q.created_at)} · {money(quoteMath(q.values).balance)} balance</span></div><button className="btn small" onClick={()=>print(customer,q)}><Printer size={14}/>Print</button></div>)}</div>}
- </Modal>}
- {modal==='customer'&&<Modal title={edit?'Edit customer':'Start a new relationship'} subtitle="Add the basics. Build the story as you go." onClose={()=>{setModal(null);setEdit(null)}}><CustomerForm existing={edit} busy={busy} error={error} submit={async data=>{const result=await run(edit?{type:'update_customer',id:edit.id,customer:data}:{type:'create_customer',customer:data},edit?'Profile updated':'Customer added');if(result.ok){setModal(null);setEdit(null);if(result.id&&!edit){setSelected(result.id);setProfileTab('Activity');setQuoteDraft(defaultQuote);setQuoteVehicle(data.vehicle_interest);setNote('');}}}}/></Modal>}
- {modal==='task'&&<Modal title="Plan the next step" subtitle="Put a little intention into the next conversation." onClose={()=>setModal(null)}><form className="modal-form" onSubmit={async e=>{e.preventDefault();const f=new FormData(e.currentTarget);const result=await run({type:'create_task',customer_id:String(f.get('customer'))||null,title:String(f.get('title')),due_date:String(f.get('date')),kind:String(f.get('kind')) as 'task'},'Task added');if(result.ok)setModal(null)}}><label>Task title<input name="title" placeholder="What’s the next step?" required minLength={2} maxLength={250}/></label><label>Customer<select name="customer" defaultValue={customer?.id??''}><option value="">Dealership task</option>{ws.customers.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label><div className="form-grid"><label>Due date<input name="date" type="date" defaultValue={planDate} required/></label><label>Type<select name="kind"><option value="task">Task</option><option value="appointment">Appointment</option><option value="unsold_followup">Unsold follow-up</option><option value="sold_followup">Sold follow-up</option></select></label></div>{error&&<p className="form-error">{error}</p>}<button className="btn primary" disabled={busy}>Save task</button></form></Modal>}
- {modal==='call'&&customer&&<Modal title="Log a phone call" subtitle={customer.name} onClose={()=>setModal(null)}><form className="modal-form" onSubmit={async e=>{e.preventDefault();const f=new FormData(e.currentTarget);if((await run({type:'add_activity',customer_id:customer.id,kind:'call',body:`${f.get('direction')} · ${f.get('outcome')}\n${f.get('body')}`},'Call logged')).ok)setModal(null)}}><div className="form-grid"><label>Direction<select name="direction"><option>Outbound call</option><option>Inbound call</option></select></label><label>Outcome<select name="outcome"><option>Connected</option><option>Left voicemail</option><option>No answer</option><option>Wrong number</option></select></label></div><label>Call notes<textarea name="body" placeholder="What did you discuss? What happens next?" maxLength={7500}/></label><p className="fine-print">This saves a call history entry. It does not place or record a call.</p>{error&&<p className="form-error">{error}</p>}<button className="btn primary" disabled={busy}>Save call log</button></form></Modal>}
- {modal==='sold'&&customer&&<Modal title="A new set of keys." subtitle={`Mark ${customer.name} as sold?`} onClose={()=>setModal(null)}><div className="modal-form"><p>This records today’s sale, closes unsold follow-up tasks, and adds 2-day, 7-day, 30-day, and purchase anniversary reminders.</p><p className="fine-print">Their showroom visit stays open until you check them out. Inventory and finance systems are unchanged.</p>{error&&<p className="form-error">{error}</p>}<button className="btn primary" disabled={busy} onClick={async()=>{if((await run({type:'mark_sold',customer_id:customer.id},'Sold! Follow-up is planned.')).ok)setModal(null)}}><CheckCircle2 size={16}/>Confirm sale</button></div></Modal>}
- {printData&&<PrintSheet data={printData} dealership={ws.org.name}/>}
- </>;
+type View =
+  | "Overview"
+  | "Customers"
+  | "Inventory"
+  | "Showroom"
+  | "Planner"
+  | "Desking"
+  | "Appraisals"
+  | "Conversations"
+  | "Workspace";
+const nav = [
+  { name: "Overview", icon: LayoutDashboard },
+  { name: "Customers", icon: Users },
+  { name: "Inventory", icon: Car },
+  { name: "Showroom", icon: DoorOpen },
+  { name: "Planner", icon: CalendarDays },
+  { name: "Desking", icon: FileText },
+  { name: "Appraisals", icon: Car },
+  { name: "Conversations", icon: MessageSquare },
+] as const;
+const time = (d: string) =>
+  new Date(d).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "America/New_York",
+  });
+const dateLabel = (d: string) =>
+  new Date(d + "T12:00:00Z").toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+const taskLabel = (t: Task) => t.kind.replaceAll("_", " ");
+export default function CRM({
+  initial,
+  demo,
+}: {
+  initial: Workspace;
+  demo: boolean;
+}) {
+  const [ws, setWs] = useState(initial),
+    [view, setView] = useState<View>("Overview"),
+    [search, setSearch] = useState(""),
+    [stage, setStage] = useState("all"),
+    [selected, setSelected] = useState<string | null>(null),
+    [profileTab, setProfileTab] = useState<"Activity" | "Details" | "Desking">(
+      "Activity",
+    ),
+    [modal, setModal] = useState<
+      "customer" | "task" | "call" | "sold" | "inventory" | null
+    >(null),
+    [edit, setEdit] = useState<Customer | null>(null),
+    [busy, setBusy] = useState(false),
+    [toast, setToast] = useState(""),
+    [error, setError] = useState(""),
+    [note, setNote] = useState(""),
+    [planDate, setPlanDate] = useState(dayKey()),
+    [planMode, setPlanMode] = useState<"Day" | "Week" | "Month">("Week"),
+    [mobileNav, setMobileNav] = useState(false),
+    [printData, setPrintData] = useState<{
+      customer: Customer;
+      quote?: Quote;
+      pack?: boolean;
+    } | null>(null);
+  const [inventoryEdit, setInventoryEdit] = useState<InventoryVehicle | null>(
+    null,
+  );
+  const today = dayKey(),
+    customer = ws.customers.find((c) => c.id === selected),
+    openTasks = ws.tasks.filter(isOpenTask),
+    todayVisits = ws.visits.filter((v) => dayKey(v.arrived_at) === today),
+    overdue = openTasks.filter((t) => t.due_date < today),
+    soldMonth = ws.customers.filter((c) =>
+      c.sold_on?.startsWith(today.slice(0, 7)),
+    ),
+    active = ws.visits.filter((v) => !v.departed_at);
+  const findCustomer = (id: string | null) =>
+    ws.customers.find((c) => c.id === id);
+  function navigate(v: View) {
+    setView(v);
+    setMobileNav(false);
+    setSearch("");
+  }
+  function openCustomer(c: Customer) {
+    setSelected(c.id);
+    setProfileTab("Activity");
+    setNote("");
+    setError("");
+  }
+  async function run(command: Command, message = "Saved") {
+    setBusy(true);
+    setError("");
+    try {
+      let id: string | undefined;
+      if (demo) {
+        const next = demoCommand(ws, command);
+        setWs(next);
+        if (command.type === "create_customer") id = next.customers[0].id;
+        if (command.type === "save_inventory")
+          id = command.id ?? next.inventory[0].id;
+      } else {
+        const r = await fetch("/api/workspace", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(command),
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error);
+        setWs(data.workspace);
+        id = data.id;
+      }
+      setToast(message);
+      setTimeout(() => setToast(""), 4000);
+      return { ok: true, id };
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Could not save. Please try again.",
+      );
+      return { ok: false };
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function refresh() {
+    if (demo) {
+      setToast("Demo workspace · sample information");
+      return;
+    }
+    setBusy(true);
+    try {
+      const r = await fetch("/api/workspace", { cache: "no-store" });
+      if (!r.ok)
+        throw Error(
+          "Could not refresh. Please sign in again if your session expired.",
+        );
+      setWs(await r.json());
+      setToast("Workspace refreshed");
+      setTimeout(() => setToast(""), 3000);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  function exportData() {
+    const blob = new Blob([JSON.stringify(ws, null, 2)], {
+        type: "application/json",
+      }),
+      url = URL.createObjectURL(blob),
+      a = document.createElement("a");
+    a.href = url;
+    a.download = `drive-max-crm-${today}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+  function print(customer: Customer, quote?: Quote, pack = false) {
+    setPrintData({ customer, quote, pack });
+    setTimeout(() => window.print(), 80);
+  }
+  const filteredCustomers = useMemo(
+    () =>
+      ws.customers
+        .filter(
+          (c) =>
+            (stage === "all" || c.status === stage) &&
+            [c.name, c.email, c.phone, c.vehicle_interest, c.trade_vehicle]
+              .join(" ")
+              .toLowerCase()
+              .includes(search.toLowerCase()),
+        )
+        .sort((a, b) => b.updated_at.localeCompare(a.updated_at)),
+    [ws.customers, stage, search],
+  );
+  const taskRow = (t: Task) => {
+    const c = findCustomer(t.customer_id);
+    return (
+      <div className="task-row" key={t.id}>
+        <button
+          className="task-check"
+          disabled={busy}
+          aria-label={`Complete ${t.title}`}
+          onClick={() =>
+            run({ type: "complete_task", id: t.id }, "Task completed")
+          }
+        >
+          <Check size={13} />
+        </button>
+        <button
+          className="task-content"
+          disabled={!c}
+          onClick={() => c && openCustomer(c)}
+        >
+          <strong>{t.title}</strong>
+          <span>
+            {c?.name ?? "Dealership task"} <i>·</i> {taskLabel(t)}
+          </span>
+        </button>
+        <span className={`task-date ${t.due_date < today ? "late" : ""}`}>
+          {t.due_date < today
+            ? "Overdue"
+            : t.due_date === today
+              ? "Today"
+              : dateLabel(t.due_date)}
+        </span>
+      </div>
+    );
+  };
+  const visitCard = (v: Workspace["visits"][number]) => {
+    const c = findCustomer(v.customer_id);
+    if (!c) return null;
+    const inventory = ws.inventory.find((i) => i.id === c.inventory_id);
+    return (
+      <article className={`visit-card visit-${visitStatus(v)}`} key={v.id}>
+        <div className="visit-top">
+          <Avatar name={c.name} />
+          <div>
+            <button className="name-button" onClick={() => openCustomer(c)}>
+              {c.name}
+            </button>
+            <span>{c.source}</span>
+          </div>
+          <Badge value={visitStatus(v)} />
+        </div>
+        <div className="visit-vehicle">
+          <Car size={17} />
+          <span>
+            {inventory
+              ? vehicleName(inventory)
+              : c.vehicle_interest || "Vehicle to be selected"}
+          </span>
+        </div>
+        <div className="visit-times">
+          <span>
+            <Clock size={13} />
+            Arrived {time(v.arrived_at)}
+          </span>
+          <span>
+            {v.departed_at ? "Left " + time(v.departed_at) : "Still here"}
+          </span>
+        </div>
+        <div className="visit-actions">
+          <button className="btn small" onClick={() => openCustomer(c)}>
+            Open profile
+            <ArrowUpRight size={13} />
+          </button>
+          {!v.departed_at && (
+            <button
+              className="btn small end-visit"
+              disabled={busy}
+              onClick={() =>
+                run(
+                  { type: "check_out", id: v.id },
+                  "Visit ended. Customer marked left.",
+                )
+              }
+            >
+              <LogOut size={14} />
+              End visit
+            </button>
+          )}
+        </div>
+      </article>
+    );
+  };
+  return (
+    <>
+      <div className="app-shell">
+        {mobileNav && (
+          <button
+            className="nav-scrim"
+            aria-label="Close navigation"
+            onClick={() => setMobileNav(false)}
+          />
+        )}
+        <aside className={`sidebar ${mobileNav ? "mobile-open" : ""}`}>
+          <div className="brand">
+            <img src="/drive-max-logo.webp" alt="Drive Max Used Cars" />
+            <span>DEALERSHIP WORKSPACE</span>
+          </div>
+          <div className="dealership-switch">
+            <span className="dealer-icon">DM</span>
+            <div>
+              <strong>Drive Max</strong>
+              <small>New Bern, North Carolina</small>
+            </div>
+            <ShieldCheck size={16} />
+          </div>
+          <div className="nav-label">YOUR SALES DAY</div>
+          <nav aria-label="Main navigation">
+            {nav.map(({ name, icon: Icon }) => (
+              <button
+                key={name}
+                className={view === name ? "nav-item active" : "nav-item"}
+                onClick={() => navigate(name)}
+              >
+                <Icon size={19} />
+                <span>{name}</span>
+                {name === "Showroom" && active.length > 0 && (
+                  <b>{active.length}</b>
+                )}
+                {name === "Planner" && overdue.length > 0 && (
+                  <span className="nav-dot" />
+                )}
+              </button>
+            ))}
+          </nav>
+          <div className="sidebar-bottom">
+            <div className="sidebar-note">
+              <span className="pulse-dot" />
+              <div>
+                <strong>
+                  {demo
+                    ? "Explore your next chapter"
+                    : "Your dealership, connected"}
+                </strong>
+                <p>
+                  {demo
+                    ? "Try the workflow with sample customers."
+                    : "Every relationship has a next step."}
+                </p>
+              </div>
+            </div>
+            <button
+              className={view === "Workspace" ? "nav-item active" : "nav-item"}
+              onClick={() => navigate("Workspace")}
+            >
+              <Settings size={18} />
+              Workspace
+            </button>
+            <div className="sidebar-user">
+              <Avatar name={ws.member.name} size="small" />
+              <div>
+                <strong>{ws.member.name}</strong>
+                <small>{demo ? "Demo workspace" : "Dealership owner"}</small>
+              </div>
+              {demo ? (
+                <a href="/login" aria-label="Sign in">
+                  <LogOut size={17} />
+                </a>
+              ) : (
+                <form action={signOut}>
+                  <button aria-label="Sign out" type="submit">
+                    <LogOut size={17} />
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+        </aside>
+        <div className="workspace">
+          <header className="topbar">
+            <button
+              className="mobile-menu icon-btn"
+              aria-label="Open navigation"
+              onClick={() => setMobileNav(true)}
+            >
+              <Menu size={21} />
+            </button>
+            <div className="breadcrumb">
+              Workspace
+              <ChevronRight size={13} />
+              <strong>{view}</strong>
+            </div>
+            <div className="topbar-actions">
+              <label className="global-search">
+                <Search size={16} />
+                <input
+                  aria-label="Search customers"
+                  placeholder="Search customers…"
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setView("Customers");
+                  }}
+                />
+              </label>
+              <button
+                className="icon-btn refresh-btn"
+                aria-label="Refresh workspace"
+                onClick={refresh}
+                disabled={busy}
+              >
+                <RefreshCw size={17} />
+              </button>
+              <span className="top-avatar">
+                <Avatar name={ws.member.name} size="small" />
+              </span>
+            </div>
+          </header>
+          {demo && (
+            <div className="demo-banner">
+              <span>
+                <span className="demo-pill">DEMO</span>Sample customers. Changes
+                reset when you refresh.
+              </span>
+              <a href="/login">
+                Open your live workspace
+                <ArrowRight size={13} />
+              </a>
+            </div>
+          )}
+          <main className="content">
+            {error && (
+              <div className="error-notice" role="alert">
+                {error}
+                <button onClick={() => setError("")} aria-label="Dismiss error">
+                  <X size={15} />
+                </button>
+              </div>
+            )}
+            <div className="page-heading">
+              <div>
+                <div className="eyebrow">
+                  {view === "Overview"
+                    ? new Date(today + "T12:00:00Z").toLocaleDateString(
+                        "en-US",
+                        { weekday: "long", month: "long", day: "numeric" },
+                      )
+                    : "DRIVE MAX CRM"}
+                </div>
+                <h1>
+                  {view === "Overview"
+                    ? `Good to see you, ${ws.member.name.split(" ")[0]}.`
+                    : view === "Workspace"
+                      ? "Made for your dealership."
+                      : view}
+                </h1>
+                <p>
+                  {
+                    {
+                      Overview:
+                        "Your sales day, in focus. Let’s move a few opportunities forward.",
+                      Inventory:
+                        "Your stock, your numbers, ready for the next conversation.",
+                      Customers:
+                        "Know the person. Remember the conversation. Find the next step.",
+                      Showroom:
+                        "Every visit counts. See who’s here and how their visit went.",
+                      Planner:
+                        "A thoughtful follow-up starts with a clear plan.",
+                      Desking:
+                        "Build the proposal. Keep the history. Move the deal forward.",
+                      Appraisals:
+                        "Keep your trade conversations and working values together.",
+                      Conversations:
+                        "One place for the conversation, from first hello to follow-up.",
+                      Workspace:
+                        "A focused foundation, with room for your next chapter.",
+                    }[view]
+                  }
+                </p>
+              </div>
+              <button
+                className="btn primary"
+                onClick={() => {
+                  if (view === "Inventory") {
+                    setInventoryEdit(null);
+                    setModal("inventory");
+                  } else {
+                    setEdit(null);
+                    setModal("customer");
+                  }
+                }}
+              >
+                <Plus size={17} />
+                {view === "Inventory" ? "Add vehicle" : "Add customer"}
+              </button>
+            </div>
+            {view === "Overview" && (
+              <>
+                <div className="stat-grid">
+                  <Stat
+                    title="In the showroom"
+                    value={active.length}
+                    sub={`${todayVisits.length} total visits today`}
+                    icon={<DoorOpen />}
+                    color="red"
+                    onClick={() => navigate("Showroom")}
+                  />
+                  <Stat
+                    title="Follow-ups due"
+                    value={openTasks.filter((t) => t.due_date <= today).length}
+                    sub={
+                      overdue.length
+                        ? `${overdue.length} need a little attention`
+                        : "You’re up to date"
+                    }
+                    icon={<CalendarCheck />}
+                    color="amber"
+                    onClick={() => navigate("Planner")}
+                  />
+                  <Stat
+                    title="Active customers"
+                    value={
+                      ws.customers.filter(
+                        (c) => !["sold", "lost"].includes(c.status),
+                      ).length
+                    }
+                    sub="Open opportunities in your book"
+                    icon={<Users />}
+                    color="blue"
+                    onClick={() => navigate("Customers")}
+                  />
+                  <Stat
+                    title="Sold this month"
+                    value={soldMonth.length}
+                    sub="Relationships worth celebrating"
+                    icon={<CheckCircle2 />}
+                    color="green"
+                    onClick={() => {
+                      navigate("Customers");
+                      setStage("sold");
+                    }}
+                  />
+                </div>
+                <div className="dashboard-grid">
+                  <section className="panel">
+                    <SectionTitle
+                      title="Your next moves"
+                      subtitle="The conversations that deserve your attention."
+                      action={
+                        <Go onClick={() => navigate("Planner")}>
+                          View planner
+                        </Go>
+                      }
+                    />
+                    <div className="panel-tabs">
+                      <span className="selected">
+                        Due & overdue{" "}
+                        <b>
+                          {openTasks.filter((t) => t.due_date <= today).length}
+                        </b>
+                      </span>
+                      <span>Keep the momentum going</span>
+                    </div>
+                    <div className="task-list">
+                      {openTasks
+                        .filter((t) => t.due_date <= today)
+                        .sort((a, b) => a.due_date.localeCompare(b.due_date))
+                        .slice(0, 5)
+                        .map(taskRow)}
+                      {!openTasks.some((t) => t.due_date <= today) && (
+                        <Empty
+                          title="A clear runway."
+                          body="You’re caught up. Add a task or plan your next conversation."
+                          action={
+                            <button
+                              className="btn small"
+                              onClick={() => setModal("task")}
+                            >
+                              Plan a follow-up
+                            </button>
+                          }
+                        />
+                      )}
+                    </div>
+                  </section>
+                  <section className="momentum-card">
+                    <div className="eyebrow">
+                      RELATIONSHIPS, NOT JUST RECORDS
+                    </div>
+                    <h2>
+                      Every customer.
+                      <br />A next step.
+                    </h2>
+                    <p>
+                      A great experience carries on long after the keys change
+                      hands.
+                    </p>
+                    <div className="momentum-number">
+                      {
+                        openTasks.filter((t) =>
+                          ["birthday", "anniversary", "sold_followup"].includes(
+                            t.kind,
+                          ),
+                        ).length
+                      }
+                      <span>
+                        relationship reminders
+                        <br />
+                        on your calendar
+                      </span>
+                    </div>
+                    <button onClick={() => navigate("Planner")}>
+                      See what’s coming up
+                      <ArrowUpRight size={18} />
+                    </button>
+                    <div className="decor-rings" />
+                  </section>
+                </div>
+                <section className="panel showroom-preview">
+                  <SectionTitle
+                    title="On the floor"
+                    subtitle="A live view of the people in your showroom."
+                    action={
+                      <Go onClick={() => navigate("Showroom")}>
+                        Open showroom
+                      </Go>
+                    }
+                  />
+                  {active.length ? (
+                    <div className="visit-grid">
+                      {active.slice(0, 3).map(visitCard)}
+                    </div>
+                  ) : (
+                    <Empty
+                      title="Ready for your next visitor."
+                      body="Check a customer in from their profile when they arrive."
+                      action={
+                        <button
+                          className="btn small"
+                          onClick={() => navigate("Customers")}
+                        >
+                          Open customers
+                        </button>
+                      }
+                    />
+                  )}
+                </section>
+                <div className="dashboard-bottom">
+                  <section className="panel">
+                    <SectionTitle
+                      title="Opportunity snapshot"
+                      subtitle="A little clarity on where conversations stand."
+                    />
+                    {(["new", "working", "appointment", "sold"] as const).map(
+                      (s) => (
+                        <button
+                          className="pipeline-row"
+                          key={s}
+                          onClick={() => {
+                            navigate("Customers");
+                            setStage(s);
+                          }}
+                        >
+                          <Badge value={s} />
+                          <span className="pipeline-track">
+                            <span
+                              className={s}
+                              style={{
+                                width: `${ws.customers.length ? Math.max(3, (ws.customers.filter((c) => c.status === s).length / ws.customers.length) * 100) : 0}%`,
+                              }}
+                            />
+                          </span>
+                          <strong>
+                            {ws.customers.filter((c) => c.status === s).length}
+                          </strong>
+                        </button>
+                      ),
+                    )}
+                  </section>
+                  <section className="panel">
+                    <SectionTitle
+                      title="Recent activity"
+                      subtitle="The latest moments across your customer book."
+                    />
+                    <div className="recent-list">
+                      {ws.activities
+                        .slice()
+                        .sort((a, b) =>
+                          b.created_at.localeCompare(a.created_at),
+                        )
+                        .slice(0, 3)
+                        .map((a) => (
+                          <button
+                            key={a.id}
+                            onClick={() => {
+                              const c = findCustomer(a.customer_id);
+                              if (c) openCustomer(c);
+                            }}
+                          >
+                            <span className="activity-icon">
+                              {a.kind === "call" ? (
+                                <Phone size={15} />
+                              ) : (
+                                <StickyNote size={15} />
+                              )}
+                            </span>
+                            <div>
+                              <strong>
+                                {findCustomer(a.customer_id)?.name}
+                              </strong>
+                              <p>{a.body}</p>
+                              <small>
+                                {dateLabel(dayKey(a.created_at))} ·{" "}
+                                {time(a.created_at)}
+                              </small>
+                            </div>
+                          </button>
+                        ))}
+                      {!ws.activities.length && (
+                        <p className="muted-copy">
+                          Your team’s activity will appear here as you work.
+                        </p>
+                      )}
+                    </div>
+                  </section>
+                </div>
+              </>
+            )}
+            {view === "Customers" && (
+              <section className="panel">
+                <div className="table-toolbar">
+                  <div className="segmented">
+                    {[
+                      "all",
+                      "new",
+                      "working",
+                      "appointment",
+                      "sold",
+                      "lost",
+                    ].map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setStage(s)}
+                        className={stage === s ? "chosen" : ""}
+                      >
+                        {s === "all" ? "All customers" : s}
+                      </button>
+                    ))}
+                  </div>
+                  <span>{filteredCustomers.length} customers</span>
+                </div>
+                {filteredCustomers.length ? (
+                  <div className="table-scroll">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Customer</th>
+                          <th>Vehicle of interest</th>
+                          <th>Stage</th>
+                          <th>Source</th>
+                          <th>Added</th>
+                          <th />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredCustomers.map((c) => (
+                          <tr key={c.id}>
+                            <td>
+                              <button
+                                className="customer-cell"
+                                onClick={() => openCustomer(c)}
+                              >
+                                <Avatar name={c.name} />
+                                <span>
+                                  <strong>{c.name}</strong>
+                                  <small>
+                                    {c.phone ||
+                                      c.email ||
+                                      "Contact details to add"}
+                                  </small>
+                                </span>
+                              </button>
+                            </td>
+                            <td>
+                              <div className="vehicle-cell">
+                                <Car size={15} />
+                                {c.vehicle_interest || "Not selected"}
+                              </div>
+                              {c.trade_vehicle && (
+                                <small className="subtext">
+                                  Trade: {c.trade_vehicle}
+                                </small>
+                              )}
+                            </td>
+                            <td>
+                              <Badge value={c.status} />
+                            </td>
+                            <td>{c.source}</td>
+                            <td>{dateLabel(dayKey(c.created_at))}</td>
+                            <td>
+                              <button
+                                className="icon-btn"
+                                aria-label={`Open ${c.name}`}
+                                onClick={() => openCustomer(c)}
+                              >
+                                <ArrowUpRight size={17} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <Empty
+                    title={
+                      search
+                        ? "No matching customers."
+                        : "Your next relationship starts here."
+                    }
+                    body={
+                      search
+                        ? "Try a name, phone number, email, or vehicle."
+                        : "Add your first customer and keep their whole story in one place."
+                    }
+                    action={
+                      <button
+                        className="btn primary"
+                        onClick={() => {
+                          setEdit(null);
+                          setModal("customer");
+                        }}
+                      >
+                        <Plus size={16} />
+                        Add customer
+                      </button>
+                    }
+                  />
+                )}
+              </section>
+            )}
+            {view === "Inventory" && (
+              <InventoryView
+                inventory={ws.inventory}
+                onAdd={() => {
+                  setInventoryEdit(null);
+                  setModal("inventory");
+                }}
+                onEdit={(v) => {
+                  setInventoryEdit(v);
+                  setModal("inventory");
+                }}
+              />
+            )}
+            {view === "Showroom" && (
+              <Showroom
+                visits={ws.visits}
+                card={visitCard}
+                onFindCustomer={() => navigate("Customers")}
+              />
+            )}
+            {view === "Planner" && (
+              <>
+                <div className="view-controls">
+                  <div className="date-control">
+                    <button
+                      aria-label="Previous period"
+                      onClick={() =>
+                        setPlanDate(
+                          planMode === "Month"
+                            ? addMonths(planDate, -1)
+                            : addDays(planDate, planMode === "Day" ? -1 : -7),
+                        )
+                      }
+                    >
+                      <ChevronLeft size={18} />
+                    </button>
+                    <input
+                      aria-label="Planner date"
+                      type="date"
+                      value={planDate}
+                      onChange={(e) =>
+                        e.target.value && setPlanDate(e.target.value)
+                      }
+                    />
+                    <button
+                      aria-label="Next period"
+                      onClick={() =>
+                        setPlanDate(
+                          planMode === "Month"
+                            ? addMonths(planDate, 1)
+                            : addDays(planDate, planMode === "Day" ? 1 : 7),
+                        )
+                      }
+                    >
+                      <ChevronRight size={18} />
+                    </button>
+                    <button onClick={() => setPlanDate(today)}>Today</button>
+                  </div>
+                  <div className="planner-actions">
+                    <div className="segmented">
+                      {(["Day", "Week", "Month"] as const).map((m) => (
+                        <button
+                          key={m}
+                          className={planMode === m ? "chosen" : ""}
+                          onClick={() => setPlanMode(m)}
+                        >
+                          {m}
+                        </button>
+                      ))}
+                    </div>
+                    <button className="btn" onClick={() => setModal("task")}>
+                      <Plus size={15} />
+                      Add task
+                    </button>
+                  </div>
+                </div>
+                {overdue.length > 0 && (
+                  <section className="panel overdue-panel">
+                    <SectionTitle
+                      title={`${overdue.length} overdue ${overdue.length === 1 ? "follow-up" : "follow-ups"}`}
+                      subtitle="A small nudge can start the conversation again."
+                    />
+                    {overdue.map(taskRow)}
+                  </section>
+                )}
+                <Planner
+                  mode={planMode}
+                  date={planDate}
+                  today={today}
+                  tasks={openTasks}
+                  taskRow={taskRow}
+                  open={(t) => {
+                    const c = findCustomer(t.customer_id);
+                    if (c) openCustomer(c);
+                  }}
+                  onDay={(d) => {
+                    setPlanDate(d);
+                    setPlanMode("Day");
+                  }}
+                />
+              </>
+            )}
+            {view === "Desking" && (
+              <section className="panel">
+                <SectionTitle
+                  title="Saved proposals"
+                  subtitle="Each saved quote keeps its own version of the numbers."
+                />
+                {ws.quotes.length ? (
+                  <div className="table-scroll">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Customer / vehicle</th>
+                          <th>Sale price</th>
+                          <th>Estimated balance</th>
+                          <th>Created</th>
+                          <th />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {ws.quotes
+                          .slice()
+                          .sort((a, b) =>
+                            b.created_at.localeCompare(a.created_at),
+                          )
+                          .map((q) => {
+                            const c = findCustomer(q.customer_id);
+                            return (
+                              <tr key={q.id}>
+                                <td>
+                                  <button
+                                    className="name-button"
+                                    onClick={() => c && openCustomer(c)}
+                                  >
+                                    {c?.name}
+                                  </button>
+                                  <small className="subtext">{q.vehicle}</small>
+                                </td>
+                                <td>{money(q.values.price)}</td>
+                                <td>{money(quoteMath(q.values).balance)}</td>
+                                <td>{dateLabel(dayKey(q.created_at))}</td>
+                                <td>
+                                  <button
+                                    className="btn small"
+                                    onClick={() => c && print(c, q)}
+                                  >
+                                    <Printer size={14} />
+                                    Print quote
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <Empty
+                    title="A good proposal starts with a customer."
+                    body="Open a customer profile, then choose Desking to build your first proposal."
+                    action={
+                      <button
+                        className="btn"
+                        onClick={() => navigate("Customers")}
+                      >
+                        Open customers
+                      </button>
+                    }
+                  />
+                )}
+                <div className="panel-foot">
+                  Preliminary quotes only. Tax and title amounts are entered
+                  manually and must be verified.
+                </div>
+              </section>
+            )}
+            {view === "Appraisals" && (
+              <>
+                <section className="info-banner">
+                  <Car size={23} />
+                  <div>
+                    <strong>Your working trade desk</strong>
+                    <p>
+                      Record trade VIN, mileage, allowance, ACV, and payoff in
+                      the customer profile. VIN decoding is ready; live book
+                      values are not connected.
+                    </p>
+                  </div>
+                </section>
+                <div className="visit-grid full">
+                  {ws.customers
+                    .filter((c) => c.trade_vehicle)
+                    .map((c) => {
+                      const q = ws.quotes
+                        .filter((q) => q.customer_id === c.id)
+                        .sort((a, b) =>
+                          b.created_at.localeCompare(a.created_at),
+                        )[0];
+                      return (
+                        <section className="panel trade-card" key={c.id}>
+                          <div className="trade-icon">
+                            <Car size={26} />
+                          </div>
+                          <h3>{c.trade_vehicle}</h3>
+                          <p>{c.name}</p>
+                          <div className="trade-values">
+                            <div>
+                              <small>Working ACV</small>
+                              <strong>
+                                {c.trade
+                                  ? money(c.trade.acv)
+                                  : q
+                                    ? money(q.values.acv)
+                                    : "—"}
+                              </strong>
+                            </div>
+                            <div>
+                              <small>Est. reconditioning</small>
+                              <strong>{q ? money(q.values.recon) : "—"}</strong>
+                            </div>
+                          </div>
+                          <button
+                            className="btn"
+                            onClick={() => {
+                              openCustomer(c);
+                              setProfileTab("Desking");
+                            }}
+                          >
+                            Open trade worksheet
+                            <ArrowUpRight size={14} />
+                          </button>
+                        </section>
+                      );
+                    })}
+                </div>
+                {!ws.customers.some((c) => c.trade_vehicle) && (
+                  <section className="panel">
+                    <Empty
+                      title="Room for the next trade."
+                      body="Add a trade-in to a customer profile to start a working appraisal."
+                    />
+                  </section>
+                )}
+              </>
+            )}
+            {view === "Conversations" && (
+              <section className="panel connection-page">
+                <span className="connection-icon">
+                  <MessageSquare size={32} />
+                </span>
+                <span className="eyebrow">THE NEXT PIECE OF THE WORKSPACE</span>
+                <h2>Keep every conversation together.</h2>
+                <p>
+                  Two-way email and texting will live here once the providers
+                  are connected. For now, save notes and call outcomes directly
+                  on each customer.
+                </p>
+                <div className="integration-grid">
+                  <div>
+                    <Mail />
+                    <h3>Email conversations</h3>
+                    <p>Sending, replies, attachments, and delivery status.</p>
+                    <Badge value="not connected" />
+                  </div>
+                  <div>
+                    <MessageSquare />
+                    <h3>Business texting</h3>
+                    <p>
+                      A dedicated number, consent preferences, and opt-outs.
+                    </p>
+                    <Badge value="not connected" />
+                  </div>
+                  <div>
+                    <Phone />
+                    <h3>Phone history</h3>
+                    <p>Manual call logging is ready in customer profiles.</p>
+                    <Badge value="manual logging" />
+                  </div>
+                </div>
+                <button className="btn" onClick={() => navigate("Customers")}>
+                  Open customer profiles
+                  <ArrowRight size={16} />
+                </button>
+              </section>
+            )}
+            {view === "Workspace" && (
+              <>
+                <div className="settings-grid">
+                  <section className="panel">
+                    <SectionTitle
+                      title="Your dealership"
+                      subtitle="The first workspace in a foundation built to grow."
+                    />
+                    <dl className="settings-list">
+                      <dt>Name</dt>
+                      <dd>{ws.org.name}</dd>
+                      <dt>Account</dt>
+                      <dd>{ws.member.name}</dd>
+                      <dt>Role</dt>
+                      <dd className="capitalize">{ws.member.role}</dd>
+                      <dt>Timezone</dt>
+                      <dd>Eastern Time</dd>
+                      <dt>Environment</dt>
+                      <dd>
+                        <Badge value={demo ? "demo" : "live"} />
+                      </dd>
+                    </dl>
+                  </section>
+                  <section className="panel">
+                    <SectionTitle
+                      title="Your data stays yours"
+                      subtitle="Download a copy of your workspace whenever you need it."
+                    />
+                    <p className="muted-copy">
+                      Customer profiles, inventory, trades, visits, notes,
+                      tasks, and saved proposals are included in your export.
+                    </p>
+                    <button className="btn" onClick={exportData}>
+                      <Download size={16} />
+                      Export workspace
+                    </button>
+                    <div className="security-line">
+                      <ShieldCheck size={16} />
+                      Server-checked dealership access
+                    </div>
+                    <div className="security-line">
+                      <Database size={16} />
+                      {demo
+                        ? "Sample data held only in this tab"
+                        : "Saved in dedicated CRM tables"}
+                    </div>
+                  </section>
+                </div>
+                <section className="panel">
+                  <SectionTitle title="What’s ready — and what’s next" />
+                  <div className="roadmap-grid">
+                    <div>
+                      <CheckCircle2 />
+                      <h3>The working foundation</h3>
+                      <p>
+                        Customer profiles, inventory, VIN decoding, showroom
+                        visits, planner, desking, trade worksheets, and
+                        printable deal summaries.
+                      </p>
+                    </div>
+                    <div>
+                      <Link2 />
+                      <h3>Connected conversations</h3>
+                      <p>
+                        Email, SMS, website lead intake, and automatic call
+                        history are the next integration stage.
+                      </p>
+                    </div>
+                    <div>
+                      <Users />
+                      <h3>A product for more dealers</h3>
+                      <p>
+                        Dealership membership and data boundaries are in place.
+                        Self-service onboarding, billing, and team management
+                        come later.
+                      </p>
+                    </div>
+                  </div>
+                </section>
+              </>
+            )}
+            <footer className="workspace-footer">
+              <span>
+                DRIVE MAX CRM <i>·</i> Built around relationships.
+              </span>
+              <span>
+                {demo ? "Interactive demo" : "Foundation release"}{" "}
+                <span className="dot green" />
+              </span>
+            </footer>
+          </main>
+        </div>
+      </div>
+      {toast && (
+        <div className="toast" role="status">
+          <CheckCircle2 size={18} />
+          {toast}
+        </div>
+      )}
+      {customer && (
+        <Modal
+          title="Customer profile"
+          subtitle="The whole relationship, in one place."
+          onClose={() => setSelected(null)}
+          wide
+        >
+          <div className="profile-top">
+            <Avatar name={customer.name} size="large" />
+            <div>
+              <h2>{customer.name}</h2>
+              <div className="profile-tags">
+                <Badge value={customer.status} />
+                <span>{customer.source}</span>
+              </div>
+            </div>
+            <button
+              className="btn small"
+              onClick={() => {
+                setEdit(customer);
+                setModal("customer");
+              }}
+            >
+              Edit profile
+            </button>
+          </div>
+          <div className="profile-contact">
+            <span>
+              <Phone size={14} />
+              {customer.phone || "No phone added"}
+            </span>
+            <span>
+              <Mail size={14} />
+              {customer.email || "No email added"}
+            </span>
+          </div>
+          <div className="profile-actions">
+            {ws.visits.some(
+              (v) => v.customer_id === customer.id && !v.departed_at,
+            ) ? (
+              <button
+                className="btn small end-visit"
+                disabled={busy}
+                onClick={() => {
+                  const visit = ws.visits.find(
+                    (v) => v.customer_id === customer.id && !v.departed_at,
+                  );
+                  if (visit)
+                    void run(
+                      { type: "check_out", id: visit.id },
+                      "Visit ended. Customer marked left.",
+                    );
+                }}
+              >
+                <LogOut size={15} />
+                End visit
+              </button>
+            ) : (
+              <button
+                className="btn primary small"
+                disabled={busy}
+                onClick={() =>
+                  run(
+                    { type: "check_in", customer_id: customer.id },
+                    "Checked into the showroom",
+                  )
+                }
+              >
+                <DoorOpen size={15} />
+                Check in
+              </button>
+            )}
+            <button className="btn small" onClick={() => setModal("call")}>
+              <Phone size={14} />
+              Log call
+            </button>
+            <button className="btn small" onClick={() => setModal("task")}>
+              <CalendarDays size={14} />
+              Add task
+            </button>
+            <button
+              className="btn small"
+              onClick={() => print(customer, undefined, true)}
+            >
+              <Printer size={14} />
+              Deal summary
+            </button>
+            {customer.status !== "sold" && (
+              <button
+                className="btn small success"
+                onClick={() => setModal("sold")}
+              >
+                <CheckCircle2 size={14} />
+                Mark sold
+              </button>
+            )}
+          </div>
+          <div className="profile-vehicles">
+            <div>
+              <small>VEHICLE OF INTEREST</small>
+              <strong>
+                <Car size={16} />
+                {ws.inventory.find((v) => v.id === customer.inventory_id)
+                  ? vehicleName(
+                      ws.inventory.find((v) => v.id === customer.inventory_id)!,
+                    )
+                  : customer.vehicle_interest || "Not selected yet"}
+              </strong>
+            </div>
+            <div>
+              <small>TRADE-IN</small>
+              <strong>{customer.trade_vehicle || "No trade-in added"}</strong>
+            </div>
+          </div>
+          <div className="profile-tabs">
+            {(["Activity", "Details", "Desking"] as const).map((t) => (
+              <button
+                key={t}
+                className={profileTab === t ? "active" : ""}
+                onClick={() => setProfileTab(t)}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+          {error && (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          )}
+          {profileTab === "Activity" && (
+            <div className="profile-body">
+              <form
+                className="note-composer"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (
+                    (
+                      await run(
+                        {
+                          type: "add_activity",
+                          customer_id: customer.id,
+                          kind: "note",
+                          body: note,
+                        },
+                        "Note added",
+                      )
+                    ).ok
+                  )
+                    setNote("");
+                }}
+              >
+                <label htmlFor="customer-note">
+                  Keep the conversation moving.
+                </label>
+                <textarea
+                  id="customer-note"
+                  placeholder="Add a note, remember a detail, or capture the next step…"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  maxLength={8000}
+                  required
+                />
+                <div>
+                  <span>Private to your dealership</span>
+                  <button
+                    className="btn primary small"
+                    disabled={busy || !note.trim()}
+                  >
+                    <Plus size={14} />
+                    Add note
+                  </button>
+                </div>
+              </form>
+              <h3 className="timeline-title">Relationship timeline</h3>
+              <div className="timeline">
+                {ws.activities
+                  .filter((a) => a.customer_id === customer.id)
+                  .sort((a, b) => b.created_at.localeCompare(a.created_at))
+                  .map((a) => (
+                    <article key={a.id}>
+                      <span className={`timeline-dot ${a.kind}`}>
+                        {a.kind === "call" ? (
+                          <Phone size={14} />
+                        ) : a.kind === "system" ? (
+                          <Check size={14} />
+                        ) : (
+                          <StickyNote size={14} />
+                        )}
+                      </span>
+                      <div>
+                        <header>
+                          <strong>
+                            {a.kind === "call"
+                              ? "Phone call"
+                              : a.kind === "system"
+                                ? "Customer update"
+                                : "Note added"}
+                          </strong>
+                          <time>
+                            {dateLabel(dayKey(a.created_at))} ·{" "}
+                            {time(a.created_at)}
+                          </time>
+                        </header>
+                        <p>{a.body}</p>
+                        <small>{a.created_by}</small>
+                      </div>
+                    </article>
+                  ))}
+              </div>
+              {!ws.activities.some((a) => a.customer_id === customer.id) && (
+                <p className="muted-copy">
+                  Add the first note to start this customer’s story.
+                </p>
+              )}
+            </div>
+          )}
+          {profileTab === "Details" && (
+            <div className="profile-body">
+              <dl className="settings-list">
+                <dt>Birthday</dt>
+                <dd>
+                  {customer.birthday
+                    ? dateLabel(customer.birthday)
+                    : "Not added"}
+                </dd>
+                <dt>Added</dt>
+                <dd>{dateLabel(dayKey(customer.created_at))}</dd>
+                <dt>Purchase date</dt>
+                <dd>
+                  {customer.sold_on ? dateLabel(customer.sold_on) : "Not sold"}
+                </dd>
+              </dl>
+              <SectionTitle title="Upcoming tasks" />
+              {openTasks
+                .filter((t) => t.customer_id === customer.id)
+                .sort((a, b) => a.due_date.localeCompare(b.due_date))
+                .map(taskRow)}
+              <SectionTitle title="Visit history" />
+              {ws.visits
+                .filter((v) => v.customer_id === customer.id)
+                .map((v) => (
+                  <div className="visit-history" key={v.id}>
+                    <span>
+                      {dateLabel(dayKey(v.arrived_at))} · {time(v.arrived_at)}
+                    </span>
+                    <Badge value={v.departed_at ? "left" : "here"} />
+                    <Badge value={v.outcome} />
+                  </div>
+                ))}
+            </div>
+          )}
+          {profileTab === "Desking" && (
+            <Desking
+              key={customer.id + customer.updated_at}
+              customer={customer}
+              inventory={ws.inventory}
+              quotes={ws.quotes}
+              busy={busy}
+              onSave={(command) => run(command, "Desking version saved")}
+              onPrint={(q) => print(customer, q)}
+              onEdit={() => {
+                setEdit(customer);
+                setModal("customer");
+              }}
+            />
+          )}
+        </Modal>
+      )}
+      {modal === "customer" && (
+        <Modal
+          title={edit ? "Edit customer" : "Start a new relationship"}
+          subtitle="Customer details, vehicle selection, and trade-in."
+          onClose={() => {
+            setModal(null);
+            setEdit(null);
+          }}
+          wide
+        >
+          <CustomerForm
+            existing={edit}
+            inventory={ws.inventory}
+            demo={demo}
+            busy={busy}
+            error={error}
+            submit={async (data) => {
+              const result = await run(
+                edit
+                  ? { type: "update_customer", id: edit.id, customer: data }
+                  : { type: "create_customer", customer: data },
+                edit ? "Profile updated" : "Customer added",
+              );
+              if (result.ok) {
+                setModal(null);
+                setEdit(null);
+                if (result.id && !edit) {
+                  setSelected(result.id);
+                  setProfileTab("Activity");
+                  setNote("");
+                }
+              }
+            }}
+          />
+        </Modal>
+      )}
+      {modal === "inventory" && (
+        <Modal
+          title={
+            inventoryEdit
+              ? "Edit inventory vehicle"
+              : "Add an inventory vehicle"
+          }
+          subtitle="Enter it once. Bring it into any customer’s deal."
+          onClose={() => {
+            setModal(null);
+            setInventoryEdit(null);
+          }}
+          wide
+        >
+          <InventoryForm
+            existing={inventoryEdit}
+            busy={busy}
+            error={error}
+            demo={demo}
+            submit={async (command) => {
+              if (
+                (
+                  await run(
+                    command,
+                    inventoryEdit
+                      ? "Inventory updated"
+                      : "Vehicle added to inventory",
+                  )
+                ).ok
+              ) {
+                setModal(null);
+                setInventoryEdit(null);
+              }
+            }}
+          />
+        </Modal>
+      )}
+      {modal === "task" && (
+        <Modal
+          title="Plan the next step"
+          subtitle="Put a little intention into the next conversation."
+          onClose={() => setModal(null)}
+        >
+          <form
+            className="modal-form"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const f = new FormData(e.currentTarget);
+              const result = await run(
+                {
+                  type: "create_task",
+                  customer_id: String(f.get("customer")) || null,
+                  title: String(f.get("title")),
+                  due_date: String(f.get("date")),
+                  kind: String(f.get("kind")) as "task",
+                },
+                "Task added",
+              );
+              if (result.ok) setModal(null);
+            }}
+          >
+            <label>
+              Task title
+              <input
+                name="title"
+                placeholder="What’s the next step?"
+                required
+                minLength={2}
+                maxLength={250}
+              />
+            </label>
+            <label>
+              Customer
+              <select name="customer" defaultValue={customer?.id ?? ""}>
+                <option value="">Dealership task</option>
+                {ws.customers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="form-grid">
+              <label>
+                Due date
+                <input
+                  name="date"
+                  type="date"
+                  defaultValue={planDate}
+                  required
+                />
+              </label>
+              <label>
+                Type
+                <select name="kind">
+                  <option value="task">Task</option>
+                  <option value="appointment">Appointment</option>
+                  <option value="unsold_followup">Unsold follow-up</option>
+                  <option value="sold_followup">Sold follow-up</option>
+                </select>
+              </label>
+            </div>
+            {error && <p className="form-error">{error}</p>}
+            <button className="btn primary" disabled={busy}>
+              Save task
+            </button>
+          </form>
+        </Modal>
+      )}
+      {modal === "call" && customer && (
+        <Modal
+          title="Log a phone call"
+          subtitle={customer.name}
+          onClose={() => setModal(null)}
+        >
+          <form
+            className="modal-form"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const f = new FormData(e.currentTarget);
+              if (
+                (
+                  await run(
+                    {
+                      type: "add_activity",
+                      customer_id: customer.id,
+                      kind: "call",
+                      body: `${f.get("direction")} · ${f.get("outcome")}\n${f.get("body")}`,
+                    },
+                    "Call logged",
+                  )
+                ).ok
+              )
+                setModal(null);
+            }}
+          >
+            <div className="form-grid">
+              <label>
+                Direction
+                <select name="direction">
+                  <option>Outbound call</option>
+                  <option>Inbound call</option>
+                </select>
+              </label>
+              <label>
+                Outcome
+                <select name="outcome">
+                  <option>Connected</option>
+                  <option>Left voicemail</option>
+                  <option>No answer</option>
+                  <option>Wrong number</option>
+                </select>
+              </label>
+            </div>
+            <label>
+              Call notes
+              <textarea
+                name="body"
+                placeholder="What did you discuss? What happens next?"
+                maxLength={7500}
+              />
+            </label>
+            <p className="fine-print">
+              This saves a call history entry. It does not place or record a
+              call.
+            </p>
+            {error && <p className="form-error">{error}</p>}
+            <button className="btn primary" disabled={busy}>
+              Save call log
+            </button>
+          </form>
+        </Modal>
+      )}
+      {modal === "sold" && customer && (
+        <Modal
+          title="A new set of keys."
+          subtitle={`Mark ${customer.name} as sold?`}
+          onClose={() => setModal(null)}
+        >
+          <div className="modal-form">
+            <p>
+              This records today’s sale, closes unsold follow-up tasks, and adds
+              2-day, 7-day, 30-day, and purchase anniversary reminders.
+            </p>
+            <p className="fine-print">
+              Their showroom visit stays open until you select End visit. A
+              linked CRM inventory vehicle will be marked sold.
+            </p>
+            {error && <p className="form-error">{error}</p>}
+            <button
+              className="btn primary"
+              disabled={busy}
+              onClick={async () => {
+                if (
+                  (
+                    await run(
+                      { type: "mark_sold", customer_id: customer.id },
+                      "Sold! Follow-up is planned.",
+                    )
+                  ).ok
+                )
+                  setModal(null);
+              }}
+            >
+              <CheckCircle2 size={16} />
+              Confirm sale
+            </button>
+          </div>
+        </Modal>
+      )}
+      {printData && <PrintSheet data={printData} dealership={ws.org.name} />}
+    </>
+  );
 }
-function Stat({title,value,sub,icon,color,onClick}:{title:string;value:number;sub:string;icon:React.ReactNode;color:string;onClick:()=>void}){return <button className="stat-card" onClick={onClick}><div><span>{title}</span><span className={`stat-icon ${color}`}>{icon}</span></div><strong>{value.toString().padStart(2,'0')}</strong><p>{sub}<ArrowUpRight size={14}/></p></button>}
-function CustomerForm({existing,busy,error,submit}:{existing:Customer|null;busy:boolean;error:string;submit:(data:Extract<Command,{type:'create_customer'}>['customer'])=>void}){return <form className="modal-form" onSubmit={e=>{e.preventDefault();const f=new FormData(e.currentTarget);submit({name:String(f.get('name')),email:String(f.get('email')),phone:String(f.get('phone')),source:String(f.get('source')),status:(String(f.get('status')||'new')) as Customer['status'],vehicle_interest:String(f.get('vehicle')),trade_vehicle:String(f.get('trade')),birthday:String(f.get('birthday'))||null})}}><label>Full name<input name="name" defaultValue={existing?.name} placeholder="Customer’s name" required minLength={2} maxLength={250} autoFocus/></label><div className="form-grid"><label>Phone<input name="phone" type="tel" defaultValue={existing?.phone} placeholder="(252) 555-0123" maxLength={30}/></label><label>Email<input name="email" type="email" defaultValue={existing?.email} placeholder="customer@example.com" maxLength={250}/></label></div><div className="form-grid"><label>Lead source<select name="source" defaultValue={existing?.source??'Walk-in'}>{['Walk-in','Website','Facebook','Phone','Referral','Repeat customer','Other'].map(s=><option key={s}>{s}</option>)}</select></label><label>Birthday<input name="birthday" type="date" defaultValue={existing?.birthday??''}/></label></div><label>Vehicle of interest<input name="vehicle" defaultValue={existing?.vehicle_interest} placeholder="Year, make, model, or stock number" maxLength={250}/></label><label>Trade-in<input name="trade" defaultValue={existing?.trade_vehicle} placeholder="Year, make, model, and mileage" maxLength={250}/></label>{existing&&<label>Stage<select name="status" defaultValue={existing.status} disabled={existing.status==='sold'}>{(existing.status==='sold'?['sold']:['new','working','appointment','lost']).map(s=><option key={s}>{s}</option>)}</select>{existing.status==='sold'&&<input type="hidden" name="status" value="sold"/>}</label>}{error&&<p className="form-error" role="alert">{error}</p>}<div className="modal-footer"><span>Contact preferences will be collected before messaging.</span><button className="btn primary" disabled={busy}>{busy?'Saving…':existing?'Save changes':'Create customer'}</button></div></form>}
-function Planner({mode,date,today,tasks,taskRow,open,onDay}:{mode:'Day'|'Week'|'Month';date:string;today:string;tasks:Task[];taskRow:(t:Task)=>React.ReactNode;open:(t:Task)=>void;onDay:(d:string)=>void}){
- const wd=new Date(date+'T12:00:00Z').getUTCDay(),start=mode==='Month'?addDays(date.slice(0,8)+'01',-new Date(date.slice(0,8)+'01T12:00:00Z').getUTCDay()):addDays(date,-wd),days=Array.from({length:mode==='Month'?42:7},(_,i)=>addDays(start,i));
- if(mode==='Day')return <section className="panel"><SectionTitle title={new Date(date+'T12:00:00Z').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}/>{tasks.filter(t=>t.due_date===date).map(taskRow)}{!tasks.some(t=>t.due_date===date)&&<Empty title="A little breathing room." body="No open tasks on this day. Add a follow-up or an appointment."/>}</section>;
- return <section className={`panel calendar ${mode.toLowerCase()}`}><div className="calendar-heading"><h2>{new Date(date+'T12:00:00Z').toLocaleDateString('en-US',{month:'long',year:'numeric'})}</h2><span>{tasks.filter(t=>days.includes(t.due_date)).length} planned tasks</span></div><div className="calendar-grid">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=><div className="weekday" key={d}>{d}</div>)}{days.map(d=><div className={`calendar-cell ${d===today?'is-today':''} ${d.slice(0,7)!==date.slice(0,7)?'outside':''}`} key={d}><button className="calendar-day" onClick={()=>onDay(d)}>{Number(d.slice(8))}</button>{tasks.filter(t=>t.due_date===d).map(t=><button className={`calendar-task ${t.kind}`} key={t.id} onClick={()=>t.customer_id?open(t):onDay(d)}><span className="dot"/>{t.title}</button>)}</div>)}</div></section>;
+function Stat({
+  title,
+  value,
+  sub,
+  icon,
+  color,
+  onClick,
+}: {
+  title: string;
+  value: number;
+  sub: string;
+  icon: React.ReactNode;
+  color: string;
+  onClick: () => void;
+}) {
+  return (
+    <button className="stat-card" onClick={onClick}>
+      <div>
+        <span>{title}</span>
+        <span className={`stat-icon ${color}`}>{icon}</span>
+      </div>
+      <strong>{value.toString().padStart(2, "0")}</strong>
+      <p>
+        {sub}
+        <ArrowUpRight size={14} />
+      </p>
+    </button>
+  );
 }
-function PrintSheet({data,dealership}:{data:{customer:Customer;quote?:Quote;pack?:boolean};dealership:string}){const {customer:c,quote:q,pack}=data;return <section className="print-sheet"><header><img src="/drive-max-logo.webp" alt="Drive Max"/><div><h1>{pack?'Preliminary deal summary':'Vehicle price quote'}</h1><p>{dealership} · {dateLabel(dayKey())}</p></div></header><h2>{c.name}</h2><p>{c.phone} · {c.email}</p><dl><dt>Vehicle</dt><dd>{q?.vehicle||c.vehicle_interest||'To be selected'}</dd><dt>Trade-in</dt><dd>{c.trade_vehicle||'None recorded'}</dd></dl>{q&&<><table><tbody>{([['price','Selling price'],['docFee','Document fee'],['tax','Estimated tax'],['titleFee','Title / registration'],['tradeAllowance','Less trade allowance'],['payoff','Trade payoff'],['downPayment','Cash down']] as [keyof QuoteValues,string][]).map(([k,label])=><tr key={k}><td>{label}</td><td>{fullMoney(q.values[k])}</td></tr>)}<tr><th>Estimated balance</th><th>{fullMoney(quoteMath(q.values).balance)}</th></tr></tbody></table><p>Illustrative payment: {fullMoney(quoteMath(q.values).payment)} / month · {q.values.months} months · {q.values.apr}% APR</p></>}{pack&&<><h3>Deal folder checklist</h3>{['Customer contact information verified','Vehicle and VIN verified','Trade title / payoff verified','Insurance verified','Buyer’s order reviewed','Required disclosures reviewed','Final contract and title documents completed','Delivery and follow-up scheduled'].map(t=><p className="print-check" key={t}><span/> {t}</p>)}<h3>Delivery notes</h3><div className="writing-lines"/></>}<footer>Preliminary worksheet only. Verify vehicle details, taxes, registration, payoff, and all figures. Financing is subject to lender approval. This document does not replace required contracts, disclosures, or title paperwork.</footer></section>}
+function Planner({
+  mode,
+  date,
+  today,
+  tasks,
+  taskRow,
+  open,
+  onDay,
+}: {
+  mode: "Day" | "Week" | "Month";
+  date: string;
+  today: string;
+  tasks: Task[];
+  taskRow: (t: Task) => React.ReactNode;
+  open: (t: Task) => void;
+  onDay: (d: string) => void;
+}) {
+  const wd = new Date(date + "T12:00:00Z").getUTCDay(),
+    start =
+      mode === "Month"
+        ? addDays(
+            date.slice(0, 8) + "01",
+            -new Date(date.slice(0, 8) + "01T12:00:00Z").getUTCDay(),
+          )
+        : addDays(date, -wd),
+    days = Array.from({ length: mode === "Month" ? 42 : 7 }, (_, i) =>
+      addDays(start, i),
+    );
+  if (mode === "Day")
+    return (
+      <section className="panel">
+        <SectionTitle
+          title={new Date(date + "T12:00:00Z").toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+          })}
+        />
+        {tasks.filter((t) => t.due_date === date).map(taskRow)}
+        {!tasks.some((t) => t.due_date === date) && (
+          <Empty
+            title="A little breathing room."
+            body="No open tasks on this day. Add a follow-up or an appointment."
+          />
+        )}
+      </section>
+    );
+  return (
+    <section className={`panel calendar ${mode.toLowerCase()}`}>
+      <div className="calendar-heading">
+        <h2>
+          {new Date(date + "T12:00:00Z").toLocaleDateString("en-US", {
+            month: "long",
+            year: "numeric",
+          })}
+        </h2>
+        <span>
+          {tasks.filter((t) => days.includes(t.due_date)).length} planned tasks
+        </span>
+      </div>
+      <div className="calendar-grid">
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+          <div className="weekday" key={d}>
+            {d}
+          </div>
+        ))}
+        {days.map((d) => (
+          <div
+            className={`calendar-cell ${d === today ? "is-today" : ""} ${d.slice(0, 7) !== date.slice(0, 7) ? "outside" : ""}`}
+            key={d}
+          >
+            <button className="calendar-day" onClick={() => onDay(d)}>
+              {Number(d.slice(8))}
+            </button>
+            {tasks
+              .filter((t) => t.due_date === d)
+              .map((t) => (
+                <button
+                  className={`calendar-task ${t.kind}`}
+                  key={t.id}
+                  onClick={() => (t.customer_id ? open(t) : onDay(d))}
+                >
+                  <span className="dot" />
+                  {t.title}
+                </button>
+              ))}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+function PrintSheet({
+  data,
+  dealership,
+}: {
+  data: { customer: Customer; quote?: Quote; pack?: boolean };
+  dealership: string;
+}) {
+  const { customer: c, quote: q, pack } = data;
+  return (
+    <section className="print-sheet">
+      <header>
+        <img src="/drive-max-logo.webp" alt="Drive Max" />
+        <div>
+          <h1>{pack ? "Preliminary deal summary" : "Vehicle price quote"}</h1>
+          <p>
+            {dealership} · {dateLabel(dayKey())}
+          </p>
+        </div>
+      </header>
+      <h2>{c.name}</h2>
+      <p>
+        {c.phone} · {c.email}
+      </p>
+      <dl>
+        <dt>Vehicle</dt>
+        <dd>{q?.vehicle || c.vehicle_interest || "To be selected"}</dd>
+        {q?.vehicle_details?.vin && (
+          <>
+            <dt>Vehicle VIN</dt>
+            <dd>{q.vehicle_details.vin}</dd>
+          </>
+        )}
+        <dt>Trade-in</dt>
+        <dd>
+          {q?.snapshot_version === 1
+            ? q.trade_snapshot?.description ||
+              (q.trade_snapshot
+                ? vehicleName(q.trade_snapshot)
+                : "None recorded")
+            : c.trade_vehicle || "None recorded"}
+        </dd>
+        {q?.trade_snapshot && (
+          <>
+            <dt>Trade VIN</dt>
+            <dd>
+              {q.trade_snapshot.vin} ·{" "}
+              {q.trade_snapshot.mileage.toLocaleString()} miles
+            </dd>
+          </>
+        )}
+      </dl>
+      {q && (
+        <>
+          <table>
+            <tbody>
+              {(
+                [
+                  ["price", "Selling price"],
+                  ["docFee", "Document fee"],
+                  ["tax", "Estimated tax"],
+                  ["titleFee", "Title / registration"],
+                  ["tradeAllowance", "Less trade allowance"],
+                  ["payoff", "Trade payoff"],
+                  ["downPayment", "Cash down"],
+                ] as [keyof QuoteValues, string][]
+              ).map(([k, label]) => (
+                <tr key={k}>
+                  <td>{label}</td>
+                  <td>{fullMoney(q.values[k])}</td>
+                </tr>
+              ))}
+              <tr>
+                <th>Estimated balance</th>
+                <th>{fullMoney(quoteMath(q.values).balance)}</th>
+              </tr>
+            </tbody>
+          </table>
+          <p>
+            Illustrative payment: {fullMoney(quoteMath(q.values).payment)} /
+            month · {q.values.months} months · {q.values.apr}% APR
+          </p>
+        </>
+      )}
+      {pack && (
+        <>
+          <h3>Deal folder checklist</h3>
+          {[
+            "Customer contact information verified",
+            "Vehicle and VIN verified",
+            "Trade title / payoff verified",
+            "Insurance verified",
+            "Buyer’s order reviewed",
+            "Required disclosures reviewed",
+            "Final contract and title documents completed",
+            "Delivery and follow-up scheduled",
+          ].map((t) => (
+            <p className="print-check" key={t}>
+              <span /> {t}
+            </p>
+          ))}
+          <h3>Delivery notes</h3>
+          <div className="writing-lines" />
+        </>
+      )}
+      <footer>
+        Preliminary worksheet only. Verify vehicle details, taxes, registration,
+        payoff, and all figures. Financing is subject to lender approval. This
+        document does not replace required contracts, disclosures, or title
+        paperwork.
+      </footer>
+    </section>
+  );
+}

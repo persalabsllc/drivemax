@@ -3913,7 +3913,8 @@
               "y": 390.0,
               "width": 185.0,
               "height": 10.0,
-              "fontSize": 7.0
+              "fontSize": 7.0,
+              "key": "deal.other_product_1_description"
             },
             {
               "name": "other_product_1",
@@ -3923,7 +3924,8 @@
               "y": 384.0,
               "width": 60.0,
               "height": 15.0,
-              "fontSize": 8.0
+              "fontSize": 8.0,
+              "key": "deal.other_product_1"
             },
             {
               "name": "other_product_2_description",
@@ -3933,7 +3935,8 @@
               "y": 410.0,
               "width": 185.0,
               "height": 10.0,
-              "fontSize": 7.0
+              "fontSize": 7.0,
+              "key": "deal.other_product_2_description"
             },
             {
               "name": "other_product_2",
@@ -3943,7 +3946,8 @@
               "y": 404.0,
               "width": 60.0,
               "height": 15.0,
-              "fontSize": 8.0
+              "fontSize": 8.0,
+              "key": "deal.other_product_2"
             },
             {
               "name": "optional_products_total",

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "./operations.css";
 import "./appointments.css";
+import "./fi-menu.css";
 export const metadata: Metadata = {
   title: "Drive Max CRM",
   description: "Your dealership. Every relationship. One workspace.",

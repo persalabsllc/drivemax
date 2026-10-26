@@ -1,4 +1,5 @@
 import manifest from "../assets/forms/manifest.json";
+import { fiBillOfSale } from "./fi-menu";
 import {
   dayKey,
   opportunityOpen,
@@ -219,8 +220,12 @@ export function documentContext(
       "deal.price": dollars(f.price),
       "deal.doc_fee": dollars(f.docFee),
       "deal.add_ons": dollars(f.addOns ?? 0),
-      "deal.service_contract": dollars(f.serviceContract ?? 0),
-      "deal.optional_products_total": dollars(f.serviceContract ?? 0),
+      ...Object.fromEntries(
+        Object.entries(fiBillOfSale(f)).map(([key, value]) => [
+          "deal." + key,
+          typeof value === "number" ? dollars(value) : value,
+        ]),
+      ),
       "deal.tax": dollars(m.tax),
       "deal.other_taxes": dollars(f.otherTaxes ?? 0),
       "deal.title_fee": dollars(f.titleFee),

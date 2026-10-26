@@ -23,6 +23,7 @@ import {
 } from "./appointments";
 import { demoAppointments } from "./appointments-demo";
 import { demoQuickQuote } from "./quick-quote";
+import { fiMenuSchema, fiSelectionMatches } from "./fi-menu";
 import {
   inventorySchema,
   vehicleDetailsSchema,
@@ -293,39 +294,48 @@ const customer = {
   trade: tradeSchema.nullable().optional(),
 };
 const amount = z.number().finite().min(0).max(1000000);
-export const quoteSchema = z.object({
-  products: z.array(productSchema).max(30).optional(),
-  price: amount,
-  docFee: amount,
-  tax: amount,
-  titleFee: amount,
-  tradeAllowance: amount,
-  payoff: amount,
-  downPayment: amount,
-  apr: z.number().min(0).max(50),
-  months: z.number().int().min(1).max(120),
-  acv: amount,
-  recon: amount,
-  mode: z.enum(["cash", "finance"]).optional(),
-  taxMode: z.enum(["auto", "manual"]).optional(),
-  taxReason: z.string().max(500).optional(),
-  addOns: amount.optional(),
-  serviceContract: amount.optional(),
-  otherTaxes: amount.optional(),
-  daysToFirstPayment: z.number().int().min(30).max(120).optional(),
-  financeOptions: z
-    .array(
-      z.object({
-        months: z.number().int().min(1).max(120),
-        apr: z.number().min(0).max(50),
-      }),
-    )
-    .length(3)
-    .optional(),
-  downPayments: z.array(amount).length(3).optional(),
-  selectedOption: z.number().int().min(0).max(2).optional(),
-  selectedDown: z.number().int().min(0).max(2).optional(),
-});
+export const quoteSchema = z
+  .object({
+    fiMenu: fiMenuSchema.optional(),
+    products: z.array(productSchema).max(30).optional(),
+    price: amount,
+    docFee: amount,
+    tax: amount,
+    titleFee: amount,
+    tradeAllowance: amount,
+    payoff: amount,
+    downPayment: amount,
+    apr: z.number().min(0).max(50),
+    months: z.number().int().min(1).max(120),
+    acv: amount,
+    recon: amount,
+    mode: z.enum(["cash", "finance"]).optional(),
+    taxMode: z.enum(["auto", "manual"]).optional(),
+    taxReason: z.string().max(500).optional(),
+    addOns: amount.optional(),
+    serviceContract: amount.optional(),
+    otherTaxes: amount.optional(),
+    daysToFirstPayment: z.number().int().min(30).max(120).optional(),
+    financeOptions: z
+      .array(
+        z.object({
+          months: z.number().int().min(1).max(120),
+          apr: z.number().min(0).max(50),
+        }),
+      )
+      .length(3)
+      .optional(),
+    downPayments: z.array(amount).length(3).optional(),
+    selectedOption: z.number().int().min(0).max(2).optional(),
+    selectedDown: z.number().int().min(0).max(2).optional(),
+  })
+  .refine(
+    (values) =>
+      !values.fiMenu ||
+      values.fiMenu.selected === null ||
+      fiSelectionMatches(values),
+    "The selected F&I package does not match the deal products. Apply the package again.",
+  );
 export const quickQuoteSchema = z.object({
   inventory_id: z.uuid().nullable(),
   vehicle: text,

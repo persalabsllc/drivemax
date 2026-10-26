@@ -8,6 +8,8 @@ import {
   Mail,
   MessageSquare,
   UserPlus,
+  LayoutGrid,
+  FileCheck2,
 } from "lucide-react";
 import {
   deskingDefaults,
@@ -21,6 +23,7 @@ import {
   type QuoteValues,
   type Command,
   type QuickQuoteInput,
+  type PrintableQuote,
   defaultQuote,
   quickQuoteSchema,
   quoteMath,
@@ -33,7 +36,20 @@ import { type InventoryVehicle, vehicleName } from "../lib/vehicles";
 import { VehicleFacts } from "./VehicleFields";
 import { FIProducts } from "./FIProducts";
 import { productsTotal } from "../lib/operations";
-type DeskingProps = { inventory: InventoryVehicle[]; busy: boolean } & (
+import { FIMenu } from "./FIMenu";
+import { FIMenuPrint } from "./FIMenuPrint";
+import { PrintDocument } from "./PrintDocument";
+import {
+  clearFISelection,
+  fiOptionValues,
+  fiSelectionMatches,
+  fiPresentationKey,
+} from "../lib/fi-menu";
+type DeskingProps = {
+  inventory: InventoryVehicle[];
+  busy: boolean;
+  dealership?: string;
+} & (
   | {
       quick?: undefined;
       customer: Customer;
@@ -71,8 +87,14 @@ export function Desking({
   onShare,
   onEdit,
   quick,
+  dealership = "Drive Max Used Cars",
 }: DeskingProps) {
   const [productsOpen, setProductsOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPrint, setMenuPrint] = useState<{
+    quote: PrintableQuote;
+    acceptance: boolean;
+  } | null>(null);
   const [quickInventory, setQuickInventory] = useState("");
   const [localError, setLocalError] = useState("");
   const form = useRef<HTMLFormElement>(null);
@@ -113,6 +135,18 @@ export function Desking({
     selectedCol = draft.selectedDown ?? 0;
   const values = selectedDeskingValues(draft);
   const totals = quoteMath(values);
+  const currentQuote: PrintableQuote = {
+    vehicle: description,
+    values: { ...values, tax: totals.tax },
+    created_at: new Date().toISOString(),
+    vehicle_details: vehicle ?? null,
+    snapshot_version: 1,
+    trade_snapshot: customer?.trade ?? null,
+  };
+  const acceptanceCurrent =
+    latest &&
+    fiSelectionMatches(latest.values) &&
+    fiPresentationKey(latest.values) === fiPresentationKey(currentQuote.values);
   function quickAction(action: "onPrint" | "onCreate") {
     if (!quick || !form.current?.reportValidity()) return;
     if (
@@ -169,13 +203,58 @@ export function Desking({
           temporary={!!quick}
           onClose={() => setProductsOpen(false)}
           onSave={(products) =>
-            setDraft({
-              ...draft,
-              products,
-              serviceContract: productsTotal({ ...draft, products }),
-            })
+            setDraft(
+              clearFISelection({
+                ...draft,
+                products,
+                serviceContract: productsTotal({ ...draft, products }),
+              }),
+            )
           }
         />
+      )}
+      {menuOpen && customer && (
+        <FIMenu
+          quote={readOnly && latest ? latest : currentQuote}
+          customer={customer}
+          dealership={dealership}
+          quotes={quotes}
+          busy={busy}
+          readOnly={readOnly}
+          onClose={() => setMenuOpen(false)}
+          onSave={async (menu, choice) => {
+            if (!onSave || !opportunity) return { ok: false };
+            const next =
+              choice === null
+                ? {
+                    ...currentQuote.values,
+                    fiMenu: { ...menu, selected: null },
+                  }
+                : fiOptionValues(currentQuote.values, menu, choice);
+            const result = await onSave({
+              type: "save_quote",
+              customer_id: customer.id,
+              opportunity_id: opportunity.id,
+              vehicle: description,
+              values: next,
+            });
+            if (result.ok) setDraft(next);
+            return result;
+          }}
+        />
+      )}
+      {menuPrint && (
+        <PrintDocument
+          landscape={!menuPrint.acceptance}
+          onClose={() => setMenuPrint(null)}
+        >
+          <FIMenuPrint
+            quote={menuPrint.quote}
+            customer={customer ?? null}
+            dealership={dealership}
+            acceptance={menuPrint.acceptance}
+          />
+        </PrintDocument>
       )}
       <div className="desk-section-head">
         <div>
@@ -341,10 +420,58 @@ export function Desking({
                 >
                   {readOnly ? "View products" : "Edit product details"}
                 </button>
+                {!quick && (!readOnly || draft.fiMenu) && (
+                  <button
+                    type="button"
+                    className="btn small"
+                    disabled={busy}
+                    onClick={() => {
+                      if (readOnly || form.current?.reportValidity())
+                        setMenuOpen(true);
+                    }}
+                  >
+                    <LayoutGrid size={14} />
+                    {readOnly
+                      ? "View F&I menu"
+                      : draft.fiMenu
+                        ? "Open F&I menu"
+                        : "Build F&I menu"}
+                  </button>
+                )}
               </div>
               {field("titleFee", "Title / registration fees")}
               {field("otherTaxes", "Other verified taxes")}
             </div>
+            {!quick && draft.fiMenu && (
+              <div className="fi-desking-selection">
+                <strong>
+                  {draft.fiMenu.selected === "declined"
+                    ? "All optional products declined"
+                    : draft.fiMenu.selected !== null
+                      ? `${draft.fiMenu.packages[draft.fiMenu.selected].name} selected`
+                      : "F&I menu saved · selection pending"}
+                </strong>
+                {acceptanceCurrent && latest ? (
+                  <button
+                    className="btn small"
+                    type="button"
+                    onClick={() =>
+                      setMenuPrint({ quote: latest, acceptance: true })
+                    }
+                  >
+                    <FileCheck2 size={14} />
+                    Print final acceptance
+                  </button>
+                ) : (
+                  draft.fiMenu.selected !== null && (
+                    <small>
+                      Save the current deal figures before printing final
+                      acceptance.
+                    </small>
+                  )
+                )}
+              </div>
+            )}
             <div className="tax-summary">
               <div>
                 <span>NC highway-use tax · 3%</span>
@@ -678,6 +805,28 @@ export function Desking({
                 <Printer size={14} />
                 Print quote
               </button>
+              {q.values.fiMenu && (
+                <div className="ops-actions">
+                  <button
+                    className="btn small"
+                    onClick={() =>
+                      setMenuPrint({ quote: q, acceptance: false })
+                    }
+                  >
+                    Print F&I menu
+                  </button>
+                  {fiSelectionMatches(q.values) && (
+                    <button
+                      className="btn small"
+                      onClick={() =>
+                        setMenuPrint({ quote: q, acceptance: true })
+                      }
+                    >
+                      Print saved acceptance
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </>

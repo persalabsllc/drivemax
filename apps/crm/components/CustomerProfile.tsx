@@ -706,6 +706,7 @@ export function CustomerProfile({
         )}
         {tab === "Desking" && o && (
           <Desking
+            dealership={ws.org.name}
             key={o.id + o.updated_at}
             customer={effective}
             opportunity={o}

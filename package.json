@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/setup-lead-notifications.mjs && next build",
+    "build": "node scripts/setup-lead-notifications.mjs && node scripts/verify-email-provider.mjs && next build",
     "start": "next start",
     "test": "node --import tsx --test tests/*.test.ts",
     "typecheck": "tsc --noEmit"
@@ -12,6 +12,7 @@
   "dependencies": {
     "@supabase/ssr": "^0.12.6",
     "@supabase/supabase-js": "^2.115.0",
+    "html-to-text": "9.0.5",
     "lucide-react": "^0.468.0",
     "next": "16.3.4",
     "nodemailer": "^10.1.7",
@@ -25,6 +26,7 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
+    "@types/html-to-text": "9.0.4",
     "@types/node": "^22.10.2",
     "@types/nodemailer": "^8.0.2",
     "@types/pg": "^8.23.1",

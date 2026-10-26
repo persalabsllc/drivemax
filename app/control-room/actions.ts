@@ -15,7 +15,7 @@ import {
 } from "../../lib/backend";
 import { leadStatuses, vehicleSchema, vehicleSlug } from "../../lib/inventory";
 import { takeSlot } from "../../lib/rate-limit";
-import { dealershipEmail, leadEmailFrom } from "../../lib/email-config";
+import { leadReplyDomain, leadEmailFrom } from "../../lib/email-config";
 import {
   leadVehicleColumns,
   updateVehicleAssignment,
@@ -286,6 +286,43 @@ export async function addMessage(form: FormData): Promise<ActionResult> {
         ? "This customer has not provided an email address. Log your call or text as a note."
         : "Connect dealership email to send replies.",
     };
+  if (v.direction === "outbound") {
+    const [suppression, intake] = await Promise.all([
+      db()
+        .from("dmcrm_email_suppressions")
+        .select("email")
+        .eq("org_id", "d5a1c100-0000-4000-8000-000000000001")
+        .eq("email", lead.email.trim().toLowerCase())
+        .maybeSingle(),
+      db()
+        .from("dmcrm_website_intake")
+        .select("customer_id")
+        .eq("id", v.lead_id)
+        .maybeSingle(),
+    ]);
+    if (suppression.error || intake.error)
+      return {
+        error: "Could not verify the customer email preference. Try again.",
+      };
+    if (suppression.data)
+      return {
+        error:
+          "Email is stopped for this recipient. Review the customer preference or delivery failure in the CRM.",
+      };
+    if (intake.data?.customer_id) {
+      const preference = await db()
+        .from("dmcrm_customers")
+        .select("email_opt_out")
+        .eq("org_id", "d5a1c100-0000-4000-8000-000000000001")
+        .eq("id", intake.data.customer_id)
+        .maybeSingle();
+      if (preference.error || preference.data?.email_opt_out)
+        return {
+          error:
+            "Email is stopped or could not be verified for this customer. Review their CRM profile.",
+        };
+    }
+  }
   const subject = "Your Drive Max inquiry";
   const { data: existing, error: lookupError } = await db()
     .from("messages")
@@ -339,7 +376,7 @@ export async function addMessage(form: FormData): Promise<ActionResult> {
           to: existing?.recipient || lead.email,
           subject: existing?.subject || subject,
           text: v.body,
-          replyTo: dealershipEmail,
+          replyTo: `lead+${v.lead_id}@${leadReplyDomain()}`,
         },
         { idempotencyKey: `lead-message-${v.id}` },
       );

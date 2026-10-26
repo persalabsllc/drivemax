@@ -445,14 +445,12 @@ export default function CRM({
               <span className="pulse-dot" />
               <div>
                 <strong>
-                  {demo
-                    ? "Explore your next chapter"
-                    : "Your dealership, connected"}
+                  {demo ? "Explore your next chapter" : "Your daily workspace"}
                 </strong>
                 <p>
                   {demo
                     ? "Try the workflow with sample customers."
-                    : "Every relationship has a next step."}
+                    : "Appointments, deals and follow-up."}
                 </p>
               </div>
             </div>
@@ -503,7 +501,7 @@ export default function CRM({
             <div className="breadcrumb">
               Workspace
               <ChevronRight size={13} />
-              <strong>{view}</strong>
+              <strong>{view === "Workspace" ? "Settings" : view}</strong>
             </div>
             <div className="topbar-actions">
               <label className="global-search">
@@ -566,7 +564,7 @@ export default function CRM({
                   {view === "Overview"
                     ? `Good to see you, ${ws.member.name.split(" ")[0]}.`
                     : view === "Workspace"
-                      ? "Made for your dealership."
+                      ? "Settings"
                       : view}
                 </h1>
                 <p>
@@ -593,7 +591,7 @@ export default function CRM({
                       Conversations:
                         "One place for the conversation, from first hello to follow-up.",
                       Workspace:
-                        "A focused foundation, with room for your next chapter.",
+                        "Manage team access, dealership details and data exports.",
                     }[view]
                   }
                 </p>
@@ -611,7 +609,7 @@ export default function CRM({
                     Quick quote
                   </button>
                 )}
-                {!quickQuoteOpen && (
+                {!quickQuoteOpen && view !== "Workspace" && (
                   <button
                     className={view === "Desking" ? "btn" : "btn primary"}
                     onClick={() => {
@@ -1261,7 +1259,7 @@ export default function CRM({
                   <section className="panel">
                     <SectionTitle
                       title="Your dealership"
-                      subtitle="The first workspace in a foundation built to grow."
+                      subtitle="Your account and dealership details."
                     />
                     <dl className="settings-list">
                       <dt>Name</dt>
@@ -1284,9 +1282,9 @@ export default function CRM({
                       subtitle="Download a copy of your workspace whenever you need it."
                     />
                     <p className="muted-copy">
-                      Customer profiles, opportunities, inventory, trades,
-                      visits, notes, tasks, and saved proposals are included in
-                      your export.
+                      Download the records available to your account, including
+                      customers, inventory, appointments, tasks, conversations,
+                      deals and saved proposals.
                     </p>
                     <button className="btn" onClick={exportData}>
                       <Download size={16} />
@@ -1294,43 +1292,44 @@ export default function CRM({
                     </button>
                     <div className="security-line">
                       <ShieldCheck size={16} />
-                      Server-checked dealership access
+                      Access follows your staff role
                     </div>
                     <div className="security-line">
                       <Database size={16} />
                       {demo
                         ? "Sample data held only in this tab"
-                        : "Saved in dedicated CRM tables"}
+                        : "Export includes saved records and deal history"}
                     </div>
                   </section>
                 </div>
                 <section className="panel">
-                  <SectionTitle title="What’s ready — and what’s next" />
+                  <SectionTitle title="Workspace tools" />
                   <div className="roadmap-grid">
                     <div>
                       <CheckCircle2 />
-                      <h3>The working foundation</h3>
+                      <h3>Sales and finance</h3>
                       <p>
-                        Customer profiles, inventory, VIN decoding, showroom
-                        visits, planner, desking, trade worksheets, and
-                        printable deal summaries.
+                        Manage customers, appointments, inventory and trade-ins.
+                        Build quotes and F&I menus, print deal paperwork, and
+                        review accounting and commissions.
                       </p>
                     </div>
                     <div>
                       <Link2 />
-                      <h3>Connected conversations</h3>
+                      <h3>Communication status</h3>
                       <p>
-                        Email, SMS, website lead intake, and automatic call
-                        history are the next integration stage.
+                        Text and email drafts and manual communication logs are
+                        available. Sending, automatic message receipt and
+                        website lead import are not connected yet.
                       </p>
                     </div>
                     <div>
                       <Users />
-                      <h3>A product for more dealers</h3>
+                      <h3>Team access</h3>
                       <p>
-                        Dealership membership and data boundaries are in place.
-                        Team roles and task assignment are ready. Self-service
-                        dealer onboarding and billing come later.
+                        Each staff member uses their own account. Managers can
+                        add salespeople, share account setup links, assign work
+                        and transfer open tasks when someone leaves the team.
                       </p>
                     </div>
                   </div>
@@ -1342,7 +1341,7 @@ export default function CRM({
                 DRIVE MAX CRM <i>·</i> Built around relationships.
               </span>
               <span>
-                {demo ? "Interactive demo" : "Foundation release"}{" "}
+                {demo ? "Interactive demo" : "Staff workspace"}{" "}
                 <span className="dot green" />
               </span>
             </footer>

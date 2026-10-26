@@ -1,0 +1,13 @@
+.login-password {
+  position: relative;
+  margin-top: 7px;
+}
+.login-form .login-password input {
+  padding-right: 48px;
+}
+.login-password .icon-btn {
+  position: absolute;
+  right: 7px;
+  top: 50%;
+  transform: translateY(-50%);
+}

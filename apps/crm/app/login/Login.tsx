@@ -1,5 +1,116 @@
-'use client';
-import {useActionState} from 'react';
-import {ArrowRight,ShieldCheck,LayoutDashboard,Users,CalendarDays} from 'lucide-react';
-import {signIn} from './actions';
-export default function Login(){const [state,action,pending]=useActionState(signIn,{error:''});return <main className="login-page"><section className="login-story"><a className="login-logo" href="/login"><img src="/drive-max-logo.webp" alt="Drive Max Used Cars"/></a><div className="login-pitch"><span className="eyebrow">THE NEXT CHAPTER OF YOUR DEALERSHIP</span><h1>Great relationships.<br/><em>More possibilities.</em></h1><p>From the first hello to the next set of keys.<br/>Bring your entire sales day into focus.</p><div className="login-features"><span><Users size={19}/>Every customer, remembered.</span><span><LayoutDashboard size={19}/>Your showroom, at a glance.</span><span><CalendarDays size={19}/>The next step, always clear.</span></div></div><div className="login-bottom">DRIVE MAX CRM <span>Built around the way you sell.</span></div></section><section className="login-form-wrap"><div className="login-form"><span className="login-badge"><ShieldCheck size={17}/>YOUR PRIVATE WORKSPACE</span><h2>Welcome back.</h2><p>Sign in to start your sales day.</p><form action={action}><label>Email address<input name="email" type="email" autoComplete="username" placeholder="you@drivemaxusedcars.com" required/></label><label>Password<input name="password" type="password" autoComplete="current-password" placeholder="Enter your password" required/></label>{state.error&&<p className="form-error" role="alert">{state.error}</p>}<button className="btn primary" disabled={pending}>{pending?'Signing in…':'Sign in to your workspace'}<ArrowRight size={17}/></button></form><p className="login-help">Sign in with your CRM account. New team members can use the setup link shared by their manager.</p><div className="demo-invite"><span>Take a look around first.</span><a href="/demo">Explore the demo <ArrowRight size={15}/></a><small>Sample customers · No messages sent · Changes reset on refresh</small></div></div></section></main>;}
+"use client";
+import { useActionState, useState } from "react";
+import {
+  ArrowRight,
+  ShieldCheck,
+  LayoutDashboard,
+  Users,
+  CalendarDays,
+  Eye,
+  EyeOff,
+} from "lucide-react";
+import { signIn } from "./actions";
+
+export default function Login() {
+  const [state, action, pending] = useActionState(signIn, { error: "" });
+  const [showPassword, setShowPassword] = useState(false);
+  return (
+    <main className="login-page">
+      <section className="login-story">
+        <a className="login-logo" href="/login">
+          <img src="/drive-max-logo.webp" alt="Drive Max Used Cars" />
+        </a>
+        <div className="login-pitch">
+          <span className="eyebrow">DRIVE MAX · DEALERSHIP WORKSPACE</span>
+          <h1>
+            Your dealership.
+            <br />
+            <em>Ready for the day.</em>
+          </h1>
+          <p>
+            Customers, appointments and deals.
+            <br />
+            Everything your team needs to keep moving.
+          </p>
+          <div className="login-features">
+            <span>
+              <Users size={19} />
+              Customers and follow-up.
+            </span>
+            <span>
+              <LayoutDashboard size={19} />
+              Inventory, desking and F&I.
+            </span>
+            <span>
+              <CalendarDays size={19} />
+              Appointments and daily tasks.
+            </span>
+          </div>
+        </div>
+        <div className="login-bottom">
+          DRIVE MAX CRM <span>Drive Max Used Cars · New Bern, NC</span>
+        </div>
+      </section>
+      <section className="login-form-wrap">
+        <div className="login-form">
+          <span className="login-badge">
+            <ShieldCheck size={17} />
+            STAFF SIGN-IN
+          </span>
+          <h2>Welcome back.</h2>
+          <p>Sign in to start your sales day.</p>
+          <form
+            action={action}
+            aria-describedby={state.error ? "sign-in-error" : undefined}
+          >
+            <label>
+              Email address
+              <input
+                name="email"
+                type="email"
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
+                placeholder="you@drivemaxusedcars.com"
+                required
+              />
+            </label>
+            <label htmlFor="crm-password">Password</label>
+            <div className="login-password">
+              <input
+                id="crm-password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                placeholder="Enter your password"
+                required
+              />
+              <button
+                type="button"
+                className="icon-btn"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
+                onClick={() => setShowPassword((shown) => !shown)}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+            {state.error && (
+              <p className="form-error" id="sign-in-error" role="alert">
+                {state.error}
+              </p>
+            )}
+            <button className="btn primary" disabled={pending}>
+              {pending ? "Signing in…" : "Sign in"}
+              <ArrowRight size={17} />
+            </button>
+          </form>
+          <p className="login-help">
+            Use your existing CRM email and password. New team members can use
+            the setup link shared by their manager.
+          </p>
+        </div>
+      </section>
+    </main>
+  );
+}

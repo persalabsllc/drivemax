@@ -8,6 +8,15 @@ import {
 } from "./people";
 import { calculateQuote, type FinanceValues } from "./finance";
 import {
+  operationCommands,
+  productSchema,
+  type Sale,
+  type TradeIntake,
+  type Commission,
+  type Message,
+} from "./operations";
+import { demoOperations } from "./operations-demo";
+import {
   inventorySchema,
   vehicleDetailsSchema,
   tradeSchema,
@@ -110,6 +119,7 @@ export type Activity = {
   created_by: string;
 };
 export type Task = {
+  channel?: "call" | "email" | "sms" | "task";
   assigned_to?: string | null;
   opportunity_id?: string | null;
   id: string;
@@ -155,6 +165,10 @@ export type Staff = {
 export const canManage = (role: string) =>
   role === "owner" || role === "manager";
 export type Workspace = {
+  sales?: Sale[];
+  trades?: TradeIntake[];
+  commissions?: Commission[];
+  messages?: Message[];
   org: { id: string; name: string; slug: string };
   member: { id: string; name: string; role: string; staff_id?: string };
   staff: Staff[];
@@ -258,6 +272,7 @@ const customer = {
 };
 const amount = z.number().finite().min(0).max(1000000);
 export const quoteSchema = z.object({
+  products: z.array(productSchema).max(30).optional(),
   price: amount,
   docFee: amount,
   tax: amount,
@@ -301,6 +316,7 @@ export const opportunitySchema = z.object({
   trade: tradeSchema.nullable(),
 });
 export const commandSchema = z.discriminatedUnion("type", [
+  ...operationCommands,
   z.object({
     type: z.literal("save_staff"),
     id: z.uuid().optional(),
@@ -387,6 +403,7 @@ export const commandSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("mark_sold"), customer_id: z.uuid() }),
   z.object({
     type: z.literal("create_task"),
+    channel: z.enum(["call", "email", "sms", "task"]).optional(),
     assigned_to: z.uuid().nullable().optional(),
     opportunity_id: z.uuid().nullable().optional(),
     customer_id: z.uuid().nullable(),
@@ -414,6 +431,13 @@ export const visibleTasks = (ws: Workspace) =>
 
 // Demo uses the same command contracts; it never writes live records.
 export function demoCommand(
+  ws: Workspace,
+  command: Command,
+  now = new Date(),
+): Workspace {
+  return demoOperations(ws, commandSchema.parse(command), now, baseDemoCommand);
+}
+function baseDemoCommand(
   ws: Workspace,
   command: Command,
   now = new Date(),

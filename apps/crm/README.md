@@ -1,4 +1,4 @@
-# Drive Max CRM — foundation release
+# Drive Max CRM
 
 A standalone Next.js application for Drive Max customer management, showroom visits, follow-up planning, preliminary quotes, and manual trade worksheets. It uses the existing Vercel team and Supabase authentication service, with exclusively `dmcrm_*` business tables. The public website and Control Room application are not changed.
 
@@ -38,6 +38,26 @@ The initial workspace contains no real customer data. Existing website leads and
 - Opportunity assignment routes unsold/sold follow-up and purchase anniversaries. The newest active opportunity sets general customer ownership, including birthdays. Reassignment moves unfinished work; completed task attribution and closed sale snapshots remain intact. Deactivation requires a replacement and immediately revokes CRM access.
 - Salespeople receive only their assigned tasks from the server; owners/managers receive the full team queue with filters. Customer profiles remain shared within the dealership. This is the routing foundation for future messaging, not an inbound-message integration.
 - Workspace JSON export (with the same task visibility as the signed-in user) and server-side mutation audit log.
+
+## Deal operations and accounting
+
+- Customer/deal search combines active/lost/sold status, inclusive sold dates, salesperson, name/phone/email, vehicle/VIN/stock, and exact ZIP or a 10–500 mile radius. ZIP distances are straight-line estimates using the bundled Census reference, not road miles. Missing/unmapped ZIPs are excluded from radius results. The complete customer book is loaded in server batches and search results paginate in the UI.
+- Migration 005 backfills an immutable sale ledger and trade intake from existing sold snapshots. New sales generate a trade stock number from the sold stock plus `A`; manual vehicles without stock use a unique `TR-…A` fallback. Trade intake supports updated miles, cost, recon, retail inventory and wholesale proceeds. Retail trades are counted only once in inventory valuation.
+- Managers can unwind a sold opportunity with a required reason. The sale snapshot, original paperwork and commissions remain in history; the sold car returns to stock, the trade returns to the customer (retail copy archived), remaining sold follow-ups cancel, and an unsold follow-up is created. Another opportunity on the trade, a pending/sold retail trade or a completed wholesale sale blocks reversal. Reselling the original deal creates a separate sale record and fresh follow-ups; an eligible returned trade reuses its archived inventory identity.
+- Desking records service contract, tire/wheel, GAP, paintless dent repair, appearance protection and prepaid maintenance with provider, contract number, term, mileage, deductible, cost and price. Product retail is counted once in quote totals. Unknown provider costs are explicit. Post-sale accounting cost overrides preserve the original customer proposal.
+- Profiles show overdue, due today and upcoming tasks across all opportunities. Task dialogs open phone links or message composers, record call outcomes and allow manual completion. Drafting or opening a call never silently completes a task.
+- Text and email threads persist across purchases, distinguish drafts/manual logs/delivery states, and support saved quote references. Drafts have revision checks and creator/manager edit permissions. Customer PDFs use an explicit allowlist that excludes costs, ACV and commission data; `/api/quotes/[id]/pdf` independently authenticates and scopes the quote/customer.
+- Accounting has sold-deal profit, current inventory valuation/aging, F&I product profit, trade ACV/allowance, commission sheets, wholesale trade profit and unwind history. Reports support date ranges, salesperson/recipient filters, CSV and print. Internal deal recaps are printable from profiles and report rows. Accounting/trade actions require owner/manager access; salespeople receive only their own commission rows and no accounting snapshots.
+
+### Accounting definitions
+
+Front gross = selling price − vehicle cost − vehicle recon + accessories − accessory cost + doc fee + (trade ACV − allowance) − other direct costs. F&I gross = product retail − actual product costs + finance reserve. Total gross = front + F&I; net contribution = gross − entered earned commissions. Pack reduces the commission basis only. Tax/title collections, down payments and trade payoff are settlement figures, not profit. Deal net excludes dealership overhead. Incomplete costs are labeled and excluded from aggregate gross/net rather than assumed to be zero. Wholesale proceeds minus trade cost/recon are reported separately.
+
+Commission amounts are entered by managers; no pay-plan formula is assumed. Date filters select the original **sale date**. “Paid to date” is cumulative for those deals, with a last-paid date; it is not a cash-disbursement ledger for the selected payment period. Unwound earnings become zero while previously paid amounts remain as recovery balances. Previously paid entries cannot be deleted/reduced or reassigned. Accounting edits retain a before-image audit record and use revision checks.
+
+### Messaging activation boundary
+
+No outbound messages or automated receipts are enabled. `dmcrm_messages` holds chronological inbound/outbound records and drafts; `lib/messaging.ts` defines the provider contract; the send route returns a clear disconnected response without mutating the draft. A saved quote reference supports producing the customer PDF later. Provider setup must implement an atomic outbox claim with the message UUID as idempotency key, verified inbound/delivery webhooks, provider-ID deduplication, sender setup, opt-out/consent enforcement and failure handling before enabling Send. Connecting credentials must never auto-send existing drafts. User-supplied inbound content must be treated as untrusted data.
 
 ## Access and tenant boundaries
 

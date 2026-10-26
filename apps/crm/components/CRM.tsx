@@ -64,6 +64,11 @@ import { InventoryView, InventoryForm } from "./Inventory";
 import { Desking } from "./Desking";
 import { PriceQuotePrint } from "./PriceQuotePrint";
 import { TeamSettings } from "./TeamSettings";
+import { ConversationsInbox } from "./ConversationsInbox";
+import { CustomerSearch } from "./CustomerSearch";
+import { Accounting } from "./Accounting";
+import { TradeIntake } from "./TradeIntake";
+import { seedOperations } from "../lib/operations-demo";
 import { Showroom, visitStatus } from "./Showroom";
 import { type InventoryVehicle, vehicleName } from "../lib/vehicles";
 import { signOut } from "../app/login/actions";
@@ -76,12 +81,16 @@ type View =
   | "Planner"
   | "Desking"
   | "Appraisals"
+  | "Trade-ins"
+  | "Accounting"
   | "Conversations"
   | "Workspace";
 const nav = [
   { name: "Overview", icon: LayoutDashboard },
   { name: "Customers", icon: Users },
   { name: "Inventory", icon: Car },
+  { name: "Trade-ins", icon: RefreshCw },
+  { name: "Accounting", icon: TrendingUp },
   { name: "Showroom", icon: DoorOpen },
   { name: "Planner", icon: CalendarDays },
   { name: "Desking", icon: FileText },
@@ -107,15 +116,17 @@ export default function CRM({
   initial: Workspace;
   demo: boolean;
 }) {
-  const [ws, setWs] = useState(initial),
+  const [ws, setWs] = useState(() =>
+      demo ? seedOperations(initial) : initial,
+    ),
     [view, setView] = useState<View>("Overview"),
     [search, setSearch] = useState(""),
     [stage, setStage] = useState("all"),
     [selected, setSelected] = useState<string | null>(null),
     [selectedOpp, setSelectedOpp] = useState<string | null>(null),
-    [profileTab, setProfileTab] = useState<"Activity" | "Details" | "Desking">(
-      "Activity",
-    ),
+    [profileTab, setProfileTab] = useState<
+      "Activity" | "Details" | "Desking" | "Texts" | "Emails"
+    >("Activity"),
     [modal, setModal] = useState<
       "customer" | "task" | "call" | "sold" | "inventory" | null
     >(null),
@@ -157,6 +168,7 @@ export default function CRM({
   const findCustomer = (id: string | null) =>
     ws.customers.find((c) => c.id === id);
   function navigate(v: View) {
+    setStage("all");
     setView(v);
     setMobileNav(false);
     setSearch("");
@@ -247,30 +259,6 @@ export default function CRM({
   }
   const currentOpportunity = (id: string) =>
     ws.opportunities.find((o) => o.customer_id === id && opportunityOpen(o));
-  const filteredCustomers = useMemo(
-    () =>
-      ws.customers
-        .filter(
-          (c) =>
-            (stage === "all" ||
-              ws.opportunities.some(
-                (o) => o.customer_id === c.id && o.status === stage,
-              )) &&
-            [
-              c.name,
-              c.email,
-              c.phone,
-              ...ws.opportunities
-                .filter((o) => o.customer_id === c.id)
-                .flatMap((o) => [o.title, o.vehicle_interest, o.trade_vehicle]),
-            ]
-              .join(" ")
-              .toLowerCase()
-              .includes(search.toLowerCase()),
-        )
-        .sort((a, b) => b.updated_at.localeCompare(a.updated_at)),
-    [ws.customers, ws.opportunities, stage, search],
-  );
   const taskRow = (t: Task) => {
     const c = findCustomer(t.customer_id);
     return (
@@ -398,22 +386,26 @@ export default function CRM({
           </div>
           <div className="nav-label">YOUR SALES DAY</div>
           <nav aria-label="Main navigation">
-            {nav.map(({ name, icon: Icon }) => (
-              <button
-                key={name}
-                className={view === name ? "nav-item active" : "nav-item"}
-                onClick={() => navigate(name)}
-              >
-                <Icon size={19} />
-                <span>{name}</span>
-                {name === "Showroom" && active.length > 0 && (
-                  <b>{active.length}</b>
-                )}
-                {name === "Planner" && overdue.length > 0 && (
-                  <span className="nav-dot" />
-                )}
-              </button>
-            ))}
+            {nav
+              .filter(
+                (n) => n.name !== "Trade-ins" || canManage(ws.member.role),
+              )
+              .map(({ name, icon: Icon }) => (
+                <button
+                  key={name}
+                  className={view === name ? "nav-item active" : "nav-item"}
+                  onClick={() => navigate(name)}
+                >
+                  <Icon size={19} />
+                  <span>{name}</span>
+                  {name === "Showroom" && active.length > 0 && (
+                    <b>{active.length}</b>
+                  )}
+                  {name === "Planner" && overdue.length > 0 && (
+                    <span className="nav-dot" />
+                  )}
+                </button>
+              ))}
           </nav>
           <div className="sidebar-bottom">
             <div className="sidebar-note">
@@ -561,6 +553,10 @@ export default function CRM({
                         "Build the proposal. Keep the history. Move the deal forward.",
                       Appraisals:
                         "Keep your trade conversations and working values together.",
+                      "Trade-ins":
+                        "Receive, prepare, and route every trade to retail or wholesale.",
+                      Accounting:
+                        "Your inventory investment, deal profit, and team earnings.",
                       Conversations:
                         "One place for the conversation, from first hello to follow-up.",
                       Workspace:
@@ -852,124 +848,26 @@ export default function CRM({
               </>
             )}
             {view === "Customers" && (
-              <section className="panel">
-                <div className="table-toolbar">
-                  <div className="segmented">
-                    {[
-                      "all",
-                      "new",
-                      "working",
-                      "appointment",
-                      "sold",
-                      "lost",
-                    ].map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => setStage(s)}
-                        className={stage === s ? "chosen" : ""}
-                      >
-                        {s === "all" ? "All customers" : s}
-                      </button>
-                    ))}
-                  </div>
-                  <span>{filteredCustomers.length} customers</span>
-                </div>
-                {filteredCustomers.length ? (
-                  <div className="table-scroll">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Customer</th>
-                          <th>Vehicle of interest</th>
-                          <th>Stage</th>
-                          <th>Source</th>
-                          <th>Added</th>
-                          <th />
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredCustomers.map((c) => (
-                          <tr key={c.id}>
-                            <td>
-                              <button
-                                className="customer-cell"
-                                onClick={() => openCustomer(c)}
-                              >
-                                <Avatar name={c.name} />
-                                <span>
-                                  <strong>{c.name}</strong>
-                                  <small>
-                                    {c.phone ||
-                                      c.email ||
-                                      "Contact details to add"}
-                                  </small>
-                                </span>
-                              </button>
-                            </td>
-                            <td>
-                              <div className="vehicle-cell">
-                                <Car size={15} />
-                                {currentOpportunity(c.id)?.vehicle_interest ||
-                                  "No active opportunity"}
-                              </div>
-                              {currentOpportunity(c.id)?.trade_vehicle && (
-                                <small className="subtext">
-                                  Trade:{" "}
-                                  {currentOpportunity(c.id)?.trade_vehicle}
-                                </small>
-                              )}
-                            </td>
-                            <td>
-                              <Badge
-                                value={
-                                  currentOpportunity(c.id)?.status ||
-                                  "no active opportunity"
-                                }
-                              />
-                            </td>
-                            <td>{c.source}</td>
-                            <td>{dateLabel(dayKey(c.created_at))}</td>
-                            <td>
-                              <button
-                                className="icon-btn"
-                                aria-label={`Open ${c.name}`}
-                                onClick={() => openCustomer(c)}
-                              >
-                                <ArrowUpRight size={17} />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <Empty
-                    title={
-                      search
-                        ? "No matching customers."
-                        : "Your next relationship starts here."
-                    }
-                    body={
-                      search
-                        ? "Try a name, phone number, email, or vehicle."
-                        : "Add your first customer and keep their whole story in one place."
-                    }
-                    action={
-                      <button
-                        className="btn primary"
-                        onClick={() => {
-                          setEdit(null);
-                          setModal("customer");
-                        }}
-                      >
-                        <Plus size={16} />
-                        Add customer
-                      </button>
-                    }
-                  />
-                )}
-              </section>
+              <CustomerSearch
+                ws={ws}
+                query={search}
+                initialStatus={stage}
+                onOpen={openCustomer}
+              />
+            )}
+            {view === "Accounting" && (
+              <Accounting ws={ws} run={run} busy={busy} />
+            )}
+            {view === "Trade-ins" && (
+              <TradeIntake
+                ws={ws}
+                run={run}
+                busy={busy}
+                onCustomer={(id, opp) => {
+                  const c = findCustomer(id);
+                  if (c) openCustomer(c, opp);
+                }}
+              />
             )}
             {view === "Inventory" && (
               <InventoryView
@@ -1233,44 +1131,14 @@ export default function CRM({
               </>
             )}
             {view === "Conversations" && (
-              <section className="panel connection-page">
-                <span className="connection-icon">
-                  <MessageSquare size={32} />
-                </span>
-                <span className="eyebrow">THE NEXT PIECE OF THE WORKSPACE</span>
-                <h2>Keep every conversation together.</h2>
-                <p>
-                  Two-way email and texting will live here once the providers
-                  are connected. For now, save notes and call outcomes directly
-                  on each customer.
-                </p>
-                <div className="integration-grid">
-                  <div>
-                    <Mail />
-                    <h3>Email conversations</h3>
-                    <p>Sending, replies, attachments, and delivery status.</p>
-                    <Badge value="not connected" />
-                  </div>
-                  <div>
-                    <MessageSquare />
-                    <h3>Business texting</h3>
-                    <p>
-                      A dedicated number, consent preferences, and opt-outs.
-                    </p>
-                    <Badge value="not connected" />
-                  </div>
-                  <div>
-                    <Phone />
-                    <h3>Phone history</h3>
-                    <p>Manual call logging is ready in customer profiles.</p>
-                    <Badge value="manual logging" />
-                  </div>
-                </div>
-                <button className="btn" onClick={() => navigate("Customers")}>
-                  Open customer profiles
-                  <ArrowRight size={16} />
-                </button>
-              </section>
+              <ConversationsInbox
+                ws={ws}
+                query={search}
+                onOpen={(c, channel) => {
+                  openCustomer(c);
+                  setProfileTab(channel === "sms" ? "Texts" : "Emails");
+                }}
+              />
             )}
             {view === "Workspace" && (
               <>
@@ -1487,12 +1355,22 @@ export default function CRM({
                   title: String(f.get("title")),
                   due_date: String(f.get("date")),
                   kind: String(f.get("kind")) as "task",
+                  channel: String(f.get("channel") || "call") as "call",
                 },
                 "Task added",
               );
               if (result.ok) setModal(null);
             }}
           >
+            <label>
+              Follow-up action
+              <select name="channel" defaultValue="call">
+                <option value="call">Call</option>
+                <option value="sms">Text message</option>
+                <option value="email">Email</option>
+                <option value="task">General task</option>
+              </select>
+            </label>
             {canManage(ws.member.role) && (
               <label>
                 Assigned to

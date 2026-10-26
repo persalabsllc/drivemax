@@ -1,5 +1,6 @@
 import { attentionCommand } from "./attention-schema";
 import type { AttentionFeed } from "./attention";
+import type { WebsiteInventoryLink } from "./website-inventory";
 import { z } from "zod";
 import { staffSchema, type StaffDetails } from "./team";
 import {
@@ -186,6 +187,7 @@ export type Staff = Partial<Omit<StaffDetails, "role" | "name" | "email">> & {
 export const canManage = (role: string) =>
   role === "owner" || role === "manager";
 export type Workspace = {
+  website_inventory?: WebsiteInventoryLink[];
   attention?: AttentionFeed;
   /** Demo-only per-user acknowledgements. */
   attention_reviewed?: string[];

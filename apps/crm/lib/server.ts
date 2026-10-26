@@ -135,10 +135,19 @@ export async function workspace(
   // Attention can recover pending website inquiries. Finish those writes before
   // reading the customer book so alerts and profiles arrive in the same response.
   const alerts = await attention(s);
-  const rows = await Promise.all(tables.map(all));
+  const [rows, websiteInventory] = await Promise.all([
+    Promise.all(tables.map(all)),
+    d.rpc("dmcrm_inventory_website_state", {
+      p_org: s.org_id,
+      p_actor: s.user_id,
+    }),
+  ]);
+  if (websiteInventory.error)
+    throw new Error("Website inventory status unavailable");
   return {
     org,
     attention: alerts,
+    website_inventory: websiteInventory.data,
     member: { id: s.user_id, name: s.name, role: s.role, staff_id: s.staff_id },
     ...Object.fromEntries(tables.map((t, i) => [t, rows[i]])),
   } as Workspace;

@@ -1,7 +1,21 @@
 "use client";
 import { DeleteVehicle } from "./DeleteVehicle";
 import { useState } from "react";
-import { Car, Search, Plus, ArrowUpRight } from "lucide-react";
+import {
+  Car,
+  Search,
+  Plus,
+  ArrowUpRight,
+  ExternalLink,
+  RefreshCw,
+} from "lucide-react";
+import {
+  controlRoomInventoryUrl,
+  websiteListingEditorUrl,
+  websiteInventoryLabel,
+  websiteInventoryIssue,
+  type WebsiteInventoryLink,
+} from "../lib/website-inventory";
 import { type Command, dayKey, money } from "../lib/model";
 import {
   type InventoryVehicle,
@@ -18,14 +32,60 @@ import {
   VehicleFacts,
 } from "./VehicleFields";
 import { Badge, Empty } from "./ui";
+function WebsiteInventoryCell({
+  vehicle,
+  link,
+}: {
+  vehicle: InventoryVehicle;
+  link?: WebsiteInventoryLink;
+}) {
+  const issue = websiteInventoryIssue(link);
+  const label =
+    !link && ["sold", "archived"].includes(vehicle.status)
+      ? "Not listed"
+      : websiteInventoryLabel(link);
+  return (
+    <td className="website-inventory-cell">
+      <span className={`website-listing-state ${link?.state ?? "pending"}`}>
+        {label}
+      </span>
+      {issue && <small className="website-sync-issue">{issue}</small>}
+      {link?.website_id && (
+        <a
+          href={websiteListingEditorUrl(link.website_id)}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`Edit website listing for stock ${vehicle.stock_number}`}
+        >
+          <ExternalLink size={13} /> Edit listing
+        </a>
+      )}
+      {link?.website_price != null && (
+        <small className="subtext">
+          {link.website_price > 0
+            ? `${money(link.website_price)} online`
+            : "Set online price before publishing"}
+        </small>
+      )}
+    </td>
+  );
+}
 export function InventoryView({
   inventory,
   onEdit,
   onAdd,
+  websiteInventory = [],
+  websiteConnected = false,
+  onRefresh,
+  busy = false,
 }: {
   inventory: InventoryVehicle[];
   onEdit: (v: InventoryVehicle) => void;
   onAdd: () => void;
+  websiteInventory?: WebsiteInventoryLink[];
+  websiteConnected?: boolean;
+  onRefresh?: () => void;
+  busy?: boolean;
 }) {
   const [filter, setFilter] = useState("in_stock"),
     [search, setSearch] = useState("");
@@ -41,6 +101,9 @@ export function InventoryView({
     )
     .sort((a, b) => a.acquired_on.localeCompare(b.acquired_on));
   const stock = inventory.filter((v) => v.status === "in_stock");
+  const websiteById = new Map(
+    websiteInventory.map((link) => [link.inventory_id, link]),
+  );
   return (
     <>
       <div className="inventory-summary">
@@ -59,6 +122,42 @@ export function InventoryView({
           <strong>{money(stock.reduce((s, v) => s + v.price, 0))}</strong>
         </div>
       </div>
+      {websiteConnected && (
+        <section
+          className="website-inventory-note"
+          aria-label="Website inventory connection"
+        >
+          <div>
+            <strong>Add once. Finish your listing in Control Room.</strong>
+            <p>
+              New vehicles create website drafts with their details and starting
+              price. Add photos, descriptions, and set your online price in
+              Control Room before publishing. Later website pricing stays
+              separate from CRM asking prices.
+            </p>
+          </div>
+          <div className="website-inventory-actions">
+            <a
+              className="btn small"
+              href={controlRoomInventoryUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <ExternalLink size={14} /> Control Room
+            </a>
+            {onRefresh && (
+              <button
+                type="button"
+                className="btn small"
+                onClick={onRefresh}
+                disabled={busy}
+              >
+                <RefreshCw size={14} /> Refresh website status
+              </button>
+            )}
+          </div>
+        </section>
+      )}
       <section className="panel">
         <div className="inventory-toolbar">
           <div className="segmented">
@@ -93,6 +192,7 @@ export function InventoryView({
                   <th>Cost</th>
                   <th>Asking price</th>
                   <th>Status</th>
+                  {websiteConnected && <th>Website</th>}
                   <th />
                 </tr>
               </thead>
@@ -128,6 +228,12 @@ export function InventoryView({
                     <td>
                       <Badge value={v.status} />
                     </td>
+                    {websiteConnected && (
+                      <WebsiteInventoryCell
+                        vehicle={v}
+                        link={websiteById.get(v.id)}
+                      />
+                    )}
                     <td>
                       <button
                         className="icon-btn"
@@ -177,7 +283,9 @@ export function InventoryForm({
   demo,
   submit,
   onDelete,
+  websiteConnected = false,
 }: {
+  websiteConnected?: boolean;
   onDelete?: (reason: string) => Promise<boolean>;
   existing: InventoryVehicle | null;
   busy: boolean;
@@ -328,7 +436,11 @@ export function InventoryForm({
         />
       )}
       <div className="modal-footer">
-        <span>Each vehicle belongs to your dealership.</span>
+        <span>
+          {websiteConnected
+            ? "New vehicles also create a website draft for photos and pricing in Control Room."
+            : "Each vehicle belongs to your dealership."}
+        </span>
         <button className="btn primary" disabled={busy}>
           {busy ? "Saving…" : existing ? "Save vehicle" : "Add to inventory"}
         </button>

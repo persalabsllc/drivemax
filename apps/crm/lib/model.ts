@@ -1,4 +1,5 @@
-import { attentionCommand, type AttentionFeed } from "./attention";
+import { attentionCommand } from "./attention-schema";
+import type { AttentionFeed } from "./attention";
 import { z } from "zod";
 import { staffSchema, type StaffDetails } from "./team";
 import {

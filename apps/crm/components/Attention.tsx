@@ -107,6 +107,20 @@ export function AttentionCenter({
           {error} The displayed alerts may be out of date.
         </p>
       )}
+      {feed.websiteIntake?.connected && (
+        <p
+          className={
+            feed.websiteIntake.pending
+              ? "website-intake-status intake-pending"
+              : "website-intake-status"
+          }
+          role={feed.websiteIntake.pending ? "status" : undefined}
+        >
+          {feed.websiteIntake.pending
+            ? `${feed.websiteIntake.pending} website ${feed.websiteIntake.pending === 1 ? "inquiry is" : "inquiries are"} waiting to import. Requests are saved on the website; automatic retries are running. If this persists, check the website’s lead inbox.`
+            : "Website connected · Test drives, sell-your-car requests, contact and financing inquiries arrive here automatically."}
+        </p>
+      )}
       <div className="attention-list">
         {feed.items.slice(0, expanded ? 100 : 6).map((item) => (
           <article
@@ -147,7 +161,9 @@ export function AttentionCenter({
         ))}
         {!feed.items.length && (
           <p className="attention-empty">
-            You’re caught up. New replies and leads will appear here.
+            {feed.websiteIntake?.pending
+              ? "Website inquiries will appear here as their imports complete."
+              : "You’re caught up. New replies and leads will appear here."}
           </p>
         )}
       </div>

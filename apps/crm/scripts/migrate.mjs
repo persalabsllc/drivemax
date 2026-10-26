@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import pg from "pg";
+import { verifyWebsiteIntake } from "./verify-website-intake.mjs";
 if (process.env.VERCEL_ENV === "production") {
   if (!process.env.POSTGRES_URL)
     throw new Error("CRM database configuration is required.");
@@ -64,6 +65,10 @@ if (process.env.VERCEL_ENV === "production") {
           : "Applied CRM migration: " + name,
       );
     }
+    await verifyWebsiteIntake(client);
+    console.log(
+      "Verified website-to-CRM intake with rolled-back fixtures: contact, test drive, sell-your-car, retry deduplication.",
+    );
     await client.query("commit");
   } catch (e) {
     await client.query("rollback").catch(() => {});

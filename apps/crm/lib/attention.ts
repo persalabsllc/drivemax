@@ -1,4 +1,4 @@
-import { z } from "zod";
+export { attentionCommand } from "./attention-schema";
 import {
   canManage,
   dayKey,
@@ -10,7 +10,7 @@ import {
 
 export type AttentionItem = {
   key: string;
-  kind: "reply" | "failed" | "lead" | "task";
+  kind: "reply" | "failed" | "lead" | "website" | "task";
   id: string;
   customer_id: string | null;
   customer_name: string;
@@ -20,16 +20,16 @@ export type AttentionItem = {
   detail: string;
   created_at: string;
 };
-export type AttentionFeed = { items: AttentionItem[]; total: number };
-export const attentionCommand = z.object({
-  type: z.literal("review_attention"),
-  kind: z.enum(["reply", "failed", "lead"]),
-  id: z.uuid(),
-});
+export type AttentionFeed = {
+  items: AttentionItem[];
+  total: number;
+  websiteIntake?: { connected: boolean; pending: number | null };
+};
 export const attentionLabel = {
   reply: "Customer reply",
   failed: "Message failed",
   lead: "New lead",
+  website: "Website inquiry",
   task: "Task due",
 };
 

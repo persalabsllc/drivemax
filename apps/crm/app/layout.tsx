@@ -3,9 +3,12 @@ import "./globals.css";
 import "./operations.css";
 import "./appointments.css";
 import "./fi-menu.css";
+import "./staff.css";
 export const metadata: Metadata = {
   title: "Drive Max CRM",
-  description: "Your dealership. Every relationship. One workspace.",
+  applicationName: "Drive Max CRM",
+  description:
+    "Drive Max staff workspace for customers, appointments, inventory, deals and follow-up.",
   robots: { index: false, follow: false },
   icons: { icon: "/favicon.svg" },
 };

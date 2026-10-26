@@ -14,6 +14,14 @@ A standalone Next.js application for Drive Max customer management, showroom vis
 
 ## Setup
 
+### Staff address
+
+`crm.drivemaxusedcars.com` is assigned to this Vercel project for production. The authoritative nameservers are HostGator (`hgns1.hostgator.com`, `hgns2.hostgator.com`), so activation requires a CNAME record at HostGator: host `crm`, target `92ff748cd5f59b4d.vercel-dns-016.com`. This target was returned by Vercel for this project; re-check the domain configuration before future DNS changes. At setup on October 26, 2026, ownership was verified and DNS was still pending. Keep the current `drive-max-crm.vercel.app` address available until DNS and HTTPS have been checked.
+
+The new host uses the same CRM project and database. Password sign-in, manager-issued setup links and API calls use the current host; session cookies have no parent-domain scope. No OAuth or emailed authentication callback is enabled. A new host requires a fresh sign-in with the existing CRM account. The login page directs staff into the live workspace; `/demo` remains a separate, explicitly labeled sample-data route for testing.
+
+Settings provides staff access, dealership details, account-scoped exports and an explicit communication connection status. A workspace JSON export is not a database backup or a tested restore process; automatic backup retention and a restore drill still need verification with the database provider before treating exports as a recovery plan.
+
 Use the committed lockfile with `npm ci`. Required variables are listed in `.env.example`. Only the Supabase URL and publishable key are public; the service role and database connection remain server-only. Never commit environment files.
 
 `npm run build` applies pending numbered `db/*.sql` migrations only when `VERCEL_ENV=production`, under a transaction and advisory lock. Applied checksums are recorded in `dmcrm_schema_migrations`; modifying an applied migration fails the build. Existing installations are baselined at 001. Preview/local builds never migrate shared storage. The initial migration reads active owner identities from `public.staff` to seed CRM memberships. Migrations create or alter only CRM objects; existing website tables and identities are unchanged.

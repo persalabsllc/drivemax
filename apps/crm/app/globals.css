@@ -771,7 +771,9 @@
 .attention-list { display: grid; gap: 8px; }
 .attention-item { display: grid; grid-template-columns: 108px minmax(0, 1fr) auto; align-items: center; gap: 14px; border: 1px solid #e5e9ef; border-left: 3px solid #d99b35; border-radius: 9px; padding: 12px; }
 .attention-reply, .attention-failed { border-left-color: #cf3449; background: #fffafb; }
-.attention-lead { border-left-color: #3b82f6; }
+.attention-lead, .attention-website { border-left-color: #3b82f6; }
+.website-intake-status { margin: 0 0 16px; padding: 11px 14px; border-radius: 9px; background: #eef6f0; color: #245338; font-size: 13px; line-height: 1.5; }
+.website-intake-status.intake-pending { background: #fff4df; color: #794800; }
 .attention-kind { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; font-weight: 700; color: #646f80; }
 .attention-open { font-family: inherit; display: grid; gap: 3px; min-width: 0; text-align: left; border: 0; background: none; padding: 0; cursor: pointer; color: #1e293b; }
 .attention-open strong { font-size: 13px; }

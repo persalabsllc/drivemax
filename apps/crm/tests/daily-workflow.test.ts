@@ -232,7 +232,7 @@ test("live migrations enforce safe deletion, preserved history, per-user alerts 
       insert into auth.users(id,email) values('${owner}','owner@example.invalid'),('${sales}','sales@example.invalid');
       insert into public.staff values('${owner}','Test Owner',true,'owner');`);
     for (const name of (await fs.readdir(new URL("../db/", import.meta.url)))
-      .filter((f) => /^\d{3}_.*\.sql$/.test(f))
+      .filter((f) => /^\d{3}_.*\.sql$/.test(f) && Number(f.slice(0, 3)) <= 11)
       .sort())
       await pg.exec(
         await fs.readFile(new URL("../db/" + name, import.meta.url), "utf8"),

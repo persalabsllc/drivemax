@@ -89,7 +89,7 @@ The foundation uses one active dealership per user in the UI. The database suppo
 
 ## Explicitly not connected yet
 
-Two-way email/SMS, automated outbound messages, telephony, website lead import, website inventory synchronization, live book values, e-signatures, lender submissions, and regulated final contracts. Nothing is sent when a sample interaction is logged. Printed forms require review and signatures; condition attestations, signatures, and notarization are not filled automatically.
+Two-way email/SMS, automated outbound messages, telephony, website inventory synchronization, live book values, e-signatures, lender submissions, and regulated final contracts. Nothing is sent when a sample interaction is logged. Printed forms require review and signatures; condition attestations, signatures, and notarization are not filled automatically.
 
 ## Checks
 
@@ -104,3 +104,16 @@ Manual acceptance: create customer → add note/call → check in → create quo
 Settings → Your team → Add user requires first name, last name, email, phone, street address, city, state, and ZIP (address line 2 is optional). Phone numbers are normalized with a country code for future notifications. Phone/address fields are excluded from salesperson workspace payloads and exports; they are visible to managers. Existing staff names are migrated without inventing missing contact information; complete those fields when editing a record.
 
 Owners can add salespeople and managers; managers can add salespeople. Set an initial password of at least 12 characters to create a login immediately, or use the existing private setup-link flow. No email or SMS is sent. Dedicated CRM accounts expose Set password / Reset password to authorized managers, with an audit entry and no stored or retrievable plaintext password. Existing logins linked from another application retain their original password recovery; owners, self-management, cross-dealership identities, and Control Room accounts are protected. Newly created identities are linked atomically to CRM membership, and failed links clean up only identities confirmed unlinked. No existing user credentials are changed by deployment.
+
+
+## Website lead intake
+
+Migration `012_website_intake.sql` connects the public site's existing `submit_lead` transaction to the CRM in the shared Supabase database. Test-drive, sell-your-car, general contact, financing, and other vehicle inquiries create a Website opportunity, the original inquiry in Activity, and a due-today follow-up task. Employment applications stay in the website inbox. No website form change, second endpoint, new secret, or outbound message is required.
+
+Each website request ID is imported once. A normalized email/phone match reuses a customer only when exactly one profile matches and the full name agrees. Conflicting/shared contact details create a separate profile with an explicit review note. Existing profile details and sold deals are preserved. An active existing salesperson is retained; otherwise a linked website staff identity is used if available, with remaining inquiries unassigned in the owner/manager attention feed. Assign the opportunity through the normal salesperson selector.
+
+The original server-captured vehicle snapshot is retained. Inventory is linked by VIN only when the CRM unit is available; website and CRM inventory IDs are independent. Requested test-drive times require staff confirmation. Seller vehicles remain appraisal inquiries, with condition, title, mileage, asking price and payoff information in Activity; they are not stock or trade inventory. Follow-up tasks use the preferred channel, with SMS selected only for explicit current customer-care consent. No automatic appointment or message is created.
+
+The private intake table retains source payloads and mapping IDs independently of later website edits. Imports run atomically inside a failure-isolated trigger. Failures keep the original website inquiry and notification queue intact, leave no partial CRM deal, and retry with bounded backoff during the existing 30-second CRM attention refresh. That refresh also recovers unqueued open inquiries in batches of 20. Owners/managers see a pending-import warning; applicants and closed historical website deals are excluded from backfill. Website request alerts have per-user review receipts, including requests from returning customers. Existing open website inquiries are imported on rollout/refresh.
+
+This is one-way form intake, not a synchronization of Control Room status changes, later email conversations, or inventory. CRM email/SMS provider activation remains separate. Tests exercise both applications' actual SQL migrations and the website's `submit_lead` procedure. Production migrations additionally run contact, test-drive, seller and duplicate-retry fixtures within a savepoint and roll them back before committing; no test leads or notifications survive.

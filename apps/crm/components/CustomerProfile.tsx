@@ -32,6 +32,8 @@ import {
 import { personFromCustomer, fullName } from "../lib/people";
 import { Avatar, Badge, Modal, Empty } from "./ui";
 import { CustomerForm } from "./CustomerForm";
+import { AppointmentDialog, CustomerAppointments } from "./Appointments";
+import type { Appointment } from "../lib/appointments";
 import { OpportunityForm } from "./OpportunityForm";
 import { InsuranceForm } from "./InsuranceForm";
 import {
@@ -48,7 +50,12 @@ const SoldPack = dynamic(() => import("./SoldPack").then((m) => m.SoldPack), {
   ssr: false,
 });
 type Tab =
-  "Activity" | "Details" | "Desking" | "Insurance" | "Texts" | "Emails";
+  | "Activity"
+  | "Details"
+  | "Desking"
+  | "Insurance"
+  | "Texts"
+  | "Emails";
 export function CustomerProfile({
   ws,
   customer,
@@ -73,6 +80,9 @@ export function CustomerProfile({
   initialOpportunityId?: string | null;
 }) {
   const [compose, setCompose] = useState<Compose | null>(null),
+    [appointmentDialog, setAppointmentDialog] = useState<
+      Appointment | "new" | null
+    >(null),
     [taskAction, setTaskAction] = useState<Task | null>(null),
     [recap, setRecap] = useState<string | null>(null),
     [unwindReason, setUnwindReason] = useState("");
@@ -169,6 +179,12 @@ export function CustomerProfile({
           </span>
         </div>
         <CustomerTasks ws={ws} customer={customer} onTask={setTaskAction} />
+        <CustomerAppointments
+          ws={ws}
+          customer={customer}
+          onSchedule={() => setAppointmentDialog("new")}
+          onOpen={setAppointmentDialog}
+        />
         <section className="opportunity-section">
           <div className="desk-section-head">
             <div>
@@ -727,6 +743,19 @@ export function CustomerProfile({
           </div>
         )}
       </Modal>
+      {appointmentDialog && (
+        <AppointmentDialog
+          key={appointmentDialog === "new" ? "new" : appointmentDialog.id}
+          ws={ws}
+          customer={customer}
+          opportunityId={o?.id ?? null}
+          existing={appointmentDialog === "new" ? undefined : appointmentDialog}
+          busy={busy}
+          error={error}
+          run={run}
+          onClose={() => setAppointmentDialog(null)}
+        />
+      )}
       {modal === "task" && (
         <Modal
           title="Add follow-up task"
@@ -905,6 +934,7 @@ export function CustomerProfile({
           onClose={() => setModal(null)}
         >
           <CustomerForm
+            ws={ws}
             existing={customer}
             busy={busy}
             error={error}

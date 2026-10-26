@@ -39,6 +39,16 @@ The initial workspace contains no real customer data. Existing website leads and
 - Salespeople receive only their assigned tasks from the server; owners/managers receive the full team queue with filters. Customer profiles remain shared within the dealership. This is the routing foundation for future messaging, not an inbound-message integration.
 - Workspace JSON export (with the same task visibility as the signed-in user) and server-side mutation audit log.
 
+## Customer appointments
+
+- Schedule a timed appointment while creating a customer or from any existing profile, Overview, or Planner. New-customer creation and its optional appointment save in one database transaction.
+- Types: test drive, return visit, vehicle viewing, sold delivery, service, trade appraisal, financing/paperwork, and other. Each appointment has an assigned active salesperson, date/time, 15–240 minute duration, and a brief description. Times are entered and displayed in Eastern Time regardless of the browser's timezone; skipped or ambiguous daylight-saving times are rejected.
+- Overview shows upcoming appointments with customer, salesperson, time, type and description, with Today / Next 7 days / past unresolved and salesperson filters. Today includes recorded outcomes. Appointments also appear in the daily/weekly/monthly Planner and at the top of customer profiles, including closed appointment history.
+- Appointments can be confirmed, rescheduled, marked arrived/completed/no-show, or canceled. Arrived also checks the customer into the showroom; completing an appointment does not end their showroom visit. Rescheduling clears a prior confirmation. Closed records remain read-only; schedule another appointment for another visit.
+- Scheduling and every change write a readable customer activity and an immutable before/after audit entry. Revision checks prevent overwriting another session's edits. Overlapping bookings for the same salesperson show a warning and can still be saved intentionally.
+- The team schedule is shared within the dealership. Salespeople can schedule and manage their own appointments; owners/managers can assign and manage anyone's. Appointments have independent assignments; deactivating a salesperson hands their open appointments to the selected replacement and retains completed attribution. Planner follows the existing owner filter and shows a salesperson's own appointments to that salesperson.
+- Delivery/service appointments can reference sold opportunities. Appointment changes never silently change deal status, cancel other bookings, or send messages. Existing date-only appointment tasks remain intact without invented times. No email/SMS reminders or external calendar sync are enabled.
+
 ## Deal operations and accounting
 
 - Customer/deal search combines active/lost/sold status, inclusive sold dates, salesperson, name/phone/email, vehicle/VIN/stock, and exact ZIP or a 10–500 mile radius. ZIP distances are straight-line estimates using the bundled Census reference, not road miles. Missing/unmapped ZIPs are excluded from radius results. The complete customer book is loaded in server batches and search results paginate in the UI.

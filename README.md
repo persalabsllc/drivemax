@@ -6,7 +6,7 @@ Vercel project: `drivemaxusedcars`
 
 ## CRM email connection
 
-The website remains the email transport for both Control Room and CRM. Configure the same server-only `CRM_EMAIL_WORKER_SECRET` on both production Vercel projects. Existing `RESEND_API_KEY`, `RESEND_WEBHOOK_SECRET`, `LEAD_EMAIL_FROM` and `LEAD_REPLY_DOMAIN` remain on the website. `/api/crm/email` checks the shared secret and claims immutable jobs from the shared database; it accepts only a message ID, never arbitrary email content. Preview deployments do not send CRM mail.
+The website remains the email transport for both Control Room and CRM. Configure the same server-only `CRM_EMAIL_WORKER_SECRET` on both production Vercel projects. The existing send-only `RESEND_API_KEY` stays in place. A separate server-only `RESEND_RECEIVING_API_KEY` with full API access is required for received-message retrieval and connection verification; Resend sending-only keys cannot read replies. Both keys, `RESEND_WEBHOOK_SECRET`, `LEAD_EMAIL_FROM` and `LEAD_REPLY_DOMAIN` remain on the website. `/api/crm/email` checks the shared secret and claims immutable jobs from the shared database; it accepts only a message ID, never arbitrary email content. Preview deployments do not send CRM mail.
 
 Deploy CRM migration `014_email.sql` before this website release. Enable the existing `/api/email/webhook` subscription for received, delivered, bounced, failed, suppressed and complained email. Production builds perform a read-only check of the verified dealership sender, webhook state and receiving API access. They do not send test emails.
 

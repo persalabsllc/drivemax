@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     return new Response("Not configured", { status: 503 });
   if (Number(request.headers.get("content-length")) > 100000)
     return new Response("Too large", { status: 413 });
-  const resend = new Resend(process.env.RESEND_API_KEY);
+  const resend = new Resend(process.env.RESEND_RECEIVING_API_KEY);
   let event: WebhookEventPayload;
   try {
     const payload = await request.text();

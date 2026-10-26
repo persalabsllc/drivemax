@@ -96,6 +96,7 @@ export async function POST(req: NextRequest) {
                         "Login email cannot be changed here",
                         "Closed opportunity is read-only",
                         "Select an active opportunity",
+                        "Complete the trade vehicle details or remove the trade before marking this deal sold.",
                         "This inventory vehicle has already been sold",
                         "Paperwork changed in another session. Reload before saving.",
                       ].includes(error.message)

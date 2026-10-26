@@ -34,12 +34,14 @@ import {
   Target,
   TrendingUp,
   RefreshCw,
+  Calculator,
 } from "lucide-react";
 import {
   type Workspace,
   type Customer,
   type Task,
   type Quote,
+  type PrintableQuote,
   type QuoteValues,
   type Command,
   opportunityOpen,
@@ -62,6 +64,7 @@ import { CustomerProfile } from "./CustomerProfile";
 import { CustomerForm } from "./CustomerForm";
 import { InventoryView, InventoryForm } from "./Inventory";
 import { Desking } from "./Desking";
+import { QuickQuote } from "./QuickQuote";
 import { PriceQuotePrint } from "./PriceQuotePrint";
 import { TeamSettings } from "./TeamSettings";
 import { ConversationsInbox } from "./ConversationsInbox";
@@ -154,9 +157,10 @@ export default function CRM({
     [planDate, setPlanDate] = useState(dayKey()),
     [planMode, setPlanMode] = useState<"Day" | "Week" | "Month">("Week"),
     [mobileNav, setMobileNav] = useState(false),
+    [quickQuoteOpen, setQuickQuoteOpen] = useState(false),
     [printData, setPrintData] = useState<{
-      customer: Customer;
-      quote?: Quote;
+      customer: Customer | null;
+      quote?: PrintableQuote;
       pack?: boolean;
     } | null>(null);
   const [inventoryEdit, setInventoryEdit] = useState<InventoryVehicle | null>(
@@ -189,6 +193,8 @@ export default function CRM({
   const findCustomer = (id: string | null) =>
     ws.customers.find((c) => c.id === id);
   function navigate(v: View) {
+    setQuickQuoteOpen(false);
+    setPrintData(null);
     setStage("all");
     setView(v);
     setMobileNav(false);
@@ -210,6 +216,8 @@ export default function CRM({
         const next = demoCommand(ws, command);
         setWs(next);
         if (command.type === "create_customer") id = next.customers[0].id;
+        if (command.type === "convert_quick_quote")
+          id = next.quick_quote_conversions?.[command.id]?.customer_id;
         if (command.type === "create_opportunity")
           id = next.opportunities[0].id;
         if (
@@ -274,7 +282,11 @@ export default function CRM({
     a.click();
     URL.revokeObjectURL(url);
   }
-  function print(customer: Customer, quote?: Quote, pack = false) {
+  function print(
+    customer: Customer | null,
+    quote?: PrintableQuote,
+    pack = false,
+  ) {
     setPrintData({ customer, quote, pack });
     setTimeout(() => window.print(), 80);
   }
@@ -586,21 +598,37 @@ export default function CRM({
                   }
                 </p>
               </div>
-              <button
-                className="btn primary"
-                onClick={() => {
-                  if (view === "Inventory") {
-                    setInventoryEdit(null);
-                    setModal("inventory");
-                  } else {
-                    setEdit(null);
-                    setModal("customer");
-                  }
-                }}
-              >
-                <Plus size={17} />
-                {view === "Inventory" ? "Add vehicle" : "Add customer"}
-              </button>
+              <div className="ops-actions">
+                {view === "Desking" && !quickQuoteOpen && (
+                  <button
+                    className="btn primary"
+                    onClick={() => {
+                      setError("");
+                      setQuickQuoteOpen(true);
+                    }}
+                  >
+                    <Calculator size={17} />
+                    Quick quote
+                  </button>
+                )}
+                {!quickQuoteOpen && (
+                  <button
+                    className={view === "Desking" ? "btn" : "btn primary"}
+                    onClick={() => {
+                      if (view === "Inventory") {
+                        setInventoryEdit(null);
+                        setModal("inventory");
+                      } else {
+                        setEdit(null);
+                        setModal("customer");
+                      }
+                    }}
+                  >
+                    <Plus size={17} />
+                    {view === "Inventory" ? "Add vehicle" : "Add customer"}
+                  </button>
+                )}
+              </div>
             </div>
             {(view === "Overview" || view === "Planner") && (
               <div className="task-scope">
@@ -1019,7 +1047,39 @@ export default function CRM({
                 />
               </>
             )}
-            {view === "Desking" && (
+            {view === "Desking" && quickQuoteOpen && (
+              <QuickQuote
+                ws={ws}
+                busy={busy}
+                error={error}
+                onClearError={() => {
+                  setError("");
+                  setPrintData(null);
+                }}
+                onClose={() => {
+                  setQuickQuoteOpen(false);
+                  setPrintData(null);
+                  setError("");
+                }}
+                onPrint={(quote) => print(null, quote)}
+                onCreate={async (command) => {
+                  const result = await run(
+                    command,
+                    "Customer created · quick quote saved",
+                  );
+                  if (result.ok && result.id) {
+                    setQuickQuoteOpen(false);
+                    setPrintData(null);
+                    setSelectedOpp(null);
+                    setSelected(result.id);
+                    setProfileTab("Desking");
+                    setNote("");
+                  }
+                  return result;
+                }}
+              />
+            )}
+            {view === "Desking" && !quickQuoteOpen && (
               <section className="panel">
                 <SectionTitle
                   title="Saved proposals"
@@ -1084,8 +1144,8 @@ export default function CRM({
                   </div>
                 ) : (
                   <Empty
-                    title="A good proposal starts with a customer."
-                    body="Open a customer profile, then choose Desking to build your first proposal."
+                    title="No saved proposals yet."
+                    body="Use Quick quote for a temporary estimate, or open a customer profile to save a proposal."
                     action={
                       <button
                         className="btn"
@@ -1787,12 +1847,13 @@ function PrintSheet({
   data,
   dealership,
 }: {
-  data: { customer: Customer; quote?: Quote; pack?: boolean };
+  data: { customer: Customer | null; quote?: PrintableQuote; pack?: boolean };
   dealership: string;
 }) {
   const { customer: c, quote: q, pack } = data;
   if (q && !pack)
     return <PriceQuotePrint customer={c} quote={q} dealership={dealership} />;
+  if (!c) return null;
   return (
     <section className="print-sheet">
       <header>

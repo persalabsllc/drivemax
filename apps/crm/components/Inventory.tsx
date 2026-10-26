@@ -1,6 +1,7 @@
 "use client";
 import { DeleteVehicle } from "./DeleteVehicle";
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import {
   Car,
   Search,
@@ -8,6 +9,7 @@ import {
   ArrowUpRight,
   ExternalLink,
   RefreshCw,
+  Printer,
 } from "lucide-react";
 import {
   controlRoomInventoryUrl,
@@ -32,6 +34,9 @@ import {
   VehicleFacts,
 } from "./VehicleFields";
 import { Badge, Empty } from "./ui";
+const InventoryPrintMaterials = dynamic(
+  () => import("./InventoryPrintMaterials"),
+);
 function WebsiteInventoryCell({
   vehicle,
   link,
@@ -293,6 +298,7 @@ export function InventoryForm({
   demo: boolean;
   submit: (p: Extract<Command, { type: "save_inventory" }>) => Promise<unknown>;
 }) {
+  const [printing, setPrinting] = useState(false);
   const [v, setV] = useState(() => ({
       ...vehicleDraft(existing),
       recon: String(existing?.recon ?? 0),
@@ -301,150 +307,178 @@ export function InventoryForm({
     [status, setStatus] = useState(existing?.status ?? "in_stock"),
     [localError, setLocalError] = useState("");
   return (
-    <form
-      className="modal-form inventory-form"
-      onSubmit={async (e) => {
-        e.preventDefault();
-        const parsed = inventorySchema.safeParse({
-          ...vehicleValues(v),
-          status,
-        });
-        if (!parsed.success) {
-          setLocalError(parsed.error.issues[0].message);
-          return;
-        }
-        if (parsed.data.acquired_on > dayKey()) {
-          setLocalError("Acquisition date cannot be in the future.");
-          return;
-        }
-        setLocalError("");
-        await submit({
-          type: "save_inventory",
-          ...(existing ? { id: existing.id } : {}),
-          vehicle: parsed.data,
-        });
-      }}
-    >
-      <VinField
-        label="Inventory VIN"
-        vin={v.vin}
-        onChange={(vin) => setV((p) => ({ ...p, vin }))}
-        onDecoded={(d) => setV((p) => applyDecoded(p, d))}
-        required
-        demo={demo}
-      />
-      <VehicleIdentity value={v} onChange={setV} required prefix="Inventory" />
-      <div className="form-grid">
-        <label>
-          Stock number
-          <input
-            value={v.stock_number}
-            onChange={(e) => setV({ ...v, stock_number: e.target.value })}
-            required
-            maxLength={250}
-          />
-        </label>
-        <label>
-          Mileage
-          <input
-            type="number"
-            min={0}
-            max={3000000}
-            step={1}
-            value={v.mileage}
-            onChange={(e) => setV({ ...v, mileage: e.target.value })}
-            required
-          />
-        </label>
-        <label>
-          Exterior color
-          <input
-            value={v.color}
-            onChange={(e) => setV({ ...v, color: e.target.value })}
-            maxLength={250}
-          />
-        </label>
-        <label>
-          Inventory status
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value as typeof status)}
-          >
-            {["in_stock", "pending", "sold", "archived"].map((s) => (
-              <option key={s} value={s}>
-                {s.replace("_", " ")}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-      <div className="form-section-title">
-        <Car size={18} />
-        <div>
-          <h3>Acquisition & pricing</h3>
-          <p>These figures fill the customer’s desking worksheet.</p>
-        </div>
-      </div>
-      <div className="form-grid">
-        {(
-          [
-            ["cost", "Vehicle cost"],
-            ["recon", "Reconditioning cost"],
-            ["price", "Asking price"],
-          ] as const
-        ).map(([key, label]) => (
-          <label key={key}>
-            {label}
+    <>
+      <form
+        className="modal-form inventory-form"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const parsed = inventorySchema.safeParse({
+            ...vehicleValues(v),
+            status,
+          });
+          if (!parsed.success) {
+            setLocalError(parsed.error.issues[0].message);
+            return;
+          }
+          if (parsed.data.acquired_on > dayKey()) {
+            setLocalError("Acquisition date cannot be in the future.");
+            return;
+          }
+          setLocalError("");
+          await submit({
+            type: "save_inventory",
+            ...(existing ? { id: existing.id } : {}),
+            vehicle: parsed.data,
+          });
+        }}
+      >
+        {existing && (
+          <div className="inventory-print-launch">
+            <div>
+              <strong>Ready for the lot</strong>
+              <p>Window sticker and editable Buyers Guide.</p>
+            </div>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => setPrinting(true)}
+            >
+              <Printer size={16} /> Print materials
+            </button>
+          </div>
+        )}
+        <VinField
+          label="Inventory VIN"
+          vin={v.vin}
+          onChange={(vin) => setV((p) => ({ ...p, vin }))}
+          onDecoded={(d) => setV((p) => applyDecoded(p, d))}
+          required
+          demo={demo}
+        />
+        <VehicleIdentity
+          value={v}
+          onChange={setV}
+          required
+          prefix="Inventory"
+        />
+        <div className="form-grid">
+          <label>
+            Stock number
+            <input
+              value={v.stock_number}
+              onChange={(e) => setV({ ...v, stock_number: e.target.value })}
+              required
+              maxLength={250}
+            />
+          </label>
+          <label>
+            Mileage
             <input
               type="number"
               min={0}
-              max={1000000}
-              step=".01"
+              max={3000000}
+              step={1}
+              value={v.mileage}
+              onChange={(e) => setV({ ...v, mileage: e.target.value })}
               required
-              value={v[key]}
-              onChange={(e) => setV({ ...v, [key]: e.target.value })}
             />
           </label>
-        ))}
-        <label>
-          Acquired on
-          <input
-            type="date"
-            value={v.acquired_on}
-            max={dayKey()}
-            required
-            onChange={(e) => setV({ ...v, acquired_on: e.target.value })}
+          <label>
+            Exterior color
+            <input
+              value={v.color}
+              onChange={(e) => setV({ ...v, color: e.target.value })}
+              maxLength={250}
+            />
+          </label>
+          <label>
+            Inventory status
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value as typeof status)}
+            >
+              {["in_stock", "pending", "sold", "archived"].map((s) => (
+                <option key={s} value={s}>
+                  {s.replace("_", " ")}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div className="form-section-title">
+          <Car size={18} />
+          <div>
+            <h3>Acquisition & pricing</h3>
+            <p>These figures fill the customer’s desking worksheet.</p>
+          </div>
+        </div>
+        <div className="form-grid">
+          {(
+            [
+              ["cost", "Vehicle cost"],
+              ["recon", "Reconditioning cost"],
+              ["price", "Asking price"],
+            ] as const
+          ).map(([key, label]) => (
+            <label key={key}>
+              {label}
+              <input
+                type="number"
+                min={0}
+                max={1000000}
+                step=".01"
+                required
+                value={v[key]}
+                onChange={(e) => setV({ ...v, [key]: e.target.value })}
+              />
+            </label>
+          ))}
+          <label>
+            Acquired on
+            <input
+              type="date"
+              value={v.acquired_on}
+              max={dayKey()}
+              required
+              onChange={(e) => setV({ ...v, acquired_on: e.target.value })}
+            />
+          </label>
+        </div>
+        <VehicleFacts vehicle={vehicleValues(v)} today={dayKey()} compact />
+        {(error || localError) && (
+          <p className="form-error" role="alert">
+            {localError || error}
+          </p>
+        )}
+        {existing && onDelete && (
+          <DeleteVehicle
+            label="vehicle"
+            busy={busy}
+            blocked={
+              ["sold", "pending"].includes(existing.status)
+                ? "Resolve the active or sold deal before deleting this vehicle."
+                : undefined
+            }
+            onDelete={onDelete}
           />
-        </label>
-      </div>
-      <VehicleFacts vehicle={vehicleValues(v)} today={dayKey()} compact />
-      {(error || localError) && (
-        <p className="form-error" role="alert">
-          {localError || error}
-        </p>
-      )}
-      {existing && onDelete && (
-        <DeleteVehicle
-          label="vehicle"
-          busy={busy}
-          blocked={
-            ["sold", "pending"].includes(existing.status)
-              ? "Resolve the active or sold deal before deleting this vehicle."
-              : undefined
-          }
-          onDelete={onDelete}
+        )}
+        <div className="modal-footer">
+          <span>
+            {websiteConnected
+              ? "New vehicles also create a website draft for photos and pricing in Control Room."
+              : "Each vehicle belongs to your dealership."}
+          </span>
+          <button className="btn primary" disabled={busy}>
+            {busy ? "Saving…" : existing ? "Save vehicle" : "Add to inventory"}
+          </button>
+        </div>
+      </form>
+      {printing && existing && (
+        <InventoryPrintMaterials
+          vehicle={existing}
+          onClose={() => setPrinting(false)}
         />
       )}
-      <div className="modal-footer">
-        <span>
-          {websiteConnected
-            ? "New vehicles also create a website draft for photos and pricing in Control Room."
-            : "Each vehicle belongs to your dealership."}
-        </span>
-        <button className="btn primary" disabled={busy}>
-          {busy ? "Saving…" : existing ? "Save vehicle" : "Add to inventory"}
-        </button>
-      </div>
-    </form>
+    </>
   );
 }

@@ -197,6 +197,18 @@ export type Message = {
 };
 export const operationCommands = [
   z.object({
+    type: z.literal("delete_inventory"),
+    id: z.uuid(),
+    updated_at: z.iso.datetime({ offset: true }),
+    reason: z.string().trim().min(3).max(2000),
+  }),
+  z.object({
+    type: z.literal("delete_trade_intake"),
+    id: z.uuid(),
+    revision: z.number().int().min(0),
+    reason: z.string().trim().min(3).max(2000),
+  }),
+  z.object({
     type: z.literal("unwind_sale"),
     opportunity_id: z.uuid(),
     reason: z.string().trim().min(3).max(2000),
@@ -487,6 +499,19 @@ export function searchDeals(
       ),
     );
 }
+/** Filter opportunities first, then collapse to one profile before pagination. */
+export function searchCustomers(
+  ws: Workspace,
+  f: SearchFilters,
+  points: ZipPoints = {},
+) {
+  const seen = new Set<string>();
+  return searchDeals(ws, f, points).filter(({ customer }) => {
+    if (seen.has(customer.id)) return false;
+    seen.add(customer.id);
+    return true;
+  });
+}
 export const taskChannel = (t: Task): "call" | "email" | "sms" | "task" =>
   t.channel ??
   (/text|sms/i.test(t.title)
@@ -496,7 +521,7 @@ export const taskChannel = (t: Task): "call" | "email" | "sms" | "task" =>
       : "call");
 export function quoteMessage(q: Quote, c: Customer) {
   const m = calculateQuote(q.values);
-  return `Hi ${c.person?.first_name || c.name.split(" ")[0]}, here is your Drive Max quote for ${q.vehicle}.\n\nVehicle price: $${q.values.price.toFixed(2)}\nDoc fee: $${q.values.docFee.toFixed(2)}\nProtection products: $${productsTotal(q.values).toFixed(2)}\nEstimated total: $${m.total.toFixed(2)}\nDown payment: $${q.values.downPayment.toFixed(2)}\nEstimated balance: $${m.balance.toFixed(2)}${q.values.mode === "cash" ? "" : `\nEstimated payment: $${m.payment.toFixed(2)} for ${q.values.months} months at ${q.values.apr}% APR.`}\n\nEstimate only, subject to lender approval and final paperwork.`;
+  return `Hi ${c.person?.first_name || c.name.split(" ")[0]}, here is your Drive Max quote for ${q.vehicle}.\n\nVehicle price: $${q.values.price.toFixed(2)}\nDoc fee: $${q.values.docFee.toFixed(2)}${q.values.showProtectionProducts !== false ? `\nProtection products: $${productsTotal(q.values).toFixed(2)}` : ""}\nEstimated total: $${m.total.toFixed(2)}\nDown payment: $${q.values.downPayment.toFixed(2)}\nEstimated balance: $${m.balance.toFixed(2)}${q.values.mode === "cash" ? "" : `\nEstimated payment: $${m.payment.toFixed(2)} for ${q.values.months} months${q.values.showAPR !== false ? ` at ${q.values.apr}% APR` : ""}.`}\n\nEstimate only, subject to lender approval and final paperwork.`;
 }
 export function csvText(rows: unknown[][]) {
   return rows

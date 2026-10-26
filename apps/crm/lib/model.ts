@@ -1,3 +1,4 @@
+import { attentionCommand, type AttentionFeed } from "./attention";
 import { z } from "zod";
 import { staffSchema, type StaffDetails } from "./team";
 import {
@@ -184,6 +185,9 @@ export type Staff = Partial<Omit<StaffDetails, "role" | "name" | "email">> & {
 export const canManage = (role: string) =>
   role === "owner" || role === "manager";
 export type Workspace = {
+  attention?: AttentionFeed;
+  /** Demo-only per-user acknowledgements. */
+  attention_reviewed?: string[];
   /** In-memory retry keys used only by the demo; live conversions stay server-side. */
   quick_quote_conversions?: Record<
     string,
@@ -255,11 +259,11 @@ export const defaultQuote: QuoteValues = {
   price: 0,
   docFee: 399,
   tax: 0,
-  titleFee: 0,
+  titleFee: 114,
   tradeAllowance: 0,
   payoff: 0,
   downPayment: 0,
-  apr: 9.99,
+  apr: 25,
   months: 60,
   acv: 0,
   recon: 0,
@@ -317,7 +321,9 @@ export const quoteSchema = z
     addOns: amount.optional(),
     serviceContract: amount.optional(),
     otherTaxes: amount.optional(),
-    daysToFirstPayment: z.number().int().min(30).max(120).optional(),
+    daysToFirstPayment: z.number().int().min(30).max(365).optional(),
+    showAPR: z.boolean().optional(),
+    showProtectionProducts: z.boolean().optional(),
     financeOptions: z
       .array(
         z.object({
@@ -363,6 +369,7 @@ export const commandSchema = z.discriminatedUnion("type", [
     quote: quickQuoteSchema,
   }),
   ...appointmentCommands,
+  attentionCommand,
   ...operationCommands,
   z.object({
     type: z.literal("save_staff"),

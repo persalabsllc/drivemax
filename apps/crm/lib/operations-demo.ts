@@ -1,3 +1,4 @@
+import { demoAttention } from "./attention";
 import type { Command, Opportunity, Workspace } from "./model";
 import { clearFIPaperwork } from "./fi-paperwork";
 import {
@@ -123,6 +124,72 @@ export function demoOperations(
       created_at: stamp,
       created_by: s.member.name,
     });
+  if (p.type === "review_attention") {
+    if (!demoAttention(s).items.some((i) => i.key === `${p.kind}:${p.id}`))
+      return s;
+    s.attention_reviewed = [
+      ...(s.attention_reviewed ?? []),
+      `${s.member.id}:${p.kind}:${p.id}`,
+    ];
+    return s;
+  }
+  if (p.type === "delete_inventory" || p.type === "delete_trade_intake") {
+    checkManager();
+    const trade =
+      p.type === "delete_trade_intake"
+        ? s.trades!.find((t) => t.id === p.id)
+        : null;
+    if (
+      p.type === "delete_trade_intake" &&
+      (!trade || trade.revision !== p.revision)
+    )
+      throw Error("Trade changed in another session. Reload before saving.");
+    if (trade?.status === "wholesaled")
+      throw Error("A completed wholesale sale cannot be deleted.");
+    const vid =
+      p.type === "delete_inventory"
+        ? p.id
+        : trade?.status !== "returned"
+          ? trade?.inventory_id
+          : null;
+    if (
+      p.type === "delete_inventory" &&
+      s.trades!.some((t) => t.inventory_id === vid && t.status !== "returned")
+    )
+      throw Error(
+        "Delete this vehicle from Trade-ins to also remove its intake record.",
+      );
+    if (vid) {
+      const iv = s.inventory.find((v) => v.id === vid);
+      if (!iv) throw Error("Inventory unavailable");
+      if (p.type === "delete_inventory" && iv.updated_at !== p.updated_at)
+        throw Error(
+          "Vehicle changed in another session. Reload before deleting.",
+        );
+      if (
+        ["sold", "pending"].includes(iv.status) ||
+        s.opportunities.some(
+          (o) => o.inventory_id === vid && o.status !== "lost",
+        )
+      )
+        throw Error(
+          "This vehicle is attached to an active or sold deal. Resolve that deal before deleting.",
+        );
+      s.inventory = s.inventory.filter((v) => v.id !== vid);
+    }
+    if (trade) {
+      history(
+        trade.customer_id,
+        trade.opportunity_id,
+        `Trade-in ${trade.stock_number} deleted: ${p.reason}. Original sale and trade accounting retained.`,
+      );
+      s.trades = s.trades!.filter((t) => t.id !== trade.id);
+    } else {
+      for (const o of s.opportunities.filter((o) => o.inventory_id === vid))
+        history(o.customer_id, o.id, `Inventory vehicle deleted: ${p.reason}`);
+    }
+    return s;
+  }
   if (p.type === "unwind_sale") {
     checkManager();
     const o = s.opportunities.find((o) => o.id === p.opportunity_id),
@@ -437,5 +504,26 @@ export function demoOperations(
   if (p.type === "mark_sold" || p.type === "close_opportunity")
     for (const o of next.opportunities.filter((o) => o.status === "sold"))
       recordSale(next, o, stamp);
+  for (const t of next.tasks.filter((t) => t.customer_id)) {
+    const old = input.tasks.find((x) => x.id === t.id);
+    const label = !old
+      ? `Task scheduled: ${t.title} · due ${t.due_date}`
+      : !old.completed_at && t.completed_at
+        ? `Task completed: ${t.title}`
+        : !old.canceled_at && t.canceled_at
+          ? `Task canceled: ${t.title}`
+          : null;
+    if (label)
+      next.activities.push({
+        id: crypto.randomUUID(),
+        org_id: next.org.id,
+        customer_id: t.customer_id!,
+        opportunity_id: t.opportunity_id,
+        kind: "system",
+        body: label,
+        created_by: next.member.name,
+        created_at: stamp,
+      });
+  }
   return next;
 }

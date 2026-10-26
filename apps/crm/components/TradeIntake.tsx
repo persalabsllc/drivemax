@@ -1,4 +1,5 @@
 "use client";
+import { DeleteVehicle } from "./DeleteVehicle";
 import { useState } from "react";
 import { ArrowLeftRight } from "lucide-react";
 import { type Workspace, fullMoney, canManage } from "../lib/model";
@@ -369,6 +370,37 @@ function TradeEditor({
             {error}
           </p>
         )}
+        <DeleteVehicle
+          label="trade-in"
+          busy={busy}
+          linked={!!linked && t.status !== "returned"}
+          blocked={
+            t.status === "wholesaled"
+              ? "A completed wholesale sale cannot be deleted."
+              : linked &&
+                  ["sold", "pending"].includes(linked.status) &&
+                  t.status !== "returned"
+                ? "Resolve the linked vehicle’s deal before deleting this trade."
+                : undefined
+          }
+          onDelete={async (reason) => {
+            const result = await run(
+              {
+                type: "delete_trade_intake",
+                id: t.id,
+                revision: t.revision,
+                reason,
+              },
+              "Trade-in deleted",
+            );
+            if (result.ok) onClose();
+            else
+              setError(
+                "Trade could not be deleted. Review the workspace error and check for an active or sold deal.",
+              );
+            return result.ok;
+          }}
+        />
         {!locked && (
           <button className="btn primary" disabled={busy}>
             Save trade

@@ -757,3 +757,48 @@
 .quick-quote-vehicle select { width: 100%; min-width: 0; }
 .quick-quote-actions { display: grid; gap: 10px; margin-top: 20px; }
 .quick-quote-actions .btn { white-space: normal; }
+
+/* Daily attention and quote presentation controls. */
+.quote-presentation { border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin: 20px 0 16px; display: grid; gap: 12px; }
+.quote-presentation legend { font-size: 12px; font-weight: 700; padding: 0 6px; }
+.quote-presentation label { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+.quote-presentation input[type="checkbox"] { width: 17px; height: 17px; flex-shrink: 0; accent-color: var(--red); }
+.quote-presentation p { font-size: 11px; line-height: 1.5; color: #64748b; margin: 0; }
+.attention-bell { display: flex; align-items: center; gap: 5px; background: #f1f5f9; border: 0; border-radius: 9px; padding: 9px; color: #475569; cursor: pointer; }
+.attention-bell.has-alerts { background: #fff1f2; color: #b42336; }
+.attention-bell span { font-size: 11px; font-weight: 700; min-width: 14px; }
+.attention-count { padding: 4px 8px; border-radius: 16px; background: #fff1f2; color: #b42336; font-size: 11px; }
+.attention-list { display: grid; gap: 8px; }
+.attention-item { display: grid; grid-template-columns: 108px minmax(0, 1fr) auto; align-items: center; gap: 14px; border: 1px solid #e5e9ef; border-left: 3px solid #d99b35; border-radius: 9px; padding: 12px; }
+.attention-reply, .attention-failed { border-left-color: #cf3449; background: #fffafb; }
+.attention-lead { border-left-color: #3b82f6; }
+.attention-kind { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; font-weight: 700; color: #646f80; }
+.attention-open { font-family: inherit; display: grid; gap: 3px; min-width: 0; text-align: left; border: 0; background: none; padding: 0; cursor: pointer; color: #1e293b; }
+.attention-open strong { font-size: 13px; }
+.attention-open span { font-size: 12px; }
+.attention-open small { font-size: 11px; color: #64748b; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.attention-actions { display: flex; align-items: center; gap: 6px; }
+.attention-footer { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; font-size: 10px; color: #64748b; margin-top: 14px; line-height: 1.6; }
+.attention-empty { padding: 18px 0; font-size: 13px; color: #64748b; }
+.delete-vehicle { padding: 16px; border: 1px solid #f2d2d7; border-radius: 10px; margin-top: 16px; }
+.delete-vehicle h3 { font-size: 14px; margin: 0 0 8px; }
+.delete-vehicle p { color: #6b7280; font-size: 12px; line-height: 1.5; margin: 8px 0 12px; }
+.delete-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.btn.danger { border-color: #e8b5be; color: #b42336; background: #fff5f5; }
+.timeline article p { white-space: pre-wrap; overflow-wrap: anywhere; }
+@media(max-width: 700px) {
+ .attention-item { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+ .attention-kind { grid-column: 1 / -1; }
+ .attention-center .section-heading { align-items: flex-start; flex-wrap: wrap; }
+ .attention-actions { flex-direction: column; }
+ .quote-presentation label { align-items: flex-start; line-height: 1.5; }
+}
+.quote-presentation { min-width: 0; }
+.quote-presentation legend { font-family: inherit; }
+.quote-presentation label { flex-direction: row; text-align: left; }
+@media(max-width: 700px) {
+ .topbar .breadcrumb { display: none; }
+ .topbar-actions { flex: 1; min-width: 0; }
+ .topbar .global-search { flex: 1; min-width: 0; width: auto; }
+ .topbar .global-search input { width: 100%; min-width: 0; }
+}

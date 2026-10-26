@@ -1,6 +1,7 @@
 "use client";
 import { useState, useMemo } from "react";
 import {
+  Bell,
   LayoutDashboard,
   Users,
   DoorOpen,
@@ -80,6 +81,9 @@ import {
   appointmentTime,
   type Appointment,
 } from "../lib/appointments";
+import { AttentionCenter, useAttention } from "./Attention";
+import type { AttentionItem } from "../lib/attention";
+import { TaskAction, MessageComposer, type Compose } from "./Communications";
 import { CustomerSearch } from "./CustomerSearch";
 import { Accounting } from "./Accounting";
 import { TradeIntake } from "./TradeIntake";
@@ -166,6 +170,12 @@ export default function CRM({
   const [inventoryEdit, setInventoryEdit] = useState<InventoryVehicle | null>(
     null,
   );
+  const alerts = useAttention(ws, demo, busy);
+  const [attentionTask, setAttentionTask] = useState<Task | null>(null);
+  const [attentionCompose, setAttentionCompose] = useState<{
+    customer: Customer;
+    compose: Compose;
+  } | null>(null);
   const today = dayKey(),
     customer = ws.customers.find((c) => c.id === selected),
     openTasks = visibleTasks(ws)
@@ -246,6 +256,44 @@ export default function CRM({
         e instanceof Error ? e.message : "Could not save. Please try again.",
       );
       return { ok: false };
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function openAttention(item: AttentionItem) {
+    setBusy(true);
+    setError("");
+    try {
+      let current = ws;
+      if (!demo) {
+        const response = await fetch("/api/workspace", { cache: "no-store" });
+        if (!response.ok)
+          throw Error(
+            "Could not load the latest customer activity. Refresh and try again.",
+          );
+        current = await response.json();
+        setWs(current);
+      }
+      if (item.kind === "task") {
+        const task = current.tasks.find(
+          (t) => t.id === item.id && isOpenTask(t),
+        );
+        if (task) setAttentionTask(task);
+        return;
+      }
+      const c = current.customers.find((c) => c.id === item.customer_id);
+      if (c) {
+        openCustomer(c, item.opportunity_id);
+        setProfileTab(
+          item.channel === "email"
+            ? "Emails"
+            : item.channel === "sms"
+              ? "Texts"
+              : "Activity",
+        );
+      }
+    } catch (e) {
+      setError((e as Error).message);
     } finally {
       setBusy(false);
     }
@@ -517,6 +565,19 @@ export default function CRM({
                 />
               </label>
               <button
+                className={`attention-bell ${alerts.feed.total ? "has-alerts" : ""}`}
+                aria-label={`${alerts.feed.total} items need attention${alerts.error ? ". Alerts could not refresh" : ""}`}
+                onClick={() => {
+                  setSelected(null);
+                  navigate("Overview");
+                }}
+              >
+                <Bell size={18} />
+                <span aria-live="polite">
+                  {alerts.error ? "!" : alerts.feed.total}
+                </span>
+              </button>
+              <button
                 className="icon-btn refresh-btn"
                 aria-label="Refresh workspace"
                 onClick={refresh}
@@ -706,6 +767,24 @@ export default function CRM({
                     }}
                   />
                 </div>
+                <AttentionCenter
+                  feed={alerts.feed}
+                  error={alerts.error}
+                  busy={busy}
+                  onOpen={openAttention}
+                  onRefresh={alerts.reload}
+                  onReview={(item) => {
+                    if (item.kind !== "task")
+                      void run(
+                        {
+                          type: "review_attention",
+                          kind: item.kind,
+                          id: item.id,
+                        },
+                        "Alert marked reviewed for you",
+                      );
+                  }}
+                />
                 <AppointmentOverview
                   ws={ws}
                   onSchedule={() => {
@@ -1410,6 +1489,65 @@ export default function CRM({
           />
         </Modal>
       )}
+      {attentionTask &&
+        (findCustomer(attentionTask.customer_id) ? (
+          <TaskAction
+            task={attentionTask}
+            customer={findCustomer(attentionTask.customer_id)!}
+            ws={ws}
+            run={run}
+            busy={busy}
+            onCompose={(compose) => {
+              setAttentionCompose({
+                customer: findCustomer(attentionTask.customer_id)!,
+                compose,
+              });
+              setAttentionTask(null);
+            }}
+            onClose={() => setAttentionTask(null)}
+          />
+        ) : (
+          <Modal
+            title={attentionTask.title}
+            onClose={() => setAttentionTask(null)}
+          >
+            <div className="modal-form">
+              <p>Due {attentionTask.due_date}</p>
+              <button
+                className="btn primary"
+                disabled={busy}
+                onClick={async () => {
+                  if (
+                    (
+                      await run(
+                        { type: "complete_task", id: attentionTask.id },
+                        "Task completed",
+                      )
+                    ).ok
+                  )
+                    setAttentionTask(null);
+                }}
+              >
+                Mark task complete
+              </button>
+              {error && (
+                <p role="alert" className="form-error">
+                  {error}
+                </p>
+              )}
+            </div>
+          </Modal>
+        ))}
+      {attentionCompose && (
+        <MessageComposer
+          ws={ws}
+          customer={attentionCompose.customer}
+          compose={attentionCompose.compose}
+          run={run}
+          busy={busy}
+          onClose={() => setAttentionCompose(null)}
+        />
+      )}
       {appointmentDialog && (
         <AppointmentDialog
           key={appointmentDialog === "new" ? "new" : appointmentDialog.id}
@@ -1445,6 +1583,26 @@ export default function CRM({
           wide
         >
           <InventoryForm
+            onDelete={
+              inventoryEdit && canManage(ws.member.role)
+                ? async (reason) => {
+                    const result = await run(
+                      {
+                        type: "delete_inventory",
+                        id: inventoryEdit.id,
+                        updated_at: inventoryEdit.updated_at,
+                        reason,
+                      },
+                      "Inventory vehicle deleted",
+                    );
+                    if (result.ok) {
+                      setModal(null);
+                      setInventoryEdit(null);
+                    }
+                    return result.ok;
+                  }
+                : undefined
+            }
             existing={inventoryEdit}
             busy={busy}
             error={error}
@@ -1914,12 +2072,18 @@ function PrintSheet({
                   ["payoff", "Trade payoff"],
                   ["downPayment", "Cash down"],
                 ] as [keyof QuoteValues, string][]
-              ).map(([k, label]) => (
-                <tr key={k}>
-                  <td>{label}</td>
-                  <td>{fullMoney(Number(q.values[k] ?? 0))}</td>
-                </tr>
-              ))}
+              )
+                .filter(
+                  ([k]) =>
+                    k !== "serviceContract" ||
+                    q.values.showProtectionProducts !== false,
+                )
+                .map(([k, label]) => (
+                  <tr key={k}>
+                    <td>{label}</td>
+                    <td>{fullMoney(Number(q.values[k] ?? 0))}</td>
+                  </tr>
+                ))}
               <tr>
                 <th>Estimated balance</th>
                 <th>{fullMoney(quoteMath(q.values).balance)}</th>
@@ -1931,10 +2095,9 @@ function PrintSheet({
               ? "Cash transaction. Financing example only:"
               : "Illustrative payment:"}{" "}
             {fullMoney(quoteMath(q.values).payment)} / month · {q.values.months}{" "}
-            months · {q.values.apr}% APR · {q.values.daysToFirstPayment ?? 30}{" "}
-            days to first payment. Includes{" "}
-            {fullMoney(quoteMath(q.values).firstPeriodInterest)} estimated
-            initial-period interest. Subject to lender terms.
+            months · {q.values.showAPR !== false && <>{q.values.apr}% APR · </>}
+            {q.values.daysToFirstPayment ?? 30} days to first payment. Subject
+            to lender terms.
           </p>
         </>
       )}

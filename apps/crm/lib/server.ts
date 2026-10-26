@@ -132,10 +132,10 @@ export async function workspace(
     .eq("id", s.org_id)
     .single();
   if (error) throw new Error("Dealership unavailable");
-  const [rows, alerts] = await Promise.all([
-    Promise.all(tables.map(all)),
-    attention(s),
-  ]);
+  // Attention can recover pending website inquiries. Finish those writes before
+  // reading the customer book so alerts and profiles arrive in the same response.
+  const alerts = await attention(s);
+  const rows = await Promise.all(tables.map(all));
   return {
     org,
     attention: alerts,

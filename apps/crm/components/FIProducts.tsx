@@ -15,12 +15,14 @@ export function FIProducts({
   onSave,
   onClose,
   readOnly = false,
+  temporary = false,
 }: {
   products?: FIProduct[];
   legacy: number;
   onSave: (p: FIProduct[]) => void;
   onClose: () => void;
   readOnly?: boolean;
+  temporary?: boolean;
 }) {
   const [items, setItems] = useState<FIProduct[]>(
       () =>
@@ -245,8 +247,11 @@ export function FIProducts({
         )}
         {!readOnly && <button className="btn primary">Apply to quote</button>}
         <p className="ops-help">
-          Save the proposal in Desking to retain these changes. A zero term or
-          mileage means not specified; use notes for unlimited coverage.
+          {temporary
+            ? "Create a customer from Quick quote to retain these changes."
+            : "Save the proposal in Desking to retain these changes."}{" "}
+          A zero term or mileage means not specified; use notes for unlimited
+          coverage.
         </p>
       </form>
     </Modal>

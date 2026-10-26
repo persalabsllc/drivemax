@@ -21,11 +21,13 @@ export function CustomerForm({
   busy,
   error,
   submit,
+  purpose = "customer",
 }: {
   existing: Customer | null;
   ws: Workspace;
   busy: boolean;
   error: string;
+  purpose?: "customer" | "quick_quote";
   submit: (
     c: Extract<Command, { type: "create_customer" }>["customer"],
     appointment?: NewCustomerAppointment,
@@ -145,7 +147,7 @@ export function CustomerForm({
           </>
         )}
       </section>
-      {!existing && (
+      {!existing && purpose !== "quick_quote" && (
         <section className="editor-section">
           <label className="checkbox-label">
             <input
@@ -185,15 +187,21 @@ export function CustomerForm({
         </p>
       )}
       <div className="modal-footer">
-        <span>Vehicle and trade details are saved on opportunities.</span>
+        <span>
+          {purpose === "quick_quote"
+            ? "Your quote will be saved on this customer’s new opportunity."
+            : "Vehicle and trade details are saved on opportunities."}
+        </span>
         <button className="btn primary" disabled={busy}>
           {busy
             ? "Saving…"
             : existing
               ? "Save customer"
-              : schedule
-                ? "Create customer & appointment"
-                : "Create customer"}
+              : purpose === "quick_quote"
+                ? "Create customer & save quote"
+                : schedule
+                  ? "Create customer & appointment"
+                  : "Create customer"}
         </button>
       </div>
     </form>

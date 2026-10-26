@@ -1,5 +1,10 @@
 import { productsTotal } from "../lib/operations";
-import { type Customer, type Quote, fullMoney, quoteMath } from "../lib/model";
+import {
+  type Customer,
+  type PrintableQuote,
+  fullMoney,
+  quoteMath,
+} from "../lib/model";
 import { deskingPaymentOptions } from "../lib/desking";
 import { financePayment } from "../lib/finance";
 import { vehicleName } from "../lib/vehicles";
@@ -9,8 +14,8 @@ export function PriceQuotePrint({
   quote,
   dealership,
 }: {
-  customer: Customer;
-  quote: Quote;
+  customer: Customer | null;
+  quote: PrintableQuote;
   dealership: string;
 }) {
   const values = quote.values;
@@ -21,8 +26,13 @@ export function PriceQuotePrint({
   const trade = quote.trade_snapshot;
   const tradeDescription =
     quote.snapshot_version === 1
-      ? trade?.description || (trade ? vehicleName(trade) : "None")
-      : customer.trade_vehicle || "None";
+      ? trade?.description ||
+        (trade
+          ? vehicleName(trade)
+          : values.tradeAllowance || values.payoff
+            ? "Vehicle details not provided"
+            : "None")
+      : customer?.trade_vehicle || "None";
   const items: [string, number, boolean?][] = [
     ["Selling price", values.price],
     ["Document fee", values.docFee],
@@ -43,7 +53,7 @@ export function PriceQuotePrint({
       <header className="pq-header">
         <img src="/drive-max-logo.webp" alt="Drive Max" />
         <div>
-          <h1>Vehicle price quote</h1>
+          <h1>{customer ? "Vehicle price quote" : "Quick price quote"}</h1>
           <p>
             {dealership} ·{" "}
             {new Date(quote.created_at).toLocaleDateString("en-US", {
@@ -58,9 +68,13 @@ export function PriceQuotePrint({
 
       <div className="pq-details">
         <div>
-          <span className="pq-label">Prepared for</span>
-          <h2>{customer.name}</h2>
-          <p>{[customer.phone, customer.email].filter(Boolean).join(" · ")}</p>
+          <span className="pq-label">
+            {customer ? "Prepared for" : "Guest estimate"}
+          </span>
+          <h2>{customer?.name || "Customer details not provided"}</h2>
+          <p>
+            {[customer?.phone, customer?.email].filter(Boolean).join(" · ")}
+          </p>
         </div>
         <div>
           <span className="pq-label">Vehicle</span>
@@ -193,9 +207,7 @@ export function PriceQuotePrint({
           </table>
           {finance && (
             <div className="pq-selected">
-              <span className="pq-label">
-                Itemization reflects this saved selection
-              </span>
+              <span className="pq-label">Selected payment estimate</span>
               <strong>{fullMoney(totals.payment)} / month</strong>
               <p>
                 {values.months} months · {values.apr}% APR ·{" "}

@@ -22,6 +22,7 @@ import {
   type Appointment,
 } from "./appointments";
 import { demoAppointments } from "./appointments-demo";
+import { demoQuickQuote } from "./quick-quote";
 import {
   inventorySchema,
   vehicleDetailsSchema,
@@ -158,6 +159,15 @@ export type Quote = {
   trade_input?: Trade | null;
   snapshot_version?: number;
 };
+export type PrintableQuote = Pick<
+  Quote,
+  | "vehicle"
+  | "values"
+  | "created_at"
+  | "vehicle_details"
+  | "trade_snapshot"
+  | "snapshot_version"
+>;
 export type Staff = {
   id: string;
   org_id: string;
@@ -171,6 +181,11 @@ export type Staff = {
 export const canManage = (role: string) =>
   role === "owner" || role === "manager";
 export type Workspace = {
+  /** In-memory retry keys used only by the demo; live conversions stay server-side. */
+  quick_quote_conversions?: Record<
+    string,
+    { customer_id: string; opportunity_id: string }
+  >;
   appointments?: Appointment[];
   sales?: Sale[];
   trades?: TradeIntake[];
@@ -311,6 +326,12 @@ export const quoteSchema = z.object({
   selectedOption: z.number().int().min(0).max(2).optional(),
   selectedDown: z.number().int().min(0).max(2).optional(),
 });
+export const quickQuoteSchema = z.object({
+  inventory_id: z.uuid().nullable(),
+  vehicle: text,
+  values: quoteSchema,
+});
+export type QuickQuoteInput = z.infer<typeof quickQuoteSchema>;
 export const opportunitySchema = z.object({
   assigned_to: z.uuid().nullable().optional(),
   title: text.min(1),
@@ -323,6 +344,12 @@ export const opportunitySchema = z.object({
   trade: tradeSchema.nullable(),
 });
 export const commandSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("convert_quick_quote"),
+    id: z.uuid(),
+    customer: z.object(customer),
+    quote: quickQuoteSchema,
+  }),
   ...appointmentCommands,
   ...operationCommands,
   z.object({
@@ -444,11 +471,46 @@ export function demoCommand(
   command: Command,
   now = new Date(),
 ): Workspace {
-  return demoAppointments(
-    ws,
-    commandSchema.parse(command),
-    now,
-    (input, p, time) => demoOperations(input, p, time, baseDemoCommand),
+  const parsed = commandSchema.parse(command);
+  if (
+    parsed.type === "mark_sold" ||
+    (parsed.type === "close_opportunity" && parsed.outcome === "sold")
+  ) {
+    const op = ws.opportunities.find((o) =>
+      parsed.type === "mark_sold"
+        ? o.customer_id === parsed.customer_id && opportunityOpen(o)
+        : o.id === parsed.id,
+    );
+    if (
+      op &&
+      !op.trade &&
+      Object.values(ws.quick_quote_conversions ?? {}).some(
+        (c) => c.opportunity_id === op.id,
+      )
+    ) {
+      const values = ws.quotes.find(
+        (q) =>
+          q.opportunity_id === op.id &&
+          (q.inventory_id ?? null) === op.inventory_id &&
+          (op.inventory_id || q.vehicle === op.vehicle_interest),
+      )?.values;
+      if (
+        op.trade_vehicle ||
+        values?.tradeAllowance ||
+        values?.payoff ||
+        values?.acv ||
+        values?.recon
+      )
+        throw Error(
+          "Complete the trade vehicle details or remove the trade before marking this deal sold.",
+        );
+    }
+  }
+  if (parsed.type === "convert_quick_quote") {
+    return demoQuickQuote(ws, parsed, now, demoCommand);
+  }
+  return demoAppointments(ws, parsed, now, (input, p, time) =>
+    demoOperations(input, p, time, baseDemoCommand),
   );
 }
 function baseDemoCommand(

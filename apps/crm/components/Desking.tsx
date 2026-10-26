@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Printer,
   Car,
@@ -7,14 +7,22 @@ import {
   Save,
   Mail,
   MessageSquare,
+  UserPlus,
 } from "lucide-react";
-import { deskingDefaults, deskingPaymentOptions } from "../lib/desking";
+import {
+  deskingDefaults,
+  deskingDraft,
+  selectedDeskingValues,
+} from "../lib/desking";
 import {
   type Customer,
   type Opportunity,
   type Quote,
   type QuoteValues,
   type Command,
+  type QuickQuoteInput,
+  defaultQuote,
+  quickQuoteSchema,
   quoteMath,
   dayKey,
   fullMoney,
@@ -25,80 +33,111 @@ import { type InventoryVehicle, vehicleName } from "../lib/vehicles";
 import { VehicleFacts } from "./VehicleFields";
 import { FIProducts } from "./FIProducts";
 import { productsTotal } from "../lib/operations";
+type DeskingProps = { inventory: InventoryVehicle[]; busy: boolean } & (
+  | {
+      quick?: undefined;
+      customer: Customer;
+      opportunity: Opportunity;
+      quotes: Quote[];
+      onSave: (
+        c: Extract<Command, { type: "save_quote" }>,
+      ) => Promise<{ ok: boolean }>;
+      onPrint: (q: Quote) => void;
+      onShare?: (q: Quote, channel: "email" | "sms") => void;
+      onEdit: () => void;
+    }
+  | {
+      quick: {
+        onPrint: (q: QuickQuoteInput) => void;
+        onCreate: (q: QuickQuoteInput) => void;
+      };
+      customer?: never;
+      opportunity?: never;
+      quotes?: never;
+      onSave?: never;
+      onPrint?: never;
+      onShare?: never;
+      onEdit?: never;
+    }
+);
 export function Desking({
   customer,
   opportunity,
   inventory,
-  quotes,
+  quotes = [],
   busy,
   onSave,
   onPrint,
   onShare,
   onEdit,
-}: {
-  customer: Customer;
-  opportunity: Opportunity;
-  inventory: InventoryVehicle[];
-  quotes: Quote[];
-  busy: boolean;
-  onSave: (
-    c: Extract<Command, { type: "save_quote" }>,
-  ) => Promise<{ ok: boolean }>;
-  onPrint: (q: Quote) => void;
-  onShare?: (q: Quote, channel: "email" | "sms") => void;
-  onEdit: () => void;
-}) {
+  quick,
+}: DeskingProps) {
   const [productsOpen, setProductsOpen] = useState(false);
+  const [quickInventory, setQuickInventory] = useState("");
+  const [localError, setLocalError] = useState("");
+  const form = useRef<HTMLFormElement>(null);
   const saved = quotes
-      .filter((q) => q.opportunity_id === opportunity.id)
+      .filter((q) => q.opportunity_id === opportunity?.id)
       .sort((a, b) => b.created_at.localeCompare(a.created_at)),
-    readOnly = !opportunityOpen(opportunity),
+    readOnly = opportunity ? !opportunityOpen(opportunity) : false,
     latest = readOnly
-      ? (opportunity.sale_snapshot?.quote ?? undefined)
+      ? (opportunity?.sale_snapshot?.quote ?? undefined)
       : saved.find(
           (q) =>
-            (q.inventory_id ?? null) === opportunity.inventory_id &&
-            (!!opportunity.inventory_id ||
-              q.vehicle === opportunity.vehicle_interest),
+            (q.inventory_id ?? null) === opportunity?.inventory_id &&
+            (!!opportunity?.inventory_id ||
+              q.vehicle === opportunity?.vehicle_interest),
         );
-  const vehicle = readOnly
-    ? opportunity.vehicle_details
-    : (inventory.find((v) => v.id === opportunity.inventory_id) ??
-      opportunity.vehicle_details);
-  const [draft, setDraft] = useState<QuoteValues>(() => {
-    const b = deskingDefaults(customer, readOnly ? [] : inventory, latest);
-    const options = deskingPaymentOptions(b);
-    return {
-      ...b,
-      mode: b.mode ?? "finance",
-      taxMode: b.taxMode ?? (latest ? "manual" : "auto"),
-      taxReason: b.taxReason ?? (latest ? "Previously saved estimate" : ""),
-      addOns: b.addOns ?? 0,
-      serviceContract: b.serviceContract ?? 0,
-      otherTaxes: b.otherTaxes ?? 0,
-      daysToFirstPayment: b.daysToFirstPayment ?? (latest ? 30 : 45),
-      financeOptions: options.terms,
-      downPayments: options.downs,
-      selectedOption: b.selectedOption ?? 2,
-      selectedDown: b.selectedDown ?? 0,
-    };
-  });
+  const vehicle = quick
+    ? inventory.find((v) => v.id === quickInventory)
+    : readOnly
+      ? opportunity?.vehicle_details
+      : (inventory.find((v) => v.id === opportunity?.inventory_id) ??
+        opportunity?.vehicle_details);
+  const [draft, setDraft] = useState<QuoteValues>(() =>
+    deskingDraft(
+      quick
+        ? { ...defaultQuote }
+        : deskingDefaults(customer!, readOnly ? [] : inventory, latest),
+      !!latest,
+    ),
+  );
   const [description, setDescription] = useState(
     vehicle
-      ? vehicleName(vehicle) || opportunity.vehicle_interest
-      : opportunity.vehicle_interest,
+      ? vehicleName(vehicle) || opportunity?.vehicle_interest || ""
+      : opportunity?.vehicle_interest || "",
   );
   const terms = draft.financeOptions!,
     downs = draft.downPayments!,
     selectedRow = draft.selectedOption ?? 2,
     selectedCol = draft.selectedDown ?? 0;
-  const values = {
-    ...draft,
-    apr: draft.mode === "cash" ? 0 : terms[selectedRow].apr,
-    months: terms[selectedRow].months,
-    downPayment: draft.mode === "cash" ? draft.downPayment : downs[selectedCol],
-  };
+  const values = selectedDeskingValues(draft);
   const totals = quoteMath(values);
+  function quickAction(action: "onPrint" | "onCreate") {
+    if (!quick || !form.current?.reportValidity()) return;
+    if (
+      quickInventory &&
+      !inventory.some((v) => v.id === quickInventory && v.status === "in_stock")
+    ) {
+      setLocalError(
+        "That vehicle is no longer in stock. Select another vehicle or use a manual price.",
+      );
+      return;
+    }
+    const result = quickQuoteSchema.safeParse({
+      inventory_id: quickInventory || null,
+      vehicle: description,
+      values: { ...values, tax: totals.tax },
+    });
+    if (!result.success) {
+      setLocalError(
+        result.error.issues[0]?.message || "Check the quote figures.",
+      );
+      return;
+    }
+    setLocalError("");
+    quick[action](result.data);
+  }
   const field = (
     key: keyof QuoteValues,
     label: string,
@@ -127,6 +166,7 @@ export function Desking({
           products={draft.products}
           legacy={draft.serviceContract ?? 0}
           readOnly={readOnly}
+          temporary={!!quick}
           onClose={() => setProductsOpen(false)}
           onSave={(products) =>
             setDraft({
@@ -140,29 +180,71 @@ export function Desking({
       <div className="desk-section-head">
         <div>
           <span className="eyebrow">
-            {readOnly ? "COMPLETED OPPORTUNITY" : "WORK THE DEAL"}
+            {quick
+              ? "NO CUSTOMER REQUIRED"
+              : readOnly
+                ? "COMPLETED OPPORTUNITY"
+                : "WORK THE DEAL"}
           </span>
-          <h3>Desking</h3>
+          <h3>{quick ? "Quick quote" : "Desking"}</h3>
         </div>
-        {!readOnly && (
+        {!readOnly && !quick && (
           <button className="btn small" onClick={onEdit}>
             Change vehicle / trade
           </button>
         )}
       </div>
+      {quick && (
+        <div className="quick-quote-vehicle">
+          <label>
+            Inventory vehicle (optional)
+            <select
+              aria-label="Quick quote inventory vehicle"
+              value={quickInventory}
+              onChange={(e) => {
+                const selected = inventory.find((v) => v.id === e.target.value);
+                setQuickInventory(e.target.value);
+                setDescription(selected ? vehicleName(selected) : "");
+                if (selected) setDraft({ ...draft, price: selected.price });
+                setLocalError("");
+              }}
+            >
+              <option value="">Manual price · no vehicle selected</option>
+              {inventory
+                .filter(
+                  (v) => v.status === "in_stock" || v.id === quickInventory,
+                )
+                .map((v) => (
+                  <option
+                    key={v.id}
+                    value={v.id}
+                    disabled={v.status !== "in_stock"}
+                  >
+                    {v.stock_number} · {vehicleName(v)} · {fullMoney(v.price)}
+                    {v.status === "in_stock" ? "" : " · unavailable"}
+                  </option>
+                ))}
+            </select>
+          </label>
+          <p className="ops-help">
+            Enter a price below, or select a vehicle to start with its asking
+            price. Selecting a vehicle does not reserve it.
+          </p>
+        </div>
+      )}
       {vehicle && (
         <div className="desk-stock">
           <div className="desk-stock-title">
             <Car size={19} />
             <div>
               <strong>
-                {vehicleName(vehicle) || opportunity.vehicle_interest}
+                {vehicleName(vehicle) || opportunity?.vehicle_interest}
               </strong>
               <span>
                 {vehicle.vin || "Manual vehicle"} ·{" "}
                 {readOnly
                   ? "Recorded at closing"
-                  : opportunity.inventory_id
+                  : quickInventory || opportunity?.inventory_id
                     ? "Linked inventory"
                     : "Manual vehicle"}
               </span>
@@ -172,7 +254,7 @@ export function Desking({
             vehicle={vehicle}
             today={
               readOnly
-                ? (opportunity.sold_on ?? dayKey(opportunity.closed_at!))
+                ? (opportunity!.sold_on ?? dayKey(opportunity!.closed_at!))
                 : dayKey()
             }
             compact
@@ -186,8 +268,10 @@ export function Desking({
         </p>
       )}
       <form
+        ref={form}
         onSubmit={async (e) => {
           e.preventDefault();
+          if (quick || !customer || !opportunity || !onSave) return;
           await onSave({
             type: "save_quote",
             customer_id: customer.id,
@@ -230,8 +314,18 @@ export function Desking({
               )}
             </div>
             <label>
-              Vehicle description
-              <input value={description} readOnly required maxLength={250} />
+              Vehicle description{quick ? " (optional)" : ""}
+              <input
+                aria-label="Vehicle description"
+                value={description}
+                readOnly={!quick || !!quickInventory}
+                required={!quick}
+                maxLength={250}
+                placeholder={
+                  quick ? "Leave blank for a price-only estimate" : undefined
+                }
+                onChange={(e) => setDescription(e.target.value)}
+              />
             </label>
             <div className="form-grid">
               {field("price", "Selling price")}
@@ -303,10 +397,12 @@ export function Desking({
               Trade-in
             </h3>
             <p className="fine-print">
-              {customer.trade?.description ||
-                customer.trade_vehicle ||
-                "No trade-in"}
-              {customer.trade &&
+              {quick
+                ? "Enter trade figures if needed. Trade vehicle details are optional for this estimate."
+                : customer?.trade?.description ||
+                  customer?.trade_vehicle ||
+                  "No trade-in"}
+              {customer?.trade &&
                 ` · ${customer.trade.vin} · ${customer.trade.mileage.toLocaleString()} miles`}
             </p>
             <div className="form-grid">
@@ -500,50 +596,92 @@ export function Desking({
                 </div>
               </>
             )}
-            {!readOnly && (
-              <button className="btn primary desk-save" disabled={busy}>
-                <Save size={16} />
-                Save desking version
-              </button>
+            {quick ? (
+              <div className="quick-quote-actions">
+                {localError && (
+                  <p className="form-error" role="alert">
+                    {localError}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  className="btn primary"
+                  disabled={busy}
+                  onClick={() => quickAction("onPrint")}
+                >
+                  <Printer size={16} />
+                  Print quick quote
+                </button>
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={busy}
+                  onClick={() => quickAction("onCreate")}
+                >
+                  <UserPlus size={16} />
+                  Create customer & save quote
+                </button>
+                <p className="ops-help">
+                  Temporary calculation. Print it, or create a customer to keep
+                  the quote. Closing this screen clears the figures.
+                </p>
+              </div>
+            ) : (
+              !readOnly && (
+                <button className="btn primary desk-save" disabled={busy}>
+                  <Save size={16} />
+                  Save desking version
+                </button>
+              )
             )}
           </section>
         </div>
       </form>
-      <div className="section-heading">
-        <div>
-          <h2>Saved proposals</h2>
-          <p>Each version keeps its own vehicle, trade, and figures.</p>
-        </div>
-      </div>
-      {saved.map((q) => (
-        <div className="saved-quote" key={q.id}>
-          <div>
-            <strong>{q.vehicle}</strong>
-            <span>
-              {new Date(q.created_at).toLocaleString("en-US", {
-                timeZone: "America/New_York",
-              })}{" "}
-              · {fullMoney(quoteMath(q.values).balance)} balance
-            </span>
+      {!quick && (
+        <>
+          <div className="section-heading">
+            <div>
+              <h2>Saved proposals</h2>
+              <p>Each version keeps its own vehicle, trade, and figures.</p>
+            </div>
           </div>
-          {onShare && (
-            <div className="ops-actions">
-              <button className="btn small" onClick={() => onShare(q, "email")}>
-                <Mail size={14} />
-                Email quote
-              </button>
-              <button className="btn small" onClick={() => onShare(q, "sms")}>
-                <MessageSquare size={14} />
-                Text quote
+          {saved.map((q) => (
+            <div className="saved-quote" key={q.id}>
+              <div>
+                <strong>{q.vehicle}</strong>
+                <span>
+                  {new Date(q.created_at).toLocaleString("en-US", {
+                    timeZone: "America/New_York",
+                  })}{" "}
+                  · {fullMoney(quoteMath(q.values).balance)} balance
+                </span>
+              </div>
+              {onShare && (
+                <div className="ops-actions">
+                  <button
+                    className="btn small"
+                    onClick={() => onShare(q, "email")}
+                  >
+                    <Mail size={14} />
+                    Email quote
+                  </button>
+                  <button
+                    className="btn small"
+                    onClick={() => onShare(q, "sms")}
+                  >
+                    <MessageSquare size={14} />
+                    Text quote
+                  </button>
+                </div>
+              )}
+              <button className="btn small" onClick={() => onPrint?.(q)}>
+                <Printer size={14} />
+                Print quote
               </button>
             </div>
-          )}
-          <button className="btn small" onClick={() => onPrint(q)}>
-            <Printer size={14} />
-            Print quote
-          </button>
-        </div>
-      ))}
+          ))}
+        </>
+      )}
     </div>
   );
 }

@@ -32,6 +32,40 @@ export function deskingPaymentOptions(values: QuoteValues) {
     ],
   };
 }
+export function deskingDraft(
+  base: QuoteValues,
+  previouslySaved = false,
+): QuoteValues {
+  const options = deskingPaymentOptions(base);
+  return {
+    ...base,
+    mode: base.mode ?? "finance",
+    taxMode: base.taxMode ?? (previouslySaved ? "manual" : "auto"),
+    taxReason:
+      base.taxReason ?? (previouslySaved ? "Previously saved estimate" : ""),
+    addOns: base.addOns ?? 0,
+    serviceContract: base.serviceContract ?? 0,
+    otherTaxes: base.otherTaxes ?? 0,
+    daysToFirstPayment: base.daysToFirstPayment ?? (previouslySaved ? 30 : 45),
+    financeOptions: options.terms,
+    downPayments: options.downs,
+    selectedOption: base.selectedOption ?? 2,
+    selectedDown: base.selectedDown ?? 0,
+  };
+}
+export function selectedDeskingValues(draft: QuoteValues): QuoteValues {
+  const { terms, downs } = deskingPaymentOptions(draft);
+  const selected = terms[draft.selectedOption ?? 2];
+  return {
+    ...draft,
+    apr: draft.mode === "cash" ? 0 : selected.apr,
+    months: selected.months,
+    downPayment:
+      draft.mode === "cash"
+        ? draft.downPayment
+        : downs[draft.selectedDown ?? 0],
+  };
+}
 export function deskingDefaults(
   customer: Customer,
   inventory: InventoryVehicle[],

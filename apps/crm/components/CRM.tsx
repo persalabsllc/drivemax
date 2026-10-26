@@ -68,6 +68,7 @@ import { Desking } from "./Desking";
 import { QuickQuote } from "./QuickQuote";
 import { PriceQuotePrint } from "./PriceQuotePrint";
 import { TeamSettings } from "./TeamSettings";
+import { EmailSettingsPanel } from "./EmailSettings";
 import { ConversationsInbox } from "./ConversationsInbox";
 import {
   AppointmentDialog,
@@ -222,6 +223,7 @@ export default function CRM({
     setError("");
     try {
       let id: string | undefined;
+      let revision: number | undefined;
       if (demo) {
         const next = demoCommand(ws, command);
         setWs(next);
@@ -247,10 +249,14 @@ export default function CRM({
         if (!r.ok) throw new Error(data.error);
         setWs(data.workspace);
         id = data.id;
+        if (command.type === "save_message")
+          revision = data.workspace.messages?.find(
+            (m: { id: string; revision: number }) => m.id === id,
+          )?.revision;
       }
       setToast(message);
       setTimeout(() => setToast(""), 4000);
-      return { ok: true, id };
+      return { ok: true, id, revision };
     } catch (e) {
       setError(
         e instanceof Error ? e.message : "Could not save. Please try again.",
@@ -1331,6 +1337,13 @@ export default function CRM({
             )}
             {view === "Workspace" && (
               <>
+                <EmailSettingsPanel
+                  ws={ws}
+                  busy={busy}
+                  error={error}
+                  run={run}
+                  demo={demo}
+                />
                 <TeamSettings
                   onAccountChanged={refresh}
                   ws={ws}
@@ -1402,9 +1415,10 @@ export default function CRM({
                       <Link2 />
                       <h3>Communication status</h3>
                       <p>
-                        Text and email drafts and manual communication logs are
-                        available. Sending, automatic message receipt and
-                        website lead import are not connected yet.
+                        Email templates, signatures and website lead
+                        acknowledgments are available. Replies appear in
+                        customer activity and Needs attention. SMS remains
+                        available for drafts until its provider is connected.
                       </p>
                     </div>
                     <div>
@@ -1448,6 +1462,7 @@ export default function CRM({
           error={error}
           run={run}
           onClose={() => setSelected(null)}
+          onRefresh={refresh}
           onPrintQuote={(c, q) => print(c, q)}
           initialTab={profileTab}
           initialOpportunityId={selectedOpp}
@@ -1544,6 +1559,7 @@ export default function CRM({
         ))}
       {attentionCompose && (
         <MessageComposer
+          onRefresh={refresh}
           ws={ws}
           customer={attentionCompose.customer}
           compose={attentionCompose.compose}

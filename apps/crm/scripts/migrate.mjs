@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import pg from "pg";
 import { verifyWebsiteIntake } from "./verify-website-intake.mjs";
 import { verifyInventoryWebsite } from "./verify-inventory-website.mjs";
+import { verifyEmail } from "./verify-email.mjs";
 if (process.env.VERCEL_ENV === "production") {
   if (!process.env.POSTGRES_URL)
     throw new Error("CRM database configuration is required.");
@@ -73,6 +74,10 @@ if (process.env.VERCEL_ENV === "production") {
     await verifyInventoryWebsite(client);
     console.log(
       "Verified CRM-to-website inventory with rolled-back fixtures: drafts, preserved merchandising, sold visibility, unwind, no duplicates.",
+    );
+    await verifyEmail(client);
+    console.log(
+      "Verified CRM email with rolled-back fixtures: drafts, idempotent sends, delivery events, replies, automatic acknowledgments.",
     );
     await client.query("commit");
   } catch (e) {

@@ -21,6 +21,7 @@ export type AttentionItem = {
   created_at: string;
 };
 export type AttentionFeed = {
+  emailQueue?: { pending: number };
   items: AttentionItem[];
   total: number;
   websiteIntake?: { connected: boolean; pending: number | null };

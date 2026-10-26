@@ -1,6 +1,7 @@
 import { demoInventory } from "./demo-vehicles";
 import { type Workspace, dayKey, addDays, defaultQuote } from "./model";
 import { appointmentInstant, type Appointment } from "./appointments";
+import { demoEmailTemplates, dealershipSignature } from "./email";
 export function demoWorkspace(now = new Date()): Workspace {
   const today = dayKey(now),
     stamp = now.toISOString(),
@@ -82,6 +83,20 @@ export function demoWorkspace(now = new Date()): Workspace {
     },
   ];
   const workspace: Workspace = {
+    email_templates: demoEmailTemplates(org),
+    email_connection: {
+      connected: false,
+      sender: "sales@drivemaxusedcars.com",
+      reason: "Demo only. No emails are sent.",
+    },
+    email_settings: {
+      org_id: org,
+      auto_reply_enabled: true,
+      auto_reply_template_id: demoEmailTemplates(org)[0].id,
+      auto_reply_signature: dealershipSignature,
+      enabled_from: stamp,
+      revision: 0,
+    },
     org: { id: org, name: "Drive Max Used Cars", slug: "drive-max" },
     member: {
       id: "demo",

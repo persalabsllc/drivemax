@@ -51,12 +51,7 @@ const SoldPack = dynamic(() => import("./SoldPack").then((m) => m.SoldPack), {
   ssr: false,
 });
 type Tab =
-  | "Activity"
-  | "Details"
-  | "Desking"
-  | "Insurance"
-  | "Texts"
-  | "Emails";
+  "Activity" | "Details" | "Desking" | "Insurance" | "Texts" | "Emails";
 export function CustomerProfile({
   ws,
   customer,
@@ -66,6 +61,7 @@ export function CustomerProfile({
   run,
   onClose,
   onPrintQuote,
+  onRefresh,
   initialTab = "Activity",
   initialOpportunityId,
 }: {
@@ -77,6 +73,7 @@ export function CustomerProfile({
   run: (p: Command, message?: string) => Promise<{ ok: boolean; id?: string }>;
   onClose: () => void;
   onPrintQuote: (c: Customer, q: Quote) => void;
+  onRefresh?: () => Promise<void>;
   initialTab?: Tab;
   initialOpportunityId?: string | null;
 }) {
@@ -449,6 +446,9 @@ export function CustomerProfile({
         )}
         {(tab === "Texts" || tab === "Emails") && (
           <Communications
+            run={run}
+            busy={busy}
+            onRefresh={onRefresh}
             key={tab}
             ws={ws}
             customer={customer}
@@ -823,6 +823,7 @@ export function CustomerProfile({
       )}
       {compose && (
         <MessageComposer
+          onRefresh={onRefresh}
           key={compose.draft?.id ?? (compose.quote?.id ?? "") + compose.channel}
           ws={ws}
           customer={customer}

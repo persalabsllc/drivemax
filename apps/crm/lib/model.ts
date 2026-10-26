@@ -1,6 +1,14 @@
 import { attentionCommand } from "./attention-schema";
 import type { AttentionFeed } from "./attention";
 import type { WebsiteInventoryLink } from "./website-inventory";
+import {
+  emailCommands,
+  type EmailTemplate,
+  type EmailSettings,
+  type EmailSignature,
+  type EmailConnection,
+} from "./email";
+import { demoEmailCommand } from "./email-demo";
 import { z } from "zod";
 import { staffSchema, type StaffDetails } from "./team";
 import {
@@ -41,6 +49,7 @@ import {
 export type { InventoryVehicle, VehicleDetails, Trade } from "./vehicles";
 
 export type Customer = {
+  email_opt_out?: boolean;
   assigned_to?: string | null;
   id: string;
   org_id: string;
@@ -187,6 +196,10 @@ export type Staff = Partial<Omit<StaffDetails, "role" | "name" | "email">> & {
 export const canManage = (role: string) =>
   role === "owner" || role === "manager";
 export type Workspace = {
+  email_templates?: EmailTemplate[];
+  email_settings?: EmailSettings;
+  email_signature?: EmailSignature | null;
+  email_connection?: EmailConnection;
   website_inventory?: WebsiteInventoryLink[];
   attention?: AttentionFeed;
   /** Demo-only per-user acknowledgements. */
@@ -365,6 +378,7 @@ export const opportunitySchema = z.object({
   trade: tradeSchema.nullable(),
 });
 export const commandSchema = z.discriminatedUnion("type", [
+  ...emailCommands,
   z.object({
     type: z.literal("convert_quick_quote"),
     id: z.uuid(),
@@ -487,6 +501,8 @@ export function demoCommand(
   now = new Date(),
 ): Workspace {
   const parsed = commandSchema.parse(command);
+  const emailResult = demoEmailCommand(ws, parsed);
+  if (emailResult) return emailResult;
   if (
     parsed.type === "mark_sold" ||
     (parsed.type === "close_opportunity" && parsed.outcome === "sold")

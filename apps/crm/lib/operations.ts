@@ -12,6 +12,8 @@ export const productKinds = {
   pdr: "Paintless dent repair",
   appearance: "Appearance protection",
   maintenance: "Prepaid maintenance",
+  key_replacement: "Key replacement",
+  other: "Other protection",
 } as const;
 export const productSchema = z.object({
   id: z.uuid(),
@@ -22,8 +24,12 @@ export const productSchema = z.object({
     "pdr",
     "appearance",
     "maintenance",
+    "key_replacement",
+    "other",
   ]),
   provider: short,
+  name: z.string().trim().max(80).optional(),
+  description: z.string().trim().max(400).optional(),
   contract_number: short,
   term_months: z.number().int().min(0).max(240),
   mileage_limit: z.number().int().min(0).max(3000000),

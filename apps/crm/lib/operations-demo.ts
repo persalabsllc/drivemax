@@ -1,4 +1,5 @@
 import type { Command, Opportunity, Workspace } from "./model";
+import { clearFIPaperwork } from "./fi-paperwork";
 import {
   emptyAccounting,
   productsTotal,
@@ -379,6 +380,48 @@ export function demoOperations(
       : p,
     now,
   );
+  if (p.type === "save_quote" && p.values.fiMenu) {
+    const q = next.quotes[0],
+      c = next.customers.find((c) => c.id === q.customer_id)!;
+    q.values.fiMenu = {
+      ...q.values.fiMenu!,
+      customer_name: c.name,
+      co_buyer_name: c.co_buyer
+        ? [
+            c.co_buyer.first_name,
+            c.co_buyer.middle_name,
+            c.co_buyer.last_name,
+            c.co_buyer.suffix,
+          ]
+            .filter(Boolean)
+            .join(" ")
+        : "",
+    };
+    const menu = q.values.fiMenu;
+    if (menu.selected !== null) {
+      const op = next.opportunities.find((o) => o.id === q.opportunity_id)!;
+      const cleared = clearFIPaperwork(op.paperwork);
+      if (JSON.stringify(cleared) !== JSON.stringify(op.paperwork)) {
+        op.paperwork = cleared;
+        op.paperwork_revision++;
+      }
+    }
+    next.activities.unshift({
+      id: crypto.randomUUID(),
+      org_id: next.org.id,
+      customer_id: c.id,
+      opportunity_id: q.opportunity_id,
+      kind: "system",
+      created_by: next.member.name,
+      created_at: stamp,
+      body:
+        menu.selected === null
+          ? "F&I menu saved; selection pending"
+          : menu.selected === "declined"
+            ? "F&I menu applied: all optional products declined"
+            : "F&I menu applied: " + menu.packages[menu.selected].name,
+    });
+  }
   if (p.type === "mark_sold" || p.type === "close_opportunity")
     for (const o of next.opportunities.filter((o) => o.status === "sold"))
       recordSale(next, o, stamp);

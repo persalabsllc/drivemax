@@ -1,7 +1,8 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import type { Customer, Quote } from "./model";
 import { calculateQuote } from "./finance";
-import { productKinds, productsTotal } from "./operations";
+import { productsTotal } from "./operations";
+import { fiProductName } from "./fi-menu";
 
 // Deliberate customer-facing allowlist: never serialize the quote object,
 // which also contains internal inventory costs and trade ACV.
@@ -21,7 +22,7 @@ export function customerQuoteLines(q: Quote, c: Customer): [string, string][] {
     ...(v.products?.map(
       (p) =>
         [
-          productKinds[p.kind],
+          fiProductName(p),
           `${money(p.price)} | ${p.term_months} months / ${p.mileage_limit.toLocaleString()} miles | Deductible ${money(p.deductible)}`,
         ] as [string, string],
     ) ?? [

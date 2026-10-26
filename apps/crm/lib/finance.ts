@@ -1,6 +1,8 @@
 import type { FIProduct } from "./operations";
+import type { FIMenu } from "./fi-menu";
 export type FinanceOption = { months: number; apr: number };
 export type FinanceValues = {
+  fiMenu?: FIMenu;
   products?: FIProduct[];
   price: number;
   docFee: number;

@@ -16,6 +16,7 @@ export function FIProducts({
   onClose,
   readOnly = false,
   temporary = false,
+  menuCatalog = false,
 }: {
   products?: FIProduct[];
   legacy: number;
@@ -23,6 +24,7 @@ export function FIProducts({
   onClose: () => void;
   readOnly?: boolean;
   temporary?: boolean;
+  menuCatalog?: boolean;
 }) {
   const [items, setItems] = useState<FIProduct[]>(
       () =>
@@ -77,8 +79,12 @@ export function FIProducts({
   );
   return (
     <Modal
-      title="F&I products"
-      subtitle="Retail prices flow into the quote. Provider costs remain internal."
+      title={menuCatalog ? "Menu products" : "F&I products"}
+      subtitle={
+        menuCatalog
+          ? "Set coverage, provider cost and customer price, then choose which options include each product."
+          : "Retail prices flow into the quote. Provider costs remain internal."
+      }
       wide
       onClose={onClose}
     >
@@ -88,6 +94,7 @@ export function FIProducts({
           e.preventDefault();
           try {
             const parsed = items.map((p) => productSchema.parse(p));
+            if (parsed.length > 30) throw Error("Up to 30 products per menu");
             if (sum(parsed.map((p) => p.price)) > 1000000)
               throw Error("Combined product prices exceed the quote limit");
             onSave(parsed);
@@ -128,6 +135,16 @@ export function FIProducts({
               )}
             </div>
             <div className="ops-form-grid">
+              <label>
+                Product name (customer-facing)
+                <input
+                  disabled={readOnly}
+                  value={p.name ?? ""}
+                  placeholder={productKinds[p.kind]}
+                  maxLength={80}
+                  onChange={(e) => update(p.id, { name: e.target.value })}
+                />
+              </label>
               <label>
                 Provider
                 <input
@@ -187,7 +204,17 @@ export function FIProducts({
               </div>
             </div>
             <label>
-              Coverage notes
+              Coverage description (customer-facing)
+              <textarea
+                disabled={readOnly}
+                value={p.description ?? ""}
+                maxLength={400}
+                placeholder="Describe the actual coverage shown in the provider’s contract."
+                onChange={(e) => update(p.id, { description: e.target.value })}
+              />
+            </label>
+            <label>
+              Internal notes · not printed
               <input
                 disabled={readOnly}
                 value={p.notes}
@@ -245,13 +272,19 @@ export function FIProducts({
             {error}
           </p>
         )}
-        {!readOnly && <button className="btn primary">Apply to quote</button>}
+        {!readOnly && (
+          <button className="btn primary">
+            {menuCatalog ? "Update menu products" : "Apply to quote"}
+          </button>
+        )}
         <p className="ops-help">
-          {temporary
-            ? "Create a customer from Quick quote to retain these changes."
-            : "Save the proposal in Desking to retain these changes."}{" "}
-          A zero term or mileage means not specified; use notes for unlimited
-          coverage.
+          {menuCatalog
+            ? "These products stay in the menu until you apply an option to the deal."
+            : temporary
+              ? "Create a customer from Quick quote to retain these changes."
+              : "Save the proposal in Desking to retain these changes."}{" "}
+          A zero term or mileage means not specified; use the customer-facing
+          coverage description for unlimited coverage.
         </p>
       </form>
     </Modal>

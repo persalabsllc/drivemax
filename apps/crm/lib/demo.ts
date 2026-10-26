@@ -80,10 +80,11 @@ export function demoWorkspace(now = new Date()): Workspace {
       outcome: "sold" as const,
     },
   ];
-  return {
+  const workspace: Workspace = {
     org: { id: org, name: "Drive Max Used Cars", slug: "drive-max" },
     member: { id: "demo", name: "Kyle Kratoville", role: "owner" },
     customers,
+    opportunities: [],
     inventory: demoInventory(org, today),
     visits,
     tasks: [
@@ -175,4 +176,47 @@ export function demoWorkspace(now = new Date()): Workspace {
       },
     ],
   };
+  workspace.opportunities = customers.map((c, i) => ({
+    id: `00000000-0000-4000-8000-0000000001${String(i).padStart(2, "0")}`,
+    org_id: org,
+    customer_id: c.id,
+    title: c.vehicle_interest,
+    source: c.source,
+    status: c.status,
+    inventory_id: null,
+    vehicle_interest: c.vehicle_interest,
+    vehicle_details: null,
+    trade_vehicle: c.trade_vehicle,
+    trade: null,
+    sold_on: c.sold_on,
+    lost_reason: "",
+    closed_at: c.status === "sold" ? stamp : null,
+    sale_snapshot: null,
+    paperwork: {},
+    paperwork_revision: 0,
+    created_at: c.created_at,
+    updated_at: stamp,
+  }));
+  for (const rows of [
+    workspace.activities,
+    workspace.visits,
+    workspace.quotes,
+    workspace.tasks,
+  ])
+    for (const row of rows) {
+      if ("kind" in row && row.kind === "birthday") continue;
+      row.opportunity_id =
+        workspace.opportunities.find((o) => o.customer_id === row.customer_id)
+          ?.id ?? null;
+    }
+  for (const o of workspace.opportunities)
+    if (o.status === "sold")
+      o.sale_snapshot = {
+        customer: structuredClone(
+          customers.find((c) => c.id === o.customer_id)!,
+        ),
+        insurance: null,
+        quote: workspace.quotes.find((q) => q.opportunity_id === o.id) ?? null,
+      };
+  return workspace;
 }

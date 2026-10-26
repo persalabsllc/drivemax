@@ -42,6 +42,8 @@ import {
   type Quote,
   type QuoteValues,
   type Command,
+  opportunityOpen,
+  opportunityCustomer,
   dayKey,
   addDays,
   addMonths,
@@ -53,6 +55,7 @@ import {
   demoCommand,
 } from "../lib/model";
 import { Avatar, Badge, Modal, Empty, SectionTitle, Go } from "./ui";
+import { CustomerProfile } from "./CustomerProfile";
 import { CustomerForm } from "./CustomerForm";
 import { InventoryView, InventoryForm } from "./Inventory";
 import { Desking } from "./Desking";
@@ -104,6 +107,7 @@ export default function CRM({
     [search, setSearch] = useState(""),
     [stage, setStage] = useState("all"),
     [selected, setSelected] = useState<string | null>(null),
+    [selectedOpp, setSelectedOpp] = useState<string | null>(null),
     [profileTab, setProfileTab] = useState<"Activity" | "Details" | "Desking">(
       "Activity",
     ),
@@ -131,7 +135,7 @@ export default function CRM({
     openTasks = ws.tasks.filter(isOpenTask),
     todayVisits = ws.visits.filter((v) => dayKey(v.arrived_at) === today),
     overdue = openTasks.filter((t) => t.due_date < today),
-    soldMonth = ws.customers.filter((c) =>
+    soldMonth = ws.opportunities.filter((c) =>
       c.sold_on?.startsWith(today.slice(0, 7)),
     ),
     active = ws.visits.filter((v) => !v.departed_at);
@@ -142,7 +146,8 @@ export default function CRM({
     setMobileNav(false);
     setSearch("");
   }
-  function openCustomer(c: Customer) {
+  function openCustomer(c: Customer, opportunityId: string | null = null) {
+    setSelectedOpp(opportunityId);
     setSelected(c.id);
     setProfileTab("Activity");
     setNote("");
@@ -157,6 +162,13 @@ export default function CRM({
         const next = demoCommand(ws, command);
         setWs(next);
         if (command.type === "create_customer") id = next.customers[0].id;
+        if (command.type === "create_opportunity")
+          id = next.opportunities[0].id;
+        if (
+          command.type === "update_opportunity" ||
+          command.type === "close_opportunity"
+        )
+          id = command.id;
         if (command.type === "save_inventory")
           id = command.id ?? next.inventory[0].id;
       } else {
@@ -218,19 +230,31 @@ export default function CRM({
     setPrintData({ customer, quote, pack });
     setTimeout(() => window.print(), 80);
   }
+  const currentOpportunity = (id: string) =>
+    ws.opportunities.find((o) => o.customer_id === id && opportunityOpen(o));
   const filteredCustomers = useMemo(
     () =>
       ws.customers
         .filter(
           (c) =>
-            (stage === "all" || c.status === stage) &&
-            [c.name, c.email, c.phone, c.vehicle_interest, c.trade_vehicle]
+            (stage === "all" ||
+              ws.opportunities.some(
+                (o) => o.customer_id === c.id && o.status === stage,
+              )) &&
+            [
+              c.name,
+              c.email,
+              c.phone,
+              ...ws.opportunities
+                .filter((o) => o.customer_id === c.id)
+                .flatMap((o) => [o.title, o.vehicle_interest, o.trade_vehicle]),
+            ]
               .join(" ")
               .toLowerCase()
               .includes(search.toLowerCase()),
         )
         .sort((a, b) => b.updated_at.localeCompare(a.updated_at)),
-    [ws.customers, stage, search],
+    [ws.customers, ws.opportunities, stage, search],
   );
   const taskRow = (t: Task) => {
     const c = findCustomer(t.customer_id);
@@ -249,7 +273,7 @@ export default function CRM({
         <button
           className="task-content"
           disabled={!c}
-          onClick={() => c && openCustomer(c)}
+          onClick={() => c && openCustomer(c, t.opportunity_id ?? null)}
         >
           <strong>{t.title}</strong>
           <span>
@@ -269,13 +293,20 @@ export default function CRM({
   const visitCard = (v: Workspace["visits"][number]) => {
     const c = findCustomer(v.customer_id);
     if (!c) return null;
-    const inventory = ws.inventory.find((i) => i.id === c.inventory_id);
+    const opportunity = ws.opportunities.find((o) => o.id === v.opportunity_id);
+    const inventory =
+      opportunity && opportunityOpen(opportunity)
+        ? ws.inventory.find((i) => i.id === opportunity.inventory_id)
+        : null;
     return (
       <article className={`visit-card visit-${visitStatus(v)}`} key={v.id}>
         <div className="visit-top">
           <Avatar name={c.name} />
           <div>
-            <button className="name-button" onClick={() => openCustomer(c)}>
+            <button
+              className="name-button"
+              onClick={() => openCustomer(c, v.opportunity_id ?? null)}
+            >
               {c.name}
             </button>
             <span>{c.source}</span>
@@ -287,7 +318,7 @@ export default function CRM({
           <span>
             {inventory
               ? vehicleName(inventory)
-              : c.vehicle_interest || "Vehicle to be selected"}
+              : opportunity?.vehicle_interest || "Vehicle to be selected"}
           </span>
         </div>
         <div className="visit-times">
@@ -300,7 +331,10 @@ export default function CRM({
           </span>
         </div>
         <div className="visit-actions">
-          <button className="btn small" onClick={() => openCustomer(c)}>
+          <button
+            className="btn small"
+            onClick={() => openCustomer(c, v.opportunity_id ?? null)}
+          >
             Open profile
             <ArrowUpRight size={13} />
           </button>
@@ -553,8 +587,10 @@ export default function CRM({
                   <Stat
                     title="Active customers"
                     value={
-                      ws.customers.filter(
-                        (c) => !["sold", "lost"].includes(c.status),
+                      ws.customers.filter((c) =>
+                        ws.opportunities.some(
+                          (o) => o.customer_id === c.id && opportunityOpen(o),
+                        ),
                       ).length
                     }
                     sub="Open opportunities in your book"
@@ -699,12 +735,15 @@ export default function CRM({
                             <span
                               className={s}
                               style={{
-                                width: `${ws.customers.length ? Math.max(3, (ws.customers.filter((c) => c.status === s).length / ws.customers.length) * 100) : 0}%`,
+                                width: `${ws.opportunities.length ? Math.max(3, (ws.opportunities.filter((o) => o.status === s).length / ws.opportunities.length) * 100) : 0}%`,
                               }}
                             />
                           </span>
                           <strong>
-                            {ws.customers.filter((c) => c.status === s).length}
+                            {
+                              ws.opportunities.filter((o) => o.status === s)
+                                .length
+                            }
                           </strong>
                         </button>
                       ),
@@ -817,16 +856,23 @@ export default function CRM({
                             <td>
                               <div className="vehicle-cell">
                                 <Car size={15} />
-                                {c.vehicle_interest || "Not selected"}
+                                {currentOpportunity(c.id)?.vehicle_interest ||
+                                  "No active opportunity"}
                               </div>
-                              {c.trade_vehicle && (
+                              {currentOpportunity(c.id)?.trade_vehicle && (
                                 <small className="subtext">
-                                  Trade: {c.trade_vehicle}
+                                  Trade:{" "}
+                                  {currentOpportunity(c.id)?.trade_vehicle}
                                 </small>
                               )}
                             </td>
                             <td>
-                              <Badge value={c.status} />
+                              <Badge
+                                value={
+                                  currentOpportunity(c.id)?.status ||
+                                  "no active opportunity"
+                                }
+                              />
                             </td>
                             <td>{c.source}</td>
                             <td>{dateLabel(dayKey(c.created_at))}</td>
@@ -1005,7 +1051,15 @@ export default function CRM({
                                 <td>
                                   <button
                                     className="name-button"
-                                    onClick={() => c && openCustomer(c)}
+                                    onClick={() => {
+                                      if (c) {
+                                        openCustomer(
+                                          c,
+                                          q.opportunity_id ?? null,
+                                        );
+                                        setProfileTab("Desking");
+                                      }
+                                    }}
                                   >
                                     {c?.name}
                                   </button>
@@ -1044,8 +1098,8 @@ export default function CRM({
                   />
                 )}
                 <div className="panel-foot">
-                  Preliminary quotes only. Tax and title amounts are entered
-                  manually and must be verified.
+                  NC highway-use tax is calculated in Desking. Review the
+                  selected payment option, taxes, and fees before delivery.
                 </div>
               </section>
             )}
@@ -1063,21 +1117,28 @@ export default function CRM({
                   </div>
                 </section>
                 <div className="visit-grid full">
-                  {ws.customers
-                    .filter((c) => c.trade_vehicle)
-                    .map((c) => {
+                  {ws.opportunities
+                    .filter((o) => o.trade_vehicle)
+                    .map((o) => {
+                      const original = ws.customers.find(
+                        (c) => c.id === o.customer_id,
+                      );
+                      if (!original) return null;
+                      const c = opportunityCustomer(original, o);
                       const q = ws.quotes
-                        .filter((q) => q.customer_id === c.id)
+                        .filter((q) => q.opportunity_id === o.id)
                         .sort((a, b) =>
                           b.created_at.localeCompare(a.created_at),
                         )[0];
                       return (
-                        <section className="panel trade-card" key={c.id}>
+                        <section className="panel trade-card" key={o.id}>
                           <div className="trade-icon">
                             <Car size={26} />
                           </div>
                           <h3>{c.trade_vehicle}</h3>
-                          <p>{c.name}</p>
+                          <p>
+                            {c.name} · {o.title} <Badge value={o.status} />
+                          </p>
                           <div className="trade-values">
                             <div>
                               <small>Working ACV</small>
@@ -1097,7 +1158,7 @@ export default function CRM({
                           <button
                             className="btn"
                             onClick={() => {
-                              openCustomer(c);
+                              openCustomer(original, o.id);
                               setProfileTab("Desking");
                             }}
                           >
@@ -1108,7 +1169,7 @@ export default function CRM({
                       );
                     })}
                 </div>
-                {!ws.customers.some((c) => c.trade_vehicle) && (
+                {!ws.opportunities.some((o) => o.trade_vehicle) && (
                   <section className="panel">
                     <Empty
                       title="Room for the next trade."
@@ -1187,8 +1248,9 @@ export default function CRM({
                       subtitle="Download a copy of your workspace whenever you need it."
                     />
                     <p className="muted-copy">
-                      Customer profiles, inventory, trades, visits, notes,
-                      tasks, and saved proposals are included in your export.
+                      Customer profiles, opportunities, inventory, trades,
+                      visits, notes, tasks, and saved proposals are included in
+                      your export.
                     </p>
                     <button className="btn" onClick={exportData}>
                       <Download size={16} />
@@ -1258,278 +1320,24 @@ export default function CRM({
         </div>
       )}
       {customer && (
-        <Modal
-          title="Customer profile"
-          subtitle="The whole relationship, in one place."
+        <CustomerProfile
+          key={customer.id}
+          ws={ws}
+          customer={customer}
+          demo={demo}
+          busy={busy}
+          error={error}
+          run={run}
           onClose={() => setSelected(null)}
-          wide
-        >
-          <div className="profile-top">
-            <Avatar name={customer.name} size="large" />
-            <div>
-              <h2>{customer.name}</h2>
-              <div className="profile-tags">
-                <Badge value={customer.status} />
-                <span>{customer.source}</span>
-              </div>
-            </div>
-            <button
-              className="btn small"
-              onClick={() => {
-                setEdit(customer);
-                setModal("customer");
-              }}
-            >
-              Edit profile
-            </button>
-          </div>
-          <div className="profile-contact">
-            <span>
-              <Phone size={14} />
-              {customer.phone || "No phone added"}
-            </span>
-            <span>
-              <Mail size={14} />
-              {customer.email || "No email added"}
-            </span>
-          </div>
-          <div className="profile-actions">
-            {ws.visits.some(
-              (v) => v.customer_id === customer.id && !v.departed_at,
-            ) ? (
-              <button
-                className="btn small end-visit"
-                disabled={busy}
-                onClick={() => {
-                  const visit = ws.visits.find(
-                    (v) => v.customer_id === customer.id && !v.departed_at,
-                  );
-                  if (visit)
-                    void run(
-                      { type: "check_out", id: visit.id },
-                      "Visit ended. Customer marked left.",
-                    );
-                }}
-              >
-                <LogOut size={15} />
-                End visit
-              </button>
-            ) : (
-              <button
-                className="btn primary small"
-                disabled={busy}
-                onClick={() =>
-                  run(
-                    { type: "check_in", customer_id: customer.id },
-                    "Checked into the showroom",
-                  )
-                }
-              >
-                <DoorOpen size={15} />
-                Check in
-              </button>
-            )}
-            <button className="btn small" onClick={() => setModal("call")}>
-              <Phone size={14} />
-              Log call
-            </button>
-            <button className="btn small" onClick={() => setModal("task")}>
-              <CalendarDays size={14} />
-              Add task
-            </button>
-            <button
-              className="btn small"
-              onClick={() => print(customer, undefined, true)}
-            >
-              <Printer size={14} />
-              Deal summary
-            </button>
-            {customer.status !== "sold" && (
-              <button
-                className="btn small success"
-                onClick={() => setModal("sold")}
-              >
-                <CheckCircle2 size={14} />
-                Mark sold
-              </button>
-            )}
-          </div>
-          <div className="profile-vehicles">
-            <div>
-              <small>VEHICLE OF INTEREST</small>
-              <strong>
-                <Car size={16} />
-                {ws.inventory.find((v) => v.id === customer.inventory_id)
-                  ? vehicleName(
-                      ws.inventory.find((v) => v.id === customer.inventory_id)!,
-                    )
-                  : customer.vehicle_interest || "Not selected yet"}
-              </strong>
-            </div>
-            <div>
-              <small>TRADE-IN</small>
-              <strong>{customer.trade_vehicle || "No trade-in added"}</strong>
-            </div>
-          </div>
-          <div className="profile-tabs">
-            {(["Activity", "Details", "Desking"] as const).map((t) => (
-              <button
-                key={t}
-                className={profileTab === t ? "active" : ""}
-                onClick={() => setProfileTab(t)}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-          {error && (
-            <p className="form-error" role="alert">
-              {error}
-            </p>
-          )}
-          {profileTab === "Activity" && (
-            <div className="profile-body">
-              <form
-                className="note-composer"
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  if (
-                    (
-                      await run(
-                        {
-                          type: "add_activity",
-                          customer_id: customer.id,
-                          kind: "note",
-                          body: note,
-                        },
-                        "Note added",
-                      )
-                    ).ok
-                  )
-                    setNote("");
-                }}
-              >
-                <label htmlFor="customer-note">
-                  Keep the conversation moving.
-                </label>
-                <textarea
-                  id="customer-note"
-                  placeholder="Add a note, remember a detail, or capture the next step…"
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  maxLength={8000}
-                  required
-                />
-                <div>
-                  <span>Private to your dealership</span>
-                  <button
-                    className="btn primary small"
-                    disabled={busy || !note.trim()}
-                  >
-                    <Plus size={14} />
-                    Add note
-                  </button>
-                </div>
-              </form>
-              <h3 className="timeline-title">Relationship timeline</h3>
-              <div className="timeline">
-                {ws.activities
-                  .filter((a) => a.customer_id === customer.id)
-                  .sort((a, b) => b.created_at.localeCompare(a.created_at))
-                  .map((a) => (
-                    <article key={a.id}>
-                      <span className={`timeline-dot ${a.kind}`}>
-                        {a.kind === "call" ? (
-                          <Phone size={14} />
-                        ) : a.kind === "system" ? (
-                          <Check size={14} />
-                        ) : (
-                          <StickyNote size={14} />
-                        )}
-                      </span>
-                      <div>
-                        <header>
-                          <strong>
-                            {a.kind === "call"
-                              ? "Phone call"
-                              : a.kind === "system"
-                                ? "Customer update"
-                                : "Note added"}
-                          </strong>
-                          <time>
-                            {dateLabel(dayKey(a.created_at))} ·{" "}
-                            {time(a.created_at)}
-                          </time>
-                        </header>
-                        <p>{a.body}</p>
-                        <small>{a.created_by}</small>
-                      </div>
-                    </article>
-                  ))}
-              </div>
-              {!ws.activities.some((a) => a.customer_id === customer.id) && (
-                <p className="muted-copy">
-                  Add the first note to start this customer’s story.
-                </p>
-              )}
-            </div>
-          )}
-          {profileTab === "Details" && (
-            <div className="profile-body">
-              <dl className="settings-list">
-                <dt>Birthday</dt>
-                <dd>
-                  {customer.birthday
-                    ? dateLabel(customer.birthday)
-                    : "Not added"}
-                </dd>
-                <dt>Added</dt>
-                <dd>{dateLabel(dayKey(customer.created_at))}</dd>
-                <dt>Purchase date</dt>
-                <dd>
-                  {customer.sold_on ? dateLabel(customer.sold_on) : "Not sold"}
-                </dd>
-              </dl>
-              <SectionTitle title="Upcoming tasks" />
-              {openTasks
-                .filter((t) => t.customer_id === customer.id)
-                .sort((a, b) => a.due_date.localeCompare(b.due_date))
-                .map(taskRow)}
-              <SectionTitle title="Visit history" />
-              {ws.visits
-                .filter((v) => v.customer_id === customer.id)
-                .map((v) => (
-                  <div className="visit-history" key={v.id}>
-                    <span>
-                      {dateLabel(dayKey(v.arrived_at))} · {time(v.arrived_at)}
-                    </span>
-                    <Badge value={v.departed_at ? "left" : "here"} />
-                    <Badge value={v.outcome} />
-                  </div>
-                ))}
-            </div>
-          )}
-          {profileTab === "Desking" && (
-            <Desking
-              key={customer.id + customer.updated_at}
-              customer={customer}
-              inventory={ws.inventory}
-              quotes={ws.quotes}
-              busy={busy}
-              onSave={(command) => run(command, "Desking version saved")}
-              onPrint={(q) => print(customer, q)}
-              onEdit={() => {
-                setEdit(customer);
-                setModal("customer");
-              }}
-            />
-          )}
-        </Modal>
+          onPrintQuote={(c, q) => print(c, q)}
+          initialTab={profileTab}
+          initialOpportunityId={selectedOpp}
+        />
       )}
       {modal === "customer" && (
         <Modal
           title={edit ? "Edit customer" : "Start a new relationship"}
-          subtitle="Customer details, vehicle selection, and trade-in."
+          subtitle="Customer identification, contact information, and co-buyer."
           onClose={() => {
             setModal(null);
             setEdit(null);
@@ -1538,8 +1346,6 @@ export default function CRM({
         >
           <CustomerForm
             existing={edit}
-            inventory={ws.inventory}
-            demo={demo}
             busy={busy}
             error={error}
             submit={async (data) => {
@@ -1956,6 +1762,9 @@ function PrintSheet({
                 [
                   ["price", "Selling price"],
                   ["docFee", "Document fee"],
+                  ["addOns", "Taxable add-ons"],
+                  ["serviceContract", "Service contract"],
+                  ["otherTaxes", "Other taxes"],
                   ["tax", "Estimated tax"],
                   ["titleFee", "Title / registration"],
                   ["tradeAllowance", "Less trade allowance"],
@@ -1965,7 +1774,7 @@ function PrintSheet({
               ).map(([k, label]) => (
                 <tr key={k}>
                   <td>{label}</td>
-                  <td>{fullMoney(q.values[k])}</td>
+                  <td>{fullMoney(Number(q.values[k] ?? 0))}</td>
                 </tr>
               ))}
               <tr>
@@ -1975,8 +1784,14 @@ function PrintSheet({
             </tbody>
           </table>
           <p>
-            Illustrative payment: {fullMoney(quoteMath(q.values).payment)} /
-            month · {q.values.months} months · {q.values.apr}% APR
+            {q.values.mode === "cash"
+              ? "Cash transaction. Financing example only:"
+              : "Illustrative payment:"}{" "}
+            {fullMoney(quoteMath(q.values).payment)} / month · {q.values.months}{" "}
+            months · {q.values.apr}% APR · {q.values.daysToFirstPayment ?? 30}{" "}
+            days to first payment. Includes{" "}
+            {fullMoney(quoteMath(q.values).firstPeriodInterest)} estimated
+            initial-period interest. Subject to lender terms.
           </p>
         </>
       )}

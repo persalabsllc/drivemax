@@ -22,13 +22,13 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   if (req.headers.get("origin") !== new URL(req.url).origin)
     return json({ error: "Invalid request origin." }, 403);
-  if (Number(req.headers.get("content-length") || 0) > 20000)
+  if (Number(req.headers.get("content-length") || 0) > 200000)
     return json({ error: "Request too large." }, 413);
   try {
     const s = await session();
     if (!s) return json({ error: "Your session ended. Sign in again." }, 401);
     const raw = await req.text();
-    if (raw.length > 20000) return json({ error: "Request too large." }, 413);
+    if (raw.length > 200000) return json({ error: "Request too large." }, 413);
     let input: unknown;
     try {
       input = JSON.parse(raw);
@@ -57,7 +57,14 @@ export async function POST(req: NextRequest) {
               ? "That VIN or stock number is already in this dealership’s inventory."
               : error.message === "Select an in-stock vehicle"
                 ? "That vehicle is no longer in stock. Refresh and select another vehicle."
-                : "The change could not be saved. Refresh and try again.",
+                : [
+                      "Closed opportunity is read-only",
+                      "Select an active opportunity",
+                      "This inventory vehicle has already been sold",
+                      "Paperwork changed in another session. Reload before saving.",
+                    ].includes(error.message)
+                  ? error.message
+                  : "The change could not be saved. Refresh and try again.",
         },
         400,
       );

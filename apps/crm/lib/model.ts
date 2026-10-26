@@ -1,5 +1,13 @@
 import { z } from "zod";
 import {
+  buyerSchema,
+  coBuyerSchema,
+  insuranceSchema,
+  type Person,
+  type Insurance,
+} from "./people";
+import { calculateQuote, type FinanceValues } from "./finance";
+import {
   inventorySchema,
   vehicleDetailsSchema,
   tradeSchema,
@@ -24,12 +32,63 @@ export type Customer = {
   inventory_id?: string | null;
   vehicle_details?: VehicleDetails | null;
   trade?: Trade | null;
+  person?: Person | null;
+  co_buyer?: Person | null;
+  insurance?: Insurance | null;
   birthday: string | null;
   sold_on: string | null;
   created_at: string;
   updated_at: string;
 };
+export type Opportunity = {
+  id: string;
+  org_id: string;
+  customer_id: string;
+  title: string;
+  status: Customer["status"];
+  source: string;
+  inventory_id: string | null;
+  vehicle_interest: string;
+  vehicle_details: VehicleDetails | null;
+  trade_vehicle: string;
+  trade: Trade | null;
+  sold_on: string | null;
+  lost_reason: string;
+  closed_at: string | null;
+  created_at: string;
+  updated_at: string;
+  sale_snapshot: {
+    customer: Customer;
+    quote: Quote | null;
+    insurance: Insurance | null;
+  } | null;
+  paperwork: Record<string, Record<string, string | boolean>>;
+  paperwork_revision: number;
+};
+export const opportunityOpen = (o: Opportunity) =>
+  o.status !== "sold" && o.status !== "lost";
+export function opportunityCustomer(
+  c: Customer,
+  o: Opportunity,
+  inventory: InventoryVehicle[] = [],
+): Customer {
+  const base = o.sale_snapshot?.customer ?? c;
+  return {
+    ...base,
+    id: c.id,
+    org_id: c.org_id,
+    status: o.status,
+    sold_on: o.sold_on,
+    vehicle_interest: o.vehicle_interest,
+    inventory_id: o.inventory_id,
+    vehicle_details: o.vehicle_details,
+    trade_vehicle: o.trade_vehicle,
+    trade: o.trade,
+    updated_at: o.updated_at,
+  };
+}
 export type Visit = {
+  opportunity_id?: string | null;
   id: string;
   org_id: string;
   customer_id: string;
@@ -38,15 +97,17 @@ export type Visit = {
   outcome: "browsing" | "unsold" | "sold";
 };
 export type Activity = {
+  opportunity_id?: string | null;
   id: string;
   org_id: string;
   customer_id: string;
-  kind: "note" | "call" | "system";
+  kind: "note" | "call" | "system" | "email" | "sms";
   body: string;
   created_at: string;
   created_by: string;
 };
 export type Task = {
+  opportunity_id?: string | null;
   id: string;
   org_id: string;
   customer_id: string | null;
@@ -62,20 +123,9 @@ export type Task = {
   completed_at: string | null;
   canceled_at: string | null;
 };
-export type QuoteValues = {
-  price: number;
-  docFee: number;
-  tax: number;
-  titleFee: number;
-  tradeAllowance: number;
-  payoff: number;
-  downPayment: number;
-  apr: number;
-  months: number;
-  acv: number;
-  recon: number;
-};
+export type QuoteValues = FinanceValues;
 export type Quote = {
+  opportunity_id?: string | null;
   id: string;
   org_id: string;
   customer_id: string;
@@ -92,6 +142,7 @@ export type Workspace = {
   org: { id: string; name: string; slug: string };
   member: { id: string; name: string; role: string };
   customers: Customer[];
+  opportunities: Opportunity[];
   inventory: InventoryVehicle[];
   visits: Visit[];
   activities: Activity[];
@@ -157,23 +208,7 @@ export const defaultQuote: QuoteValues = {
   acv: 0,
   recon: 0,
 };
-export function quoteMath(v: QuoteValues) {
-  const total =
-    Math.round(
-      (v.price + v.docFee + v.tax + v.titleFee - v.tradeAllowance + v.payoff) *
-        100,
-    ) / 100;
-  const balance = Math.round((total - v.downPayment) * 100) / 100;
-  const rate = v.apr / 1200;
-  const months = Math.max(1, v.months);
-  const payment =
-    balance > 0
-      ? rate
-        ? (balance * rate) / (1 - Math.pow(1 + rate, -months))
-        : balance / months
-      : 0;
-  return { total, balance, payment: Math.round(payment * 100) / 100 };
-}
+export const quoteMath = calculateQuote;
 const text = z.string().trim().max(250);
 const date = z
   .string()
@@ -197,6 +232,9 @@ const customer = {
   vehicle_interest: text,
   trade_vehicle: text,
   birthday,
+  person: buyerSchema.nullable().optional(),
+  co_buyer: coBuyerSchema.nullable().optional(),
+  initial_opportunity: z.boolean().optional(),
   inventory_id: z.uuid().nullable().optional(),
   vehicle_details: vehicleDetailsSchema.nullable().optional(),
   trade: tradeSchema.nullable().optional(),
@@ -214,8 +252,70 @@ export const quoteSchema = z.object({
   months: z.number().int().min(1).max(120),
   acv: amount,
   recon: amount,
+  mode: z.enum(["cash", "finance"]).optional(),
+  taxMode: z.enum(["auto", "manual"]).optional(),
+  taxReason: z.string().max(500).optional(),
+  addOns: amount.optional(),
+  serviceContract: amount.optional(),
+  otherTaxes: amount.optional(),
+  daysToFirstPayment: z.number().int().min(30).max(120).optional(),
+  financeOptions: z
+    .array(
+      z.object({
+        months: z.number().int().min(1).max(120),
+        apr: z.number().min(0).max(50),
+      }),
+    )
+    .length(3)
+    .optional(),
+  downPayments: z.array(amount).length(3).optional(),
+  selectedOption: z.number().int().min(0).max(2).optional(),
+  selectedDown: z.number().int().min(0).max(2).optional(),
+});
+export const opportunitySchema = z.object({
+  title: text.min(1),
+  source: text,
+  status: z.enum(["new", "working", "appointment"]),
+  inventory_id: z.uuid().nullable(),
+  vehicle_interest: text,
+  vehicle_details: vehicleDetailsSchema.nullable(),
+  trade_vehicle: text,
+  trade: tradeSchema.nullable(),
 });
 export const commandSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("create_opportunity"),
+    customer_id: z.uuid(),
+    opportunity: opportunitySchema,
+  }),
+  z.object({
+    type: z.literal("update_opportunity"),
+    id: z.uuid(),
+    opportunity: opportunitySchema,
+  }),
+  z.object({
+    type: z.literal("close_opportunity"),
+    id: z.uuid(),
+    outcome: z.enum(["sold", "lost"]),
+    reason: z.string().trim().max(2000).optional(),
+  }),
+  z.object({
+    type: z.literal("save_insurance"),
+    customer_id: z.uuid(),
+    insurance: insuranceSchema,
+  }),
+  z.object({
+    type: z.literal("save_paperwork"),
+    opportunity_id: z.uuid(),
+    revision: z.number().int().min(0),
+    paperwork: z.record(
+      z.string().max(80),
+      z.record(
+        z.string().max(250),
+        z.union([z.string().max(8000), z.boolean()]),
+      ),
+    ),
+  }),
   z.object({
     type: z.literal("save_inventory"),
     id: z.uuid().optional(),
@@ -233,14 +333,20 @@ export const commandSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("add_activity"),
     customer_id: z.uuid(),
-    kind: z.enum(["note", "call"]),
+    opportunity_id: z.uuid().nullable().optional(),
+    kind: z.enum(["note", "call", "email", "sms"]),
     body: z.string().trim().min(1).max(8000),
   }),
-  z.object({ type: z.literal("check_in"), customer_id: z.uuid() }),
+  z.object({
+    type: z.literal("check_in"),
+    customer_id: z.uuid(),
+    opportunity_id: z.uuid().nullable().optional(),
+  }),
   z.object({ type: z.literal("check_out"), id: z.uuid() }),
   z.object({ type: z.literal("mark_sold"), customer_id: z.uuid() }),
   z.object({
     type: z.literal("create_task"),
+    opportunity_id: z.uuid().nullable().optional(),
     customer_id: z.uuid().nullable(),
     title: text.min(2),
     due_date: date,
@@ -249,6 +355,7 @@ export const commandSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("complete_task"), id: z.uuid() }),
   z.object({
     type: z.literal("save_quote"),
+    opportunity_id: z.uuid().optional(),
     customer_id: z.uuid(),
     vehicle: text.min(1),
     values: quoteSchema,
@@ -257,7 +364,7 @@ export const commandSchema = z.discriminatedUnion("type", [
 export type Command = z.infer<typeof commandSchema>;
 export const isOpenTask = (t: Task) => !t.completed_at && !t.canceled_at;
 
-// The demo runs only in memory. This reducer never touches the live workspace.
+// Demo uses the same command contracts; it never writes live records.
 export function demoCommand(
   ws: Workspace,
   command: Command,
@@ -270,35 +377,82 @@ export function demoCommand(
     id = () => crypto.randomUUID(),
     org_id = s.org.id;
   const activity = (
-    customer_id: string,
+    cid: string,
     body: string,
     kind: Activity["kind"] = "system",
+    oid: string | null = null,
   ) =>
     s.activities.unshift({
       id: id(),
       org_id,
-      customer_id,
+      customer_id: cid,
+      opportunity_id: oid,
       body,
       kind,
       created_at: stamp,
       created_by: s.member.name,
     });
   const task = (
-    customer_id: string,
+    cid: string,
     title: string,
-    due_date: string,
+    due: string,
     kind: Task["kind"],
+    oid: string | null = null,
   ) =>
     s.tasks.push({
       id: id(),
       org_id,
-      customer_id,
+      customer_id: cid,
+      opportunity_id: oid,
       title,
-      due_date,
+      due_date: due,
       kind,
       completed_at: null,
       canceled_at: null,
     });
+  const canonical = (
+    o: z.infer<typeof opportunitySchema>,
+    old?: Opportunity,
+  ) => {
+    if (o.inventory_id) {
+      const v = s.inventory.find((v) => v.id === o.inventory_id);
+      if (!v) throw Error("Vehicle unavailable");
+      if (v.status !== "in_stock" && v.id !== old?.inventory_id)
+        throw Error("Select an in-stock vehicle");
+      o.vehicle_details = inventorySnapshot(v);
+      o.vehicle_interest = vehicleName(v);
+    }
+    if (o.trade)
+      o.trade_vehicle =
+        o.trade.description || vehicleName(o.trade) || o.trade.vin;
+    return o;
+  };
+  const addOpp = (cid: string, data: z.infer<typeof opportunitySchema>) => {
+    const o: Opportunity = {
+      ...canonical(data),
+      id: id(),
+      org_id,
+      customer_id: cid,
+      sold_on: null,
+      lost_reason: "",
+      closed_at: null,
+      sale_snapshot: null,
+      paperwork: {},
+      paperwork_revision: 0,
+      created_at: stamp,
+      updated_at: stamp,
+    };
+    s.opportunities.unshift(o);
+    activity(cid, "Opportunity created", "system", o.id);
+    task(
+      cid,
+      "Follow up · " + o.title,
+      addDays(today, 1),
+      "unsold_followup",
+      o.id,
+    );
+    return o;
+  };
   if (p.type === "save_inventory") {
     if (
       s.inventory.some(
@@ -309,12 +463,12 @@ export function demoCommand(
               p.vehicle.stock_number.toLowerCase()),
       )
     )
-      throw new Error("That VIN or stock number already exists in inventory.");
+      throw Error("That VIN or stock number already exists in inventory.");
     if (p.id) {
       const v = s.inventory.find((v) => v.id === p.id);
-      if (!v) throw new Error("Vehicle unavailable");
+      if (!v) throw Error("Vehicle unavailable");
       Object.assign(v, p.vehicle, { updated_at: stamp });
-    } else {
+    } else
       s.inventory.unshift({
         ...p.vehicle,
         id: id(),
@@ -322,32 +476,11 @@ export function demoCommand(
         created_at: stamp,
         updated_at: stamp,
       });
-    }
-  }
-  if (p.type === "create_customer" || p.type === "update_customer") {
-    if (p.customer.inventory_id) {
-      const v = s.inventory.find((v) => v.id === p.customer.inventory_id);
-      if (!v) throw new Error("Vehicle unavailable");
-      if (
-        v.status !== "in_stock" &&
-        !(
-          p.type === "update_customer" &&
-          s.customers.find((c) => c.id === p.id)?.inventory_id === v.id
-        )
-      )
-        throw new Error("Select an in-stock vehicle");
-      p.customer.vehicle_interest = vehicleName(v);
-      p.customer.vehicle_details = inventorySnapshot(v);
-    }
-    if (p.customer.trade)
-      p.customer.trade_vehicle =
-        p.customer.trade.description ||
-        vehicleName(p.customer.trade) ||
-        p.customer.trade.vin;
   }
   if (p.type === "create_customer") {
-    const c = {
+    const c: Customer = {
       ...p.customer,
+      status: "new",
       id: id(),
       org_id,
       sold_on: null,
@@ -356,12 +489,17 @@ export function demoCommand(
     };
     s.customers.unshift(c);
     activity(c.id, "Customer profile created");
-    task(
-      c.id,
-      "Follow up with " + c.name,
-      addDays(today, 1),
-      "unsold_followup",
-    );
+    if (p.customer.initial_opportunity !== false)
+      addOpp(c.id, {
+        title: c.vehicle_interest || "Vehicle purchase",
+        source: c.source,
+        status: "new",
+        inventory_id: c.inventory_id ?? null,
+        vehicle_interest: c.vehicle_interest,
+        vehicle_details: c.vehicle_details ?? null,
+        trade_vehicle: c.trade_vehicle,
+        trade: c.trade ?? null,
+      });
     if (c.birthday)
       task(
         c.id,
@@ -372,9 +510,165 @@ export function demoCommand(
   }
   if (p.type === "update_customer") {
     const c = s.customers.find((c) => c.id === p.id);
-    if (c) Object.assign(c, p.customer, { updated_at: stamp });
+    if (!c) throw Error("Customer unavailable");
+    if (c.birthday !== p.customer.birthday) {
+      s.tasks
+        .filter(
+          (t) =>
+            t.customer_id === c.id && t.kind === "birthday" && isOpenTask(t),
+        )
+        .forEach((t) => (t.canceled_at = stamp));
+      if (p.customer.birthday)
+        task(
+          c.id,
+          p.customer.name + " · birthday",
+          nextAnniversary(p.customer.birthday, today),
+          "birthday",
+        );
+    }
+    const { name, email, phone, source, birthday, person, co_buyer } =
+      p.customer;
+    Object.assign(c, {
+      name,
+      email,
+      phone,
+      source,
+      birthday,
+      ...(person !== undefined ? { person } : {}),
+      ...(co_buyer !== undefined ? { co_buyer } : {}),
+      updated_at: stamp,
+    });
+    activity(c.id, "Customer contact details updated");
   }
-  if (p.type === "add_activity") activity(p.customer_id, p.body, p.kind);
+  if (p.type === "create_opportunity") {
+    if (!s.customers.some((c) => c.id === p.customer_id))
+      throw Error("Customer unavailable");
+    addOpp(p.customer_id, p.opportunity);
+  }
+  if (p.type === "update_opportunity") {
+    const o = s.opportunities.find((o) => o.id === p.id);
+    if (!o || !opportunityOpen(o))
+      throw Error("Closed opportunity is read-only");
+    Object.assign(o, canonical(p.opportunity, o), { updated_at: stamp });
+    activity(
+      o.customer_id,
+      "Opportunity vehicle and trade updated",
+      "system",
+      o.id,
+    );
+  }
+  if (p.type === "close_opportunity" || p.type === "mark_sold") {
+    const o = s.opportunities.find((o) =>
+      p.type === "close_opportunity"
+        ? o.id === p.id
+        : o.customer_id === p.customer_id && opportunityOpen(o),
+    );
+    if (!o) throw Error("Select an active opportunity");
+    const outcome = p.type === "mark_sold" ? "sold" : p.outcome;
+    if (o.status === outcome) return s;
+    if (!opportunityOpen(o)) throw Error("Closed opportunity is read-only");
+    const c = s.customers.find((c) => c.id === o.customer_id)!;
+    const v = s.inventory.find((v) => v.id === o.inventory_id);
+    if (v && outcome === "sold") {
+      if (v.status === "sold")
+        throw Error("This inventory vehicle has already been sold");
+      v.status = "sold";
+      o.vehicle_details = inventorySnapshot(v);
+    }
+    o.status = outcome;
+    o.closed_at = stamp;
+    o.sold_on = outcome === "sold" ? today : null;
+    o.lost_reason = p.type === "close_opportunity" ? p.reason || "" : "";
+    o.updated_at = stamp;
+    o.sale_snapshot = {
+      customer: structuredClone(c),
+      insurance: structuredClone(c.insurance ?? null),
+      quote: structuredClone(
+        s.quotes
+          .filter(
+            (q) =>
+              q.opportunity_id === o.id &&
+              (o.inventory_id
+                ? q.inventory_id === o.inventory_id
+                : q.vehicle === o.vehicle_interest),
+          )
+          .sort((a, b) => b.created_at.localeCompare(a.created_at))[0] ?? null,
+      ),
+    };
+    s.tasks
+      .filter(
+        (t) =>
+          t.opportunity_id === o.id &&
+          ["unsold_followup", "appointment"].includes(t.kind) &&
+          isOpenTask(t),
+      )
+      .forEach((t) => (t.canceled_at = stamp));
+    if (outcome === "sold") {
+      const recent = s.visits
+        .filter(
+          (v) => v.opportunity_id === o.id && dayKey(v.arrived_at) === today,
+        )
+        .sort((a, b) => b.arrived_at.localeCompare(a.arrived_at))[0];
+      s.visits
+        .filter(
+          (v) =>
+            v.opportunity_id === o.id &&
+            (!v.departed_at || v.id === recent?.id),
+        )
+        .forEach((v) => (v.outcome = "sold"));
+      for (const d of [2, 7, 30])
+        task(
+          c.id,
+          d + "-day sold follow-up · " + o.title,
+          addDays(today, d),
+          "sold_followup",
+          o.id,
+        );
+      task(
+        c.id,
+        "Purchase anniversary · " + o.title,
+        nextAnniversary(today, addDays(today, 1)),
+        "anniversary",
+        o.id,
+      );
+    }
+    activity(
+      c.id,
+      "Opportunity marked " +
+        outcome +
+        (o.lost_reason ? " · " + o.lost_reason : ""),
+      "system",
+      o.id,
+    );
+  }
+  if (p.type === "save_insurance") {
+    const c = s.customers.find((c) => c.id === p.customer_id);
+    if (!c) throw Error("Customer unavailable");
+    c.insurance = p.insurance;
+    c.updated_at = stamp;
+    activity(c.id, "Automobile insurance updated");
+  }
+  if (p.type === "save_paperwork") {
+    const o = s.opportunities.find((o) => o.id === p.opportunity_id);
+    if (!o) throw Error("Opportunity unavailable");
+    if (o.paperwork_revision !== p.revision)
+      throw Error(
+        "Paperwork changed in another session. Reload before saving.",
+      );
+    o.paperwork = p.paperwork;
+    o.paperwork_revision++;
+  }
+  if (
+    "opportunity_id" in p &&
+    p.opportunity_id &&
+    "customer_id" in p &&
+    !s.opportunities.some(
+      (o) => o.id === p.opportunity_id && o.customer_id === p.customer_id,
+    )
+  )
+    throw Error("Opportunity unavailable");
+  if (p.type === "add_activity")
+    activity(p.customer_id, p.body, p.kind, p.opportunity_id ?? null);
   if (
     p.type === "check_in" &&
     !s.visits.some((v) => v.customer_id === p.customer_id && !v.departed_at)
@@ -383,11 +677,17 @@ export function demoCommand(
       id: id(),
       org_id,
       customer_id: p.customer_id,
+      opportunity_id: p.opportunity_id ?? null,
       arrived_at: stamp,
       departed_at: null,
       outcome: "browsing",
     });
-    activity(p.customer_id, "Checked into the showroom");
+    activity(
+      p.customer_id,
+      "Checked into the showroom",
+      "system",
+      p.opportunity_id ?? null,
+    );
   }
   if (p.type === "check_out") {
     const v = s.visits.find((v) => v.id === p.id);
@@ -395,60 +695,26 @@ export function demoCommand(
       v.departed_at = stamp;
       if (v.outcome !== "sold") {
         v.outcome = "unsold";
-        task(
-          v.customer_id,
-          "Follow up after showroom visit",
-          addDays(today, 1),
-          "unsold_followup",
-        );
+        if (
+          !v.opportunity_id ||
+          s.opportunities.some(
+            (o) => o.id === v.opportunity_id && opportunityOpen(o),
+          )
+        )
+          task(
+            v.customer_id,
+            "Follow up after showroom visit",
+            addDays(today, 1),
+            "unsold_followup",
+            v.opportunity_id ?? null,
+          );
       }
-      activity(v.customer_id, "Checked out of the showroom");
-    }
-  }
-  if (p.type === "mark_sold") {
-    const c = s.customers.find((c) => c.id === p.customer_id);
-    if (c && c.status !== "sold") {
-      c.status = "sold";
-      c.sold_on = today;
-      const iv = s.inventory.find((v) => v.id === c.inventory_id);
-      if (iv) iv.status = "sold";
-      s.visits
-        .filter(
-          (v) =>
-            v.customer_id === c.id &&
-            (!v.departed_at ||
-              v.id ===
-                s.visits
-                  .filter(
-                    (x) =>
-                      x.customer_id === c.id && dayKey(x.arrived_at) === today,
-                  )
-                  .sort((a, b) => b.arrived_at.localeCompare(a.arrived_at))[0]
-                  ?.id),
-        )
-        .forEach((v) => (v.outcome = "sold"));
-      s.tasks
-        .filter(
-          (t) =>
-            t.customer_id === c.id &&
-            t.kind === "unsold_followup" &&
-            isOpenTask(t),
-        )
-        .forEach((t) => (t.canceled_at = stamp));
-      for (const d of [2, 7, 30])
-        task(
-          c.id,
-          d + "-day sold follow-up",
-          addDays(today, d),
-          "sold_followup",
-        );
-      task(
-        c.id,
-        "Purchase anniversary",
-        nextAnniversary(today, addDays(today, 1)),
-        "anniversary",
+      activity(
+        v.customer_id,
+        "Visit ended · customer left",
+        "system",
+        v.opportunity_id ?? null,
       );
-      activity(c.id, "Deal marked sold");
     }
   }
   if (p.type === "create_task")
@@ -469,29 +735,37 @@ export function demoCommand(
           t.title,
           nextAnniversary(t.due_date, addDays(t.due_date, 1)),
           t.kind,
+          t.opportunity_id ?? null,
         );
     }
   }
   if (p.type === "save_quote") {
-    const c = s.customers.find((c) => c.id === p.customer_id),
-      v = s.inventory.find((v) => v.id === c?.inventory_id);
+    const o = s.opportunities.find((o) =>
+      p.opportunity_id
+        ? o.id === p.opportunity_id
+        : o.customer_id === p.customer_id && opportunityOpen(o),
+    );
+    if (!o || !opportunityOpen(o)) throw Error("Select an active opportunity");
+    const v = s.inventory.find((v) => v.id === o.inventory_id),
+      values = { ...p.values, tax: calculateQuote(p.values).tax };
     s.quotes.unshift({
       id: id(),
       org_id,
       customer_id: p.customer_id,
+      opportunity_id: o.id,
       vehicle: p.vehicle,
-      values: p.values,
+      values,
       created_at: stamp,
-      inventory_id: c?.inventory_id ?? null,
-      vehicle_details: v ? inventorySnapshot(v) : (c?.vehicle_details ?? null),
-      trade_input: c?.trade ?? null,
+      inventory_id: o.inventory_id,
+      vehicle_details: v ? inventorySnapshot(v) : o.vehicle_details,
+      trade_input: o.trade,
       snapshot_version: 1,
-      trade_snapshot: c?.trade
+      trade_snapshot: o.trade
         ? {
-            ...c.trade,
-            allowance: p.values.tradeAllowance,
-            acv: p.values.acv,
-            payoff: p.values.payoff,
+            ...o.trade,
+            allowance: values.tradeAllowance,
+            acv: values.acv,
+            payoff: values.payoff,
           }
         : null,
     });

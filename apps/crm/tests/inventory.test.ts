@@ -169,10 +169,14 @@ test("ending a demo visit preserves unsold customer and visit; a sale marks link
   assert.equal(ws.visits.find((v) => v.id === visit.id)?.outcome, "unsold");
   assert.notEqual(ws.customers[0].status, "sold");
   ws = demoCommand(ws, {
-    type: "update_customer",
-    id: c.id,
-    customer: {
-      ...contact,
+    type: "update_opportunity",
+    id: ws.opportunities.find((o) => o.customer_id === c.id)!.id,
+    opportunity: {
+      title: "Stock purchase",
+      source: "Walk-in",
+      status: "new",
+      vehicle_interest: "",
+      trade_vehicle: "",
       inventory_id: ws.inventory[0].id,
       trade,
       vehicle_details: null,

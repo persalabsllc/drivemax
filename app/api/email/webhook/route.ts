@@ -1,9 +1,14 @@
 import { after } from "next/server";
 import { Resend, type WebhookEventPayload } from "resend";
 import { backendReady, db, emailReady } from "../../../../lib/backend";
-import { mailbox, replyLeadId } from "../../../../lib/email-routing";
+import {
+  mailbox,
+  replyLeadId,
+  replyCRMToken,
+} from "../../../../lib/email-routing";
 import { leadReplyDomain } from "../../../../lib/email-config";
 import { dispatchLeadNotificationsSafely } from "../../../../lib/lead-notifications";
+import { receivedEmailText } from "../../../../lib/received-email-text";
 
 export const maxDuration = 60;
 
@@ -32,6 +37,27 @@ export async function POST(request: Request) {
   }
   try {
     if (event.type === "email.received") {
+      const token = replyCRMToken(event.data.to, leadReplyDomain());
+      if (token) {
+        const email = await resend.emails.receiving.get(event.data.email_id);
+        if (email.error || !email.data)
+          throw Error("Could not retrieve received email");
+        if (
+          replyCRMToken(email.data.to, leadReplyDomain()) !== token ||
+          mailbox(email.data.from) !== mailbox(event.data.from)
+        )
+          return Response.json({ ignored: true });
+        const saved = await db().rpc("dmcrm_email_receive", {
+          p_token: token,
+          p_provider: event.data.email_id,
+          p_from: mailbox(email.data.from),
+          p_subject: email.data.subject,
+          p_body: receivedEmailText(email.data),
+          p_received: event.created_at,
+        });
+        if (saved.error) throw Error("CRM reply could not be saved");
+        return Response.json(saved.data ? { ok: true } : { ignored: true });
+      }
       const id = replyLeadId(event.data.to, leadReplyDomain());
       if (!id) return Response.json({ ignored: true });
       const { data: lead, error } = await db()
@@ -50,11 +76,7 @@ export async function POST(request: Request) {
         replyLeadId(email.data.to, leadReplyDomain()) !== id
       )
         return Response.json({ ignored: true });
-      // Plain text only in the CRM. Do not render email HTML or download attachments.
-      const body = (
-        email.data.text ||
-        "This reply has no plain-text body. Open the original email in Resend to view its content."
-      ).slice(0, 50000);
+      const body = receivedEmailText(email.data);
       const saved = await db()
         .from("messages")
         .upsert(
@@ -88,13 +110,19 @@ export async function POST(request: Request) {
     };
     const state = states[event.type];
     if (state && "email_id" in event.data) {
+      // Persist the event even when Resend beats the send-response bookkeeping.
+      const crm = await db().rpc("dmcrm_email_delivery", {
+        p_provider: event.data.email_id,
+        p_state: state,
+      });
+      if (crm.error) throw Error("CRM delivery event could not be saved");
       const known = await db()
         .from("messages")
         .select("id")
         .eq("provider_id", event.data.email_id)
         .maybeSingle();
       if (known.error) throw known.error;
-      // A provider event can arrive before the send response is stored. Let Resend retry.
+      // The event is durable; database triggers reconcile it if the send response arrives later.
       if (!known.data) {
         const notification = await db()
           .from("lead_notifications")
@@ -102,8 +130,7 @@ export async function POST(request: Request) {
           .eq("provider_id", event.data.email_id)
           .maybeSingle();
         if (notification.error) throw notification.error;
-        if (!notification.data)
-          return new Response("Send record not ready", { status: 503 });
+        if (!notification.data) return Response.json({ ok: true });
         if (state !== "delivered") {
           const failed = await db()
             .from("lead_notifications")

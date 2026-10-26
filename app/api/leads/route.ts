@@ -1,6 +1,7 @@
 import { after } from "next/server";
 import { backendReady, db } from "../../../lib/backend";
 import { dispatchLeadNotificationsSafely } from "../../../lib/lead-notifications";
+import { dispatchCRMEmailsSafely } from "../../../lib/crm-email";
 import { leadSchema } from "../../../lib/inventory";
 import { takeSlot } from "../../../lib/rate-limit";
 import { purchaseSummary } from "../../../lib/purchase-requests";
@@ -92,7 +93,12 @@ export async function POST(request: Request) {
     const { data: leadId, error } = await db().rpc("submit_lead", { payload });
     if (error) throw error;
     // The database queues the alert in the same transaction as the inquiry.
-    after(() => dispatchLeadNotificationsSafely(leadId));
+    after(async () => {
+      await Promise.all([
+        dispatchCRMEmailsSafely(),
+        dispatchLeadNotificationsSafely(leadId),
+      ]);
+    });
     return Response.json(
       { ok: true },
       { status: 201, headers: { "Cache-Control": "no-store" } },

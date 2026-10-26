@@ -13,3 +13,16 @@ export function replyLeadId(recipients: string[], domain: string) {
   );
   return ids.size === 1 ? [...ids][0] : null;
 }
+
+export function replyCRMToken(recipients: string[], domain: string) {
+  const tokens = new Set(
+    recipients.map(mailbox).flatMap((address) => {
+      const [local, host] = address.split("@");
+      const token = local?.match(
+        /^crm\+([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/,
+      )?.[1];
+      return host === domain.toLowerCase() && token ? [token] : [];
+    }),
+  );
+  return tokens.size === 1 ? [...tokens][0] : null;
+}

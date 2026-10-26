@@ -204,7 +204,7 @@ export function formValues(
     if (form.id === "MVR-2" && f.section) {
       const prop = f.name.split(".").at(-1);
       if (prop === "buyer_name_address")
-        value = join(common["buyers.names"], common["buyer.full_address"]);
+        value = join(common["buyers.names"], common["buyer.full_mailing_address"]);
       if (prop === "mileage") value = common["vehicle.mileage"];
       if (prop === "delivered_on") value = common["deal.date"];
       if (prop === "dealer_name") value = common["dealer.name"];

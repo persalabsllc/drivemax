@@ -121,6 +121,16 @@ export function AttentionCenter({
             : "Website connected · Test drives, sell-your-car requests, contact and financing inquiries arrive here automatically."}
         </p>
       )}
+      {!!feed.websiteInventory?.pending && (
+        <p className="website-intake-status intake-pending" role="status">
+          {feed.websiteInventory.pending} inventory{" "}
+          {feed.websiteInventory.pending === 1
+            ? "vehicle needs"
+            : "vehicles need"}{" "}
+          website sync. Open Inventory to review the listing status and any
+          details that need correcting.
+        </p>
+      )}
       <div className="attention-list">
         {feed.items.slice(0, expanded ? 100 : 6).map((item) => (
           <article
@@ -161,8 +171,8 @@ export function AttentionCenter({
         ))}
         {!feed.items.length && (
           <p className="attention-empty">
-            {feed.websiteIntake?.pending
-              ? "Website inquiries will appear here as their imports complete."
+            {feed.websiteIntake?.pending || feed.websiteInventory?.pending
+              ? "Website updates are still being processed. Review any notices above."
               : "You’re caught up. New replies and leads will appear here."}
           </p>
         )}

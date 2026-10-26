@@ -24,6 +24,7 @@ export type AttentionFeed = {
   items: AttentionItem[];
   total: number;
   websiteIntake?: { connected: boolean; pending: number | null };
+  websiteInventory?: { connected: boolean; pending: number };
 };
 export const attentionLabel = {
   reply: "Customer reply",

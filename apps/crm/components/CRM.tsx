@@ -1009,6 +1009,10 @@ export default function CRM({
             {view === "Inventory" && (
               <InventoryView
                 inventory={ws.inventory}
+                websiteInventory={ws.website_inventory}
+                websiteConnected={alerts.feed.websiteInventory?.connected}
+                onRefresh={refresh}
+                busy={busy}
                 onAdd={() => {
                   setInventoryEdit(null);
                   setModal("inventory");
@@ -1583,6 +1587,7 @@ export default function CRM({
           wide
         >
           <InventoryForm
+            websiteConnected={alerts.feed.websiteInventory?.connected}
             onDelete={
               inventoryEdit && canManage(ws.member.role)
                 ? async (reason) => {

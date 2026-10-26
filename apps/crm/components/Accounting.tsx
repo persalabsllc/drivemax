@@ -343,9 +343,11 @@ export function Accounting({
             (s.snapshot?.quote?.vehicle ?? op?.vehicle_interest ?? ""),
           c.category.toUpperCase(),
           s.status,
-          fmt(earned),
+          c.pending && s.status === "sold" ? "Pending costs" : fmt(earned),
           fmt(c.paid_amount),
-          fmt(earned - c.paid_amount),
+          c.pending && s.status === "sold"
+            ? "Pending costs"
+            : fmt(earned - c.paid_amount),
           c.paid_on || "—",
         ],
       };
@@ -365,7 +367,7 @@ export function Accounting({
       { label: "Balance / (recovery)", value: fmt(earned - paid) },
     ];
     note =
-      "Period is based on the deal’s sold date, including both endpoints. Paid to date is cumulative for those deals, not payments made during the selected period. Unwound deals earn zero; money already paid remains as a recovery balance. No pay plan is assumed—amounts are entered in each deal recap.";
+      "Period is based on the deal’s sold date, including both endpoints. Paid to date is cumulative for those deals, not payments made during the selected period. Unwound deals earn zero; money already paid remains as a recovery balance. New deals default to 25% of front gross excluding doc fee and pack, plus 5% of F&I gross. Pending costs are excluded from earned totals. Manual overrides are available in each deal recap.";
   } else if (report === "wholesale") {
     headers = [
       "Wholesale date",

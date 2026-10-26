@@ -11,3 +11,42 @@
   top: 50%;
   transform: translateY(-50%);
 }
+
+.team-password-fields {
+  display: grid;
+  gap: 16px;
+}
+.team-password-fields .login-password input {
+  padding-right: 48px;
+}
+.team-commission-defaults {
+  display: grid;
+  gap: 8px;
+  margin-top: 20px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fafbfc;
+  font-size: 13px;
+}
+.team-commission-defaults p {
+  margin: 0;
+  color: #637487;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.team-settings .team-row-actions {
+  min-width: 210px;
+}
+
+.team-contact-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.team-password-fields > div > label {
+  margin: 0;
+}
+@media (max-width: 600px) {
+  .team-contact-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

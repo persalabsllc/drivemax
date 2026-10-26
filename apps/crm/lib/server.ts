@@ -107,7 +107,9 @@ export async function workspace(
         .select(
           table === "sales" && !canManage(s.role)
             ? "id,org_id,opportunity_id,customer_id,sold_on,status,unwound_at,unwind_reason"
-            : "*",
+            : table === "staff" && !canManage(s.role)
+              ? "id,org_id,user_id,name,email,role,active,created_at"
+              : "*",
         )
         .eq("org_id", s.org_id);
       // Never deliver another salesperson's tasks to the browser, exports, or planner.

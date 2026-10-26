@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { staffSchema, type StaffDetails } from "./team";
 import {
   buyerSchema,
   coBuyerSchema,
@@ -169,7 +170,8 @@ export type PrintableQuote = Pick<
   | "trade_snapshot"
   | "snapshot_version"
 >;
-export type Staff = {
+export type Staff = Partial<Omit<StaffDetails, "role" | "name" | "email">> & {
+  password_managed?: boolean;
   id: string;
   org_id: string;
   user_id: string | null;
@@ -365,14 +367,7 @@ export const commandSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("save_staff"),
     id: z.uuid().optional(),
-    staff: z.object({
-      name: z.string().trim().min(2).max(120),
-      email: z
-        .email()
-        .max(250)
-        .transform((v) => v.trim().toLowerCase()),
-      role: z.enum(["sales", "manager"]),
-    }),
+    staff: staffSchema,
   }),
   z.object({
     type: z.literal("set_staff_active"),

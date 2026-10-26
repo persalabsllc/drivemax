@@ -12,6 +12,8 @@ import {
   productKinds,
   accountingSchema,
   commissionSchema,
+  calculatedCommission,
+  newDefaultCommissions,
   sum,
 } from "../lib/operations";
 import { type RunCommand } from "./Communications";
@@ -102,7 +104,7 @@ export function RecapDocument({ ws, sale }: { ws: Workspace; sale: Sale }) {
               ["Other direct costs", a.other_cost],
               ["Front gross", m.front],
               ["Pack (commission basis only)", a.pack],
-              ["Commissionable front", m.payableFront],
+              ["Commissionable front (doc fee excluded)", m.payableFront],
             ]}
           />
         </section>
@@ -226,7 +228,11 @@ export function RecapDocument({ ws, sale }: { ws: Workspace; sale: Sale }) {
             <tr key={c.id}>
               <td>{c.staff_name}</td>
               <td>{c.category.toUpperCase()}</td>
-              <td>{fmt(s.status === "sold" ? c.amount : 0)}</td>
+              <td>
+                {s.status === "sold" && c.pending
+                  ? "Pending costs"
+                  : fmt(s.status === "sold" ? c.amount : 0)}
+              </td>
               <td>{fmt(c.paid_amount)}</td>
               <td>{c.paid_on || "—"}</td>
             </tr>
@@ -244,9 +250,10 @@ export function RecapDocument({ ws, sale }: { ws: Workspace; sale: Sale }) {
         </p>
       )}
       <footer>
-        Gross excludes tax, title fees, trade payoff and down payment. Pack only
-        reduces the commission basis. Net shown is deal contribution after
-        entered commissions, before dealership overhead and income taxes.
+        Gross excludes tax, title fees, trade payoff and down payment. Doc fees
+        remain income but are excluded from commissions; pack also reduces the
+        front commission basis. Net shown is deal contribution after entered
+        commissions, before dealership overhead and income taxes.
       </footer>
     </div>
   );
@@ -363,6 +370,17 @@ function AccountingEditor({
       />
     </label>
   );
+  const currentSale = { ...sale, accounting: a };
+  const calculatedEntries = entries.map((c) =>
+    calculatedCommission(currentSale, c),
+  );
+  const defaultEntries = () =>
+    newDefaultCommissions(
+      currentSale,
+      ws.staff.find((s) => s.id === sale.snapshot.salesperson?.id) ??
+        ws.staff.find((s) => s.id === ws.member.staff_id) ??
+        ws.staff[0],
+    );
   const edit = (id: string, p: Partial<Commission>) =>
     setEntries(entries.map((c) => (c.id === id ? { ...c, ...p } : c)));
   return (
@@ -373,7 +391,9 @@ function AccountingEditor({
         setError("");
         try {
           const accounting = accountingSchema.parse(a),
-            commissions = entries.map((c) => commissionSchema.parse(c));
+            commissions = calculatedEntries.map((c) =>
+              commissionSchema.parse(c),
+            );
           if (
             (
               await run(
@@ -455,7 +475,7 @@ function AccountingEditor({
                   min="0"
                   max="1000000"
                   step="0.01"
-                  value={a.product_costs?.[p.id] ?? p.cost ?? ""}
+                  value={productCostFor(currentSale, p) ?? ""}
                   placeholder="Not recorded"
                   onChange={(e) =>
                     setA({
@@ -475,11 +495,30 @@ function AccountingEditor({
       ) : null}
       <h3>Commissions</h3>
       <p className="ops-help">
-        Enter the agreed earnings for each person. Paid to date is cumulative;
-        its date is the latest payment date. Existing paid entries cannot be
-        removed or reduced.
+        Defaults: 25% of front gross after pack, with doc fee excluded, and 5%
+        of F&I gross (including finance reserve). Negative gross earns $0;
+        missing costs stay pending. Choose a manual amount to override. Paid to
+        date is cumulative. Previously paid entries cannot be removed or
+        reduced.
       </p>
-      {entries.map((c) => (
+      <button
+        className="btn"
+        type="button"
+        disabled={["sales", "fi"].every((category) =>
+          entries.some((c) => c.category === category),
+        )}
+        onClick={() =>
+          setEntries([
+            ...entries,
+            ...defaultEntries().filter(
+              (c) => !entries.some((old) => old.category === c.category),
+            ),
+          ])
+        }
+      >
+        Add missing default commissions
+      </button>
+      {calculatedEntries.map((c) => (
         <div className="ops-commission-entry" key={c.id}>
           <div className="ops-form-grid">
             <label>
@@ -508,6 +547,8 @@ function AccountingEditor({
                 onChange={(e) =>
                   edit(c.id, {
                     category: e.target.value as Commission["category"],
+                    calculation:
+                      e.target.value === "bonus" ? "manual" : c.calculation,
                   })
                 }
               >
@@ -517,14 +558,37 @@ function AccountingEditor({
               </select>
             </label>
             <label>
-              Earned
+              Calculation
+              <select
+                value={c.calculation ?? "manual"}
+                onChange={(e) =>
+                  edit(c.id, {
+                    calculation: e.target.value as "default" | "manual",
+                    amount: c.amount,
+                  })
+                }
+              >
+                {c.category !== "bonus" && (
+                  <option value="default">
+                    {c.category === "sales"
+                      ? "25% front · no doc fee"
+                      : "5% F&I gross"}
+                  </option>
+                )}
+                <option value="manual">Manual amount</option>
+              </select>
+            </label>
+            <label>
+              {c.pending ? "Earned · pending costs" : "Earned"}
               <input
                 type="number"
-                required
+                required={!c.pending}
                 min="0"
                 max="1000000"
                 step="0.01"
-                value={c.amount}
+                value={c.pending ? "" : c.amount}
+                readOnly={c.calculation === "default"}
+                placeholder={c.pending ? "Enter missing costs" : ""}
                 onChange={(e) => edit(c.id, { amount: Number(e.target.value) })}
               />
             </label>
@@ -579,6 +643,7 @@ function AccountingEditor({
         onClick={() => {
           const staff =
             ws.staff.find((s) => s.id === sale.snapshot.salesperson?.id) ??
+            ws.staff.find((s) => s.id === ws.member.staff_id) ??
             ws.staff[0];
           if (staff)
             setEntries([
@@ -590,6 +655,7 @@ function AccountingEditor({
                 staff_id: staff.id,
                 staff_name: staff.name,
                 category: "sales",
+                calculation: "default",
                 amount: 0,
                 paid_amount: 0,
                 paid_on: "",

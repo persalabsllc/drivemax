@@ -71,6 +71,8 @@ export const commissionSchema = z
     id: z.uuid(),
     staff_id: z.uuid(),
     category: z.enum(["sales", "fi", "bonus"]),
+    calculation: z.enum(["manual", "default"]).optional(),
+    pending: z.boolean().optional(),
     amount,
     paid_amount: amount,
     paid_on: z.union([z.iso.date(), z.literal("")]),
@@ -261,7 +263,9 @@ export function productsTotal(v: FinanceValues) {
     : v.serviceContract || 0;
 }
 export const productCostFor = (s: Sale, p: FIProduct) =>
-  s.accounting?.product_costs?.[p.id] ?? p.cost;
+  Object.hasOwn(s.accounting?.product_costs ?? {}, p.id)
+    ? s.accounting.product_costs[p.id]
+    : p.cost;
 export function saleMath(s: Sale, commissions: Commission[] = []) {
   const q = s.snapshot.quote,
     v = q?.values;
@@ -317,11 +321,54 @@ export function saleMath(s: Sale, commissions: Commission[] = []) {
     gross,
     earned,
     paid,
-    payableFront: front === null ? null : roundMoney(front - a.pack),
+    payableFront:
+      front === null ? null : roundMoney(front - (v?.docFee ?? 0) - a.pack),
     net: gross === null ? null : roundMoney(gross - earned),
     commissionBalance: roundMoney(earned - paid),
     complete: !!v && gross !== null,
   };
+}
+/** Default earnings, rounded per category. Unknown costs are pending, not assumed zero. */
+export function defaultCommission(
+  s: Sale,
+  category: Commission["category"],
+): number | null {
+  if (category === "bonus") return 0;
+  if (!s.snapshot.quote) return null;
+  const math = saleMath(s);
+  const basis = category === "sales" ? math.payableFront : math.back;
+  return basis === null
+    ? null
+    : roundMoney(Math.max(0, basis) * (category === "sales" ? 0.25 : 0.05));
+}
+export function calculatedCommission<
+  T extends Pick<Commission, "category" | "amount" | "calculation">,
+>(sale: Sale, entry: T) {
+  const amount =
+    entry.calculation === "default"
+      ? defaultCommission(sale, entry.category)
+      : entry.amount;
+  return { ...entry, amount: amount ?? 0, pending: amount === null };
+}
+export function newDefaultCommissions(
+  sale: Sale,
+  staff: { id: string; name: string },
+): Commission[] {
+  return (["sales", "fi"] as const).map((category) =>
+    calculatedCommission(sale, {
+      id: crypto.randomUUID(),
+      org_id: sale.org_id,
+      sale_id: sale.id,
+      staff_id: staff.id,
+      staff_name: staff.name,
+      category,
+      calculation: "default" as const,
+      amount: 0,
+      paid_amount: 0,
+      paid_on: "",
+      notes: "",
+    }),
+  );
 }
 export const withinDates = (
   date: string | null | undefined,

@@ -134,9 +134,10 @@ export function FIMenuPrint({
       </div>
       {finance && (
         <p className="fi-print-terms">
-          {quote.values.months} months · {quote.values.apr}% APR · First payment
-          in {quote.values.daysToFirstPayment ?? 30} days. The same financing
-          terms apply to every option below.
+          {quote.values.months} months ·{" "}
+          {quote.values.showAPR !== false && <>{quote.values.apr}% APR · </>}
+          First payment in {quote.values.daysToFirstPayment ?? 30} days. The
+          same financing terms apply to every option below.
         </p>
       )}
       {acceptance ? (
@@ -159,17 +160,9 @@ export function FIMenuPrint({
                 Vehicle total before down payment: {fullMoney(totals.total)}
               </span>
               <span>
-                {finance
-                  ? "Amount financed before additional first-period interest"
-                  : "Remaining cash balance"}
-                : {fullMoney(totals.balance)}
+                {finance ? "Balance to finance" : "Remaining cash balance"}:{" "}
+                {fullMoney(totals.balance)}
               </span>
-              {finance && (
-                <span>
-                  Additional first-period interest:{" "}
-                  {fullMoney(totals.firstPeriodInterest)}
-                </span>
-              )}
             </div>
           </div>
           <table className="fi-acceptance-table">
@@ -298,10 +291,9 @@ export function FIMenuPrint({
         <p>
           Optional products can be declined. All figures are estimates;
           financing remains subject to lender approval. Estimates use the
-          selected APR, term and down payment, including estimated interest for
-          first-payment days beyond 30. Product descriptions are summaries;
-          review the actual provider contracts. Taxes and fees shown use the
-          figures entered in Desking.
+          selected financing terms and down payment. Product descriptions are
+          summaries; review the actual provider contracts. Taxes and fees shown
+          use the figures entered in Desking.
         </p>
       </footer>
     </div>

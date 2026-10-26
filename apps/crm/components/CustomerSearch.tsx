@@ -1,18 +1,13 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { Search, SlidersHorizontal, ArrowUpRight } from "lucide-react";
+import { type Workspace, type Customer, dayKey } from "../lib/model";
 import {
-  type Workspace,
-  type Customer,
-  type Opportunity,
-  dayKey,
-} from "../lib/model";
-import {
-  searchDeals,
+  searchCustomers,
   type SearchFilters,
   type ZipPoints,
 } from "../lib/operations";
-import { Badge, Empty } from "./ui";
+import { Empty } from "./ui";
 const defaults: SearchFilters = {
   query: "",
   vehicle: "",
@@ -83,7 +78,7 @@ export function CustomerSearch({
             ? "This ZIP has no Census reference point. Use exact ZIP matching instead."
             : geoError;
   const rows = useMemo(
-    () => searchDeals(ws, f, points),
+    () => searchCustomers(ws, f, points),
     [ws, filters, query, points],
   );
   const display = invalid ? [] : rows;
@@ -96,7 +91,10 @@ export function CustomerSearch({
           <h2>
             <Search size={18} /> Customer & deal search
           </h2>
-          <p>Find a relationship, a vehicle, or a specific completed deal.</p>
+          <p>
+            One profile per customer. Filter by any matching opportunity, then
+            open the profile to see their deals.
+          </p>
         </div>
         <button
           className="btn small"
@@ -230,8 +228,8 @@ export function CustomerSearch({
       )}
       <div className="ops-result-count">
         <SlidersHorizontal size={14} />
-        {display.length} matching {display.length === 1 ? "record" : "records"}{" "}
-        · {new Set(display.map((r) => r.customer.id)).size} customers
+        {display.length} matching{" "}
+        {display.length === 1 ? "customer" : "customers"}
       </div>
       {display.length ? (
         <div className="table-scroll">
@@ -239,10 +237,8 @@ export function CustomerSearch({
             <thead>
               <tr>
                 <th>Customer</th>
-                <th>Opportunity / vehicle</th>
-                <th>Status</th>
-                <th>Stock / VIN</th>
-                <th>Sold date</th>
+                <th>Email</th>
+                <th>Source</th>
                 <th>ZIP / distance</th>
                 <th>Salesperson</th>
                 <th />
@@ -251,64 +247,43 @@ export function CustomerSearch({
             <tbody>
               {display
                 .slice(current * 50, current * 50 + 50)
-                .map(
-                  ({ customer: c, opportunity: o, vehicle: v, zip, miles }) => (
-                    <tr key={o?.id ?? c.id}>
-                      <td>
-                        <button
-                          className="name-button"
-                          onClick={() => onOpen(c, o?.id)}
-                        >
-                          {c.name}
-                        </button>
-                        <small className="subtext">{c.phone || c.email}</small>
-                      </td>
-                      <td>
-                        {o?.sale_snapshot?.quote?.vehicle ||
-                          o?.vehicle_interest ||
-                          "No vehicle selected"}
-                        <small className="subtext">
-                          {o?.title || "Customer profile"}
-                        </small>
-                      </td>
-                      <td>
-                        <Badge value={o?.status || "no opportunity"} />
-                      </td>
-                      <td>
-                        {v?.stock_number || "—"}
-                        <small className="subtext">{v?.vin}</small>
-                      </td>
-                      <td>{o?.sold_on || "—"}</td>
-                      <td>
-                        {zip || "—"}
-                        {!!f.radius && miles !== null && (
-                          <small className="subtext">
-                            {miles.toFixed(1)} mi
-                          </small>
-                        )}
-                      </td>
-                      <td>
-                        {ws.staff.find((s) => s.id === o?.assigned_to)?.name ||
-                          "Unassigned"}
-                      </td>
-                      <td>
-                        <button
-                          className="icon-btn"
-                          aria-label={`Open ${c.name} ${o?.title ?? "profile"}`}
-                          onClick={() => onOpen(c, o?.id)}
-                        >
-                          <ArrowUpRight size={17} />
-                        </button>
-                      </td>
-                    </tr>
-                  ),
-                )}
+                .map(({ customer: c, zip, miles }) => (
+                  <tr key={c.id}>
+                    <td>
+                      <button className="name-button" onClick={() => onOpen(c)}>
+                        {c.name}
+                      </button>
+                      <small className="subtext">{c.phone || c.email}</small>
+                    </td>
+                    <td>{c.email || "—"}</td>
+                    <td>{c.source || "—"}</td>
+                    <td>
+                      {zip || "—"}
+                      {!!f.radius && miles !== null && (
+                        <small className="subtext">{miles.toFixed(1)} mi</small>
+                      )}
+                    </td>
+                    <td>
+                      {ws.staff.find((s) => s.id === c.assigned_to)?.name ||
+                        "Unassigned"}
+                    </td>
+                    <td>
+                      <button
+                        className="icon-btn"
+                        aria-label={`Open ${c.name} profile`}
+                        onClick={() => onOpen(c)}
+                      >
+                        <ArrowUpRight size={17} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
       ) : (
         <Empty
-          title="No matching records"
+          title="No matching customers"
           body="Adjust the date range, vehicle, status or location filters."
         />
       )}

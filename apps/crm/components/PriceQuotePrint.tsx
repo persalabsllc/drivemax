@@ -37,7 +37,9 @@ export function PriceQuotePrint({
     ["Selling price", values.price],
     ["Document fee", values.docFee],
     ["Taxable add-ons", values.addOns ?? 0],
-    ["Protection products", productsTotal(values)],
+    ...(values.showProtectionProducts !== false
+      ? [["Protection products", productsTotal(values)] as [string, number]]
+      : []),
     ["Highway-use tax", totals.tax],
     ["Other taxes", values.otherTaxes ?? 0],
     ["Title / registration", values.titleFee],
@@ -116,7 +118,9 @@ export function PriceQuotePrint({
                 </colgroup>
                 <thead>
                   <tr>
-                    <th scope="col">Term / APR</th>
+                    <th scope="col">
+                      {values.showAPR !== false ? "Term / APR" : "Term"}
+                    </th>
                     {downs.map((down, col) => (
                       <th scope="col" key={col}>
                         <span>Down payment</span>
@@ -131,7 +135,9 @@ export function PriceQuotePrint({
                       <th scope="row">
                         <strong>{term.months}</strong>
                         <span>months</span>
-                        <small>{term.apr}% APR</small>
+                        {values.showAPR !== false && (
+                          <small>{term.apr}% APR</small>
+                        )}
                       </th>
                       {downs.map((down, col) => (
                         <td key={col}>
@@ -170,7 +176,11 @@ export function PriceQuotePrint({
         </section>
 
         <section className="pq-itemization">
-          <h3>Price itemization</h3>
+          <h3>
+            {values.showProtectionProducts !== false
+              ? "Price itemization"
+              : "Price summary"}
+          </h3>
           <table aria-label="Price itemization">
             <tbody>
               {items.map(([label, amount, deduction]) => (
@@ -205,18 +215,21 @@ export function PriceQuotePrint({
               </tr>
             </tbody>
           </table>
+          {values.showProtectionProducts === false &&
+            productsTotal(values) > 0 && (
+              <p className="pq-grid-note">
+                Totals include selected optional coverage; product details are
+                omitted from this summary.
+              </p>
+            )}
           {finance && (
             <div className="pq-selected">
               <span className="pq-label">Selected payment estimate</span>
               <strong>{fullMoney(totals.payment)} / month</strong>
               <p>
-                {values.months} months · {values.apr}% APR ·{" "}
+                {values.months} months ·{" "}
+                {values.showAPR !== false && <>{values.apr}% APR · </>}
                 {fullMoney(values.downPayment)} down
-              </p>
-              <p>
-                Additional first-period interest:{" "}
-                {fullMoney(totals.firstPeriodInterest)}. Included in the payment
-                estimate above.
               </p>
             </div>
           )}
@@ -228,7 +241,7 @@ export function PriceQuotePrint({
           Preliminary estimate only; not a sales or financing contract. Verify
           all figures before signing final documents.
           {finance &&
-            " Financing is subject to lender approval and terms. Payments include estimated interest at APR / 365 for days beyond a 30-day first period, followed by monthly amortization. Actual lender calculations may differ."}
+            " Financing is subject to lender approval and terms. Actual lender calculations may differ."}
         </p>
         <div className="pq-signatures">
           {["Buyer", "Manager"].map((role) => (

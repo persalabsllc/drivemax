@@ -552,16 +552,13 @@ export function Desking({
                   {field(
                     "daysToFirstPayment",
                     "Days to first payment",
-                    120,
+                    365,
                     30,
                     1,
                   )}
                   <div className="first-payment-note">
                     <strong>{values.daysToFirstPayment} days</strong>
-                    <small>
-                      {Math.max(0, (values.daysToFirstPayment ?? 45) - 30)}{" "}
-                      extra days beyond a standard 30-day first period.
-                    </small>
+                    <small>Until the first scheduled payment.</small>
                   </div>
                 </div>
                 <div className="payment-table-scroll">
@@ -700,17 +697,13 @@ export function Desking({
                     {fullMoney(values.downPayment)} down
                   </p>
                   <dl>
-                    <dt>Amount financed before odd-days interest</dt>
+                    <dt>Balance to finance</dt>
                     <dd>{fullMoney(totals.balance)}</dd>
-                    <dt>Additional first-period interest</dt>
-                    <dd>{fullMoney(totals.firstPeriodInterest)}</dd>
                   </dl>
                 </div>
                 <p className="fine-print">
-                  Estimate uses simple interest at APR ÷ 365 for days beyond 30,
-                  then monthly amortization. Actual lender calculations and
-                  approval may differ. The additional interest is included in
-                  this displayed estimate.
+                  Estimated payment only. Actual lender calculations, approval,
+                  and final contract terms may differ.
                 </p>
               </>
             ) : (
@@ -723,6 +716,36 @@ export function Desking({
                 </div>
               </>
             )}
+            <fieldset className="quote-presentation" disabled={readOnly}>
+              <legend>Customer quote display</legend>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={draft.showAPR !== false}
+                  onChange={(e) =>
+                    setDraft({ ...draft, showAPR: e.target.checked })
+                  }
+                />{" "}
+                Show APR on customer quotes
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={draft.showProtectionProducts !== false}
+                  onChange={(e) =>
+                    setDraft({
+                      ...draft,
+                      showProtectionProducts: e.target.checked,
+                    })
+                  }
+                />{" "}
+                Show protection products in quote itemization
+              </label>
+              <p>
+                Totals and payments include all selected products. Final sales
+                paperwork keeps its product details.
+              </p>
+            </fieldset>
             {quick ? (
               <div className="quick-quote-actions">
                 {localError && (

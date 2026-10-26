@@ -112,6 +112,8 @@ export async function workspace(
               : "*",
         )
         .eq("org_id", s.org_id);
+      if (table === "inventory" || table === "trades")
+        query = query.is("deleted_at", null);
       // Never deliver another salesperson's tasks to the browser, exports, or planner.
       if (table === "tasks" && !canManage(s.role))
         query = query.eq("assigned_to", s.staff_id);
@@ -130,10 +132,25 @@ export async function workspace(
     .eq("id", s.org_id)
     .single();
   if (error) throw new Error("Dealership unavailable");
-  const rows = await Promise.all(tables.map(all));
+  const [rows, alerts] = await Promise.all([
+    Promise.all(tables.map(all)),
+    attention(s),
+  ]);
   return {
     org,
+    attention: alerts,
     member: { id: s.user_id, name: s.name, role: s.role, staff_id: s.staff_id },
     ...Object.fromEntries(tables.map((t, i) => [t, rows[i]])),
   } as Workspace;
+}
+
+export async function attention(
+  s: NonNullable<Awaited<ReturnType<typeof session>>>,
+) {
+  const { data, error } = await db().rpc("dmcrm_attention", {
+    p_org: s.org_id,
+    p_actor: s.user_id,
+  });
+  if (error) throw new Error("Attention feed unavailable");
+  return data as import("./attention").AttentionFeed;
 }

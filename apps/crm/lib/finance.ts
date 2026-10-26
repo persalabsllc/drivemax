@@ -22,6 +22,8 @@ export type FinanceValues = {
   serviceContract?: number;
   otherTaxes?: number;
   daysToFirstPayment?: number;
+  showAPR?: boolean;
+  showProtectionProducts?: boolean;
   financeOptions?: FinanceOption[];
   downPayments?: number[];
   selectedOption?: number;

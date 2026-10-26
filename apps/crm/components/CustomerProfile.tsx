@@ -1,4 +1,5 @@
 "use client";
+import { customerActivity } from "../lib/activity";
 import { useState } from "react";
 import {
   Plus,
@@ -120,13 +121,7 @@ export function CustomerProfile({
     visit = ws.visits.find(
       (v) => v.customer_id === customer.id && !v.departed_at,
     ),
-    activities = ws.activities
-      .filter(
-        (a) =>
-          a.customer_id === customer.id &&
-          (a.opportunity_id ?? null) === (o?.id ?? null),
-      )
-      .sort((a, b) => b.created_at.localeCompare(a.created_at));
+    activities = customerActivity(ws, customer.id);
   const manager = canManage(ws.member.role),
     me = myStaffId(ws),
     assigned = o ? o.assigned_to : customer.assigned_to;
@@ -533,9 +528,7 @@ export function CustomerProfile({
                 </button>
               </div>
             </form>
-            <h3 className="timeline-title">
-              {o ? "Opportunity history" : "Customer history"}
-            </h3>
+            <h3 className="timeline-title">All activity</h3>
             <div className="timeline">
               {activities.map((a) => (
                 <article key={a.id}>
@@ -552,17 +545,7 @@ export function CustomerProfile({
                   </span>
                   <div>
                     <header>
-                      <strong>
-                        {a.kind === "note"
-                          ? "Note"
-                          : a.kind === "call"
-                            ? "Phone call"
-                            : a.kind === "email"
-                              ? "Email log"
-                              : a.kind === "sms"
-                                ? "Text message log"
-                                : "Update"}
-                      </strong>
+                      <strong>{a.label}</strong>
                       <time>
                         {new Date(a.created_at).toLocaleString("en-US", {
                           timeZone: "America/New_York",
@@ -574,7 +557,9 @@ export function CustomerProfile({
                       </time>
                     </header>
                     <p>{a.body}</p>
-                    <small>{a.created_by}</small>
+                    <small>
+                      {a.context} · {a.created_by}
+                    </small>
                   </div>
                 </article>
               ))}

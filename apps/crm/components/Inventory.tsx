@@ -1,4 +1,5 @@
 "use client";
+import { DeleteVehicle } from "./DeleteVehicle";
 import { useState } from "react";
 import { Car, Search, Plus, ArrowUpRight } from "lucide-react";
 import { type Command, dayKey, money } from "../lib/model";
@@ -175,7 +176,9 @@ export function InventoryForm({
   error,
   demo,
   submit,
+  onDelete,
 }: {
+  onDelete?: (reason: string) => Promise<boolean>;
   existing: InventoryVehicle | null;
   busy: boolean;
   error: string;
@@ -311,6 +314,18 @@ export function InventoryForm({
         <p className="form-error" role="alert">
           {localError || error}
         </p>
+      )}
+      {existing && onDelete && (
+        <DeleteVehicle
+          label="vehicle"
+          busy={busy}
+          blocked={
+            ["sold", "pending"].includes(existing.status)
+              ? "Resolve the active or sold deal before deleting this vehicle."
+              : undefined
+          }
+          onDelete={onDelete}
+        />
       )}
       <div className="modal-footer">
         <span>Each vehicle belongs to your dealership.</span>

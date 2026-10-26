@@ -21,8 +21,8 @@ const tradeKeys: (keyof Trade)[] = [
 export function deskingPaymentOptions(values: QuoteValues) {
   return {
     terms: values.financeOptions ?? [
-      { months: 36, apr: Math.min(50, values.apr + 2) },
-      { months: 48, apr: Math.min(50, values.apr + 1) },
+      { months: 36, apr: values.apr },
+      { months: 48, apr: values.apr },
       { months: values.months, apr: values.apr },
     ],
     downs: values.downPayments ?? [
@@ -40,6 +40,8 @@ export function deskingDraft(
   return {
     ...base,
     mode: base.mode ?? "finance",
+    showAPR: base.showAPR ?? true,
+    showProtectionProducts: base.showProtectionProducts ?? true,
     taxMode: base.taxMode ?? (previouslySaved ? "manual" : "auto"),
     taxReason:
       base.taxReason ?? (previouslySaved ? "Previously saved estimate" : ""),

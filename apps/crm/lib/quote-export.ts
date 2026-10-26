@@ -19,15 +19,17 @@ export function customerQuoteLines(q: Quote, c: Customer): [string, string][] {
     ["Vehicle price", money(v.price)],
     ["Accessories / add-ons", money(v.addOns || 0)],
     ["Doc fee", money(v.docFee)],
-    ...(v.products?.map(
-      (p) =>
-        [
-          fiProductName(p),
-          `${money(p.price)} | ${p.term_months} months / ${p.mileage_limit.toLocaleString()} miles | Deductible ${money(p.deductible)}`,
-        ] as [string, string],
-    ) ?? [
-      ["Protection products", money(productsTotal(v))] as [string, string],
-    ]),
+    ...(v.showProtectionProducts === false
+      ? []
+      : (v.products?.map(
+          (p) =>
+            [
+              fiProductName(p),
+              `${money(p.price)} | ${p.term_months} months / ${p.mileage_limit.toLocaleString()} miles | Deductible ${money(p.deductible)}`,
+            ] as [string, string],
+        ) ?? [
+          ["Protection products", money(productsTotal(v))] as [string, string],
+        ])),
     ["Estimated tax", money(m.tax + (v.otherTaxes || 0))],
     ["Title / registration", money(v.titleFee)],
     ["Trade allowance", money(v.tradeAllowance)],
@@ -39,7 +41,10 @@ export function customerQuoteLines(q: Quote, c: Customer): [string, string][] {
       ? []
       : ([
           ["Estimated payment", `${money(m.payment)} / month`],
-          ["Financing", `${v.months} months at ${v.apr}% APR`],
+          [
+            "Financing",
+            `${v.months} months${v.showAPR !== false ? ` at ${v.apr}% APR` : ""}`,
+          ],
           [
             "First payment",
             `${v.daysToFirstPayment ?? 30} days after contract`,
@@ -103,7 +108,9 @@ export async function buildCustomerQuotePdf(q: Quote, c: Customer) {
   y -= 14;
   for (const line of [
     "Estimate only. Subject to lender approval, availability and final paperwork.",
-    "Optional protection products are itemized above. This is not a contract.",
+    q.values.showProtectionProducts === false
+      ? "Totals include any selected coverage. Product details omitted. Not a contract."
+      : "Optional protection products are itemized above. This is not a contract.",
   ]) {
     page.drawText(line, {
       x: 42,

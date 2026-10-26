@@ -661,3 +661,91 @@
     flex-wrap: wrap;
   }
 }
+/* Customer quote: a single landscape sheet with space to circle all nine options. */
+@page customer-quote { size: letter landscape; margin: 10mm; }
+@media print {
+  .print-sheet.price-quote-sheet {
+    page: customer-quote;
+    display: flex !important;
+    flex-direction: column;
+    width: 100%;
+    max-width: none;
+    min-height: 194mm;
+    padding: 0;
+    margin: 0;
+    color: #17202b;
+    font-family: Arial, Helvetica, sans-serif;
+    font-variant-numeric: tabular-nums;
+    break-inside: avoid;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .price-quote-sheet h1, .price-quote-sheet h2, .price-quote-sheet h3 {
+    font-family: inherit;
+    letter-spacing: normal;
+  }
+  .price-quote-sheet .pq-header { padding: 0 0 3mm; gap: 8mm; }
+  .price-quote-sheet .pq-header img { width: 28mm; height: auto; }
+  .price-quote-sheet .pq-header h1 { font-size: 18pt; margin: 0; }
+  .price-quote-sheet .pq-header p { margin: 1.5mm 0 0; font-size: 8pt; color: #46505d; }
+  .pq-details { display: grid; grid-template-columns: 1fr 1.1fr; gap: 1.5mm 8mm; margin: 2mm 0; }
+  .pq-label { display: block; font-size: 7pt; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #46505d; }
+  .price-quote-sheet .pq-details h2 { font-size: 11pt; margin: 1mm 0; overflow-wrap: anywhere; }
+  .pq-details p { font-size: 8pt; margin: 0; line-height: 1.4; overflow-wrap: anywhere; }
+  .pq-details .pq-trade { grid-column: 1 / -1; font-size: 7.5pt; }
+  .pq-columns { display: grid; grid-template-columns: 113mm 1fr; gap: 9mm; align-items: start; }
+  .price-quote-sheet .pq-columns h3 { margin: 0; font-size: 12pt; }
+  .pq-instruction { margin: 1mm 0 2mm; font-size: 8pt; line-height: 1.2; }
+  .price-quote-sheet .pq-matrix { width: 113mm; margin: 0; table-layout: fixed; border-collapse: collapse; }
+  .pq-matrix .pq-term-column { width: 20mm; }
+  .price-quote-sheet .pq-matrix th, .price-quote-sheet .pq-matrix td {
+    padding: 0;
+    text-align: center;
+    vertical-align: middle;
+    background: #fff;
+    color: #17202b;
+    white-space: normal;
+    text-transform: none;
+    letter-spacing: normal;
+  }
+  .price-quote-sheet .pq-matrix thead th { height: 11mm; border: 0; font-size: 7pt; }
+  .pq-matrix thead th:first-child { text-align: left; }
+  .pq-matrix thead strong { display: block; font-size: 11pt; margin-top: 1mm; }
+  .price-quote-sheet .pq-matrix tbody th { border: 0; padding-right: 3mm; text-align: left; font-weight: 400; }
+  .pq-matrix tbody th strong { display: block; font-size: 15pt; }
+  .pq-matrix tbody th span { display: block; font-size: 8pt; margin: .5mm 0 1.5mm; }
+  .pq-matrix tbody th small { font-size: 8pt; white-space: nowrap; }
+  .price-quote-sheet .pq-matrix tbody td { height: 31mm; border: 1.25pt solid #394452; }
+  .pq-matrix td strong { display: block; font-size: 16pt; line-height: 1.3; font-weight: 700; }
+  .pq-matrix td span { display: block; font-size: 8pt; margin-top: 2mm; color: #46505d; }
+  .pq-grid-note { margin: 2mm 0 0 20mm; font-size: 7pt; }
+  .price-quote-sheet .pq-itemization table { margin: 3mm 0 0; width: 100%; }
+  .price-quote-sheet .pq-itemization td, .price-quote-sheet .pq-itemization th {
+    background: #fff;
+    font-size: 9pt;
+    padding: 1.4mm 0;
+    color: #17202b;
+    border: 0;
+    border-bottom: .5pt solid #dde0e4;
+    text-transform: none;
+    letter-spacing: normal;
+    white-space: normal;
+  }
+  .price-quote-sheet .pq-itemization td:last-child { text-align: right; white-space: nowrap; padding-left: 4mm; }
+  .price-quote-sheet .pq-itemization th { text-align: left; }
+  .price-quote-sheet .pq-itemization .pq-subtotal > * { border-top: 1pt solid #68717b; font-weight: 700; padding-top: 2mm; }
+  .price-quote-sheet .pq-itemization .pq-balance > * { border-bottom: 1pt solid #68717b; font-size: 11pt; font-weight: 700; padding: 2.5mm 0; }
+  .pq-selected { padding: 3mm 0; }
+  .pq-selected > strong { display: block; font-size: 14pt; margin: 2mm 0 1mm; }
+  .pq-selected p { font-size: 8pt; line-height: 1.5; margin: 1mm 0; }
+  .pq-cash { border: 1.25pt solid #394452; padding: 15mm 8mm; margin: 5mm 0 0; }
+  .pq-cash > span { font-size: 10pt; }
+  .pq-cash > strong { display: block; font-size: 28pt; margin: 5mm 0; }
+  .pq-cash p { font-size: 9pt; }
+  .pq-bottom { margin-top: auto; padding-top: 2mm; break-inside: avoid; }
+  .pq-disclosure { font-size: 7pt; line-height: 1.4; margin: 0 0 3mm; color: #46505d; }
+  .pq-signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 14mm; }
+  .pq-signature { display: grid; grid-template-columns: 1fr 23mm; gap: 5mm; }
+  .pq-signature span { display: block; border-bottom: 1pt solid #394452; height: 7mm; }
+  .pq-signature p { font-size: 8pt; margin: 1.5mm 0 0; }
+}

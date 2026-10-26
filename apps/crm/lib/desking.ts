@@ -17,6 +17,21 @@ const tradeKeys: (keyof Trade)[] = [
   "trim",
   "description",
 ];
+// Use the same saved choices (and legacy defaults) on screen and on the quote.
+export function deskingPaymentOptions(values: QuoteValues) {
+  return {
+    terms: values.financeOptions ?? [
+      { months: 36, apr: Math.min(50, values.apr + 2) },
+      { months: 48, apr: Math.min(50, values.apr + 1) },
+      { months: values.months, apr: values.apr },
+    ],
+    downs: values.downPayments ?? [
+      values.downPayment,
+      values.downPayment + 500,
+      values.downPayment + 1000,
+    ],
+  };
+}
 export function deskingDefaults(
   customer: Customer,
   inventory: InventoryVehicle[],

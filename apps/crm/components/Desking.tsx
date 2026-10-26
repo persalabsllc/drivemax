@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Printer, Car, ArrowLeftRight, Save } from "lucide-react";
-import { deskingDefaults } from "../lib/desking";
+import { deskingDefaults, deskingPaymentOptions } from "../lib/desking";
 import {
   type Customer,
   type Opportunity,
@@ -55,6 +55,7 @@ export function Desking({
       opportunity.vehicle_details);
   const [draft, setDraft] = useState<QuoteValues>(() => {
     const b = deskingDefaults(customer, readOnly ? [] : inventory, latest);
+    const options = deskingPaymentOptions(b);
     return {
       ...b,
       mode: b.mode ?? "finance",
@@ -64,16 +65,8 @@ export function Desking({
       serviceContract: b.serviceContract ?? 0,
       otherTaxes: b.otherTaxes ?? 0,
       daysToFirstPayment: b.daysToFirstPayment ?? (latest ? 30 : 45),
-      financeOptions: b.financeOptions ?? [
-        { months: 36, apr: Math.min(50, b.apr + 2) },
-        { months: 48, apr: Math.min(50, b.apr + 1) },
-        { months: b.months, apr: b.apr },
-      ],
-      downPayments: b.downPayments ?? [
-        b.downPayment,
-        b.downPayment + 500,
-        b.downPayment + 1000,
-      ],
+      financeOptions: options.terms,
+      downPayments: options.downs,
       selectedOption: b.selectedOption ?? 2,
       selectedDown: b.selectedDown ?? 0,
     };

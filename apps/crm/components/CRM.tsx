@@ -59,6 +59,7 @@ import { CustomerProfile } from "./CustomerProfile";
 import { CustomerForm } from "./CustomerForm";
 import { InventoryView, InventoryForm } from "./Inventory";
 import { Desking } from "./Desking";
+import { PriceQuotePrint } from "./PriceQuotePrint";
 import { Showroom, visitStatus } from "./Showroom";
 import { type InventoryVehicle, vehicleName } from "../lib/vehicles";
 import { signOut } from "../app/login/actions";
@@ -1711,6 +1712,8 @@ function PrintSheet({
   dealership: string;
 }) {
   const { customer: c, quote: q, pack } = data;
+  if (q && !pack)
+    return <PriceQuotePrint customer={c} quote={q} dealership={dealership} />;
   return (
     <section className="print-sheet">
       <header>

@@ -14,6 +14,7 @@ export const backendReady = () =>
   !!process.env.SUPABASE_SERVICE_ROLE_KEY;
 export const emailReady = () =>
   !!process.env.RESEND_API_KEY &&
+  !!process.env.RESEND_RECEIVING_API_KEY &&
   !!leadEmailFrom() &&
   !!leadReplyDomain() &&
   !!process.env.RESEND_WEBHOOK_SECRET;

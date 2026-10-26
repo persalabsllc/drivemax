@@ -17,6 +17,12 @@ import {
 } from "./operations";
 import { demoOperations } from "./operations-demo";
 import {
+  appointmentCommands,
+  newCustomerAppointmentSchema,
+  type Appointment,
+} from "./appointments";
+import { demoAppointments } from "./appointments-demo";
+import {
   inventorySchema,
   vehicleDetailsSchema,
   tradeSchema,
@@ -165,6 +171,7 @@ export type Staff = {
 export const canManage = (role: string) =>
   role === "owner" || role === "manager";
 export type Workspace = {
+  appointments?: Appointment[];
   sales?: Sale[];
   trades?: TradeIntake[];
   commissions?: Commission[];
@@ -316,6 +323,7 @@ export const opportunitySchema = z.object({
   trade: tradeSchema.nullable(),
 });
 export const commandSchema = z.discriminatedUnion("type", [
+  ...appointmentCommands,
   ...operationCommands,
   z.object({
     type: z.literal("save_staff"),
@@ -381,6 +389,7 @@ export const commandSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("create_customer"),
     customer: z.object(customer),
+    appointment: newCustomerAppointmentSchema.optional(),
   }),
   z.object({
     type: z.literal("update_customer"),
@@ -435,7 +444,12 @@ export function demoCommand(
   command: Command,
   now = new Date(),
 ): Workspace {
-  return demoOperations(ws, commandSchema.parse(command), now, baseDemoCommand);
+  return demoAppointments(
+    ws,
+    commandSchema.parse(command),
+    now,
+    (input, p, time) => demoOperations(input, p, time, baseDemoCommand),
+  );
 }
 function baseDemoCommand(
   ws: Workspace,

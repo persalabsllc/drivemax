@@ -1,5 +1,6 @@
 import { demoInventory } from "./demo-vehicles";
 import { type Workspace, dayKey, addDays, defaultQuote } from "./model";
+import { appointmentInstant, type Appointment } from "./appointments";
 export function demoWorkspace(now = new Date()): Workspace {
   const today = dayKey(now),
     stamp = now.toISOString(),
@@ -129,9 +130,9 @@ export function demoWorkspace(now = new Date()): Workspace {
         id: "00000000-0000-4000-8000-000000000030",
         org_id: org,
         customer_id: ids[0],
-        title: "Appointment · Honda Accord",
+        title: "Confirm today’s appointment · Honda Accord",
         due_date: today,
-        kind: "appointment",
+        kind: "task",
         completed_at: null,
         canceled_at: null,
       },
@@ -262,5 +263,46 @@ export function demoWorkspace(now = new Date()): Workspace {
   ])
     for (const row of rows)
       (row as { assigned_to?: string }).assigned_to = workspace.member.staff_id;
+  workspace.appointments = [
+    {
+      customer: 0,
+      date: today,
+      time: "14:00",
+      kind: "test_drive",
+      description: "Compare the Accord and review the Civic trade.",
+      owner: 0,
+    },
+    {
+      customer: 1,
+      date: addDays(today, 1),
+      time: "11:30",
+      kind: "return_visit",
+      description: "Returning with spouse to test drive the RAV4.",
+      owner: 1,
+    },
+    {
+      customer: 3,
+      date: addDays(today, 1),
+      time: "15:00",
+      kind: "sold_delivery",
+      description: "Pick up keys and review the delivery paperwork.",
+      owner: 0,
+    },
+  ].map((a, i) => ({
+    id: `00000000-0000-4000-8000-0000000002${String(i).padStart(2, "0")}`,
+    org_id: org,
+    customer_id: ids[a.customer],
+    opportunity_id: workspace.opportunities[a.customer].id,
+    assigned_to: workspace.staff[a.owner].id,
+    kind: a.kind as Appointment["kind"],
+    starts_at: appointmentInstant(a.date, a.time),
+    duration_minutes: 60,
+    description: a.description,
+    status: "scheduled",
+    revision: 0,
+    created_at: stamp,
+    updated_at: stamp,
+    created_by: "demo",
+  }));
   return workspace;
 }

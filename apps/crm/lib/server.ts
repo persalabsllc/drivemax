@@ -95,6 +95,7 @@ export async function workspace(
     "trades",
     "commissions",
     "messages",
+    "appointments",
   ] as const;
   // Pages are fetched fully in batches; never silently truncate the customer book.
   async function all(table: string) {

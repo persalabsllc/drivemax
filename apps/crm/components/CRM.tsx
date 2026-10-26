@@ -65,6 +65,18 @@ import { Desking } from "./Desking";
 import { PriceQuotePrint } from "./PriceQuotePrint";
 import { TeamSettings } from "./TeamSettings";
 import { ConversationsInbox } from "./ConversationsInbox";
+import {
+  AppointmentDialog,
+  AppointmentOverview,
+  AppointmentRow,
+} from "./Appointments";
+import {
+  appointmentsForRange,
+  appointmentLocalParts,
+  appointmentKinds,
+  appointmentTime,
+  type Appointment,
+} from "../lib/appointments";
 import { CustomerSearch } from "./CustomerSearch";
 import { Accounting } from "./Accounting";
 import { TradeIntake } from "./TradeIntake";
@@ -127,6 +139,9 @@ export default function CRM({
     [profileTab, setProfileTab] = useState<
       "Activity" | "Details" | "Desking" | "Texts" | "Emails"
     >("Activity"),
+    [appointmentDialog, setAppointmentDialog] = useState<
+      Appointment | "new" | null
+    >(null),
     [modal, setModal] = useState<
       "customer" | "task" | "call" | "sold" | "inventory" | null
     >(null),
@@ -165,6 +180,12 @@ export default function CRM({
       c.sold_on?.startsWith(today.slice(0, 7)),
     ),
     active = ws.visits.filter((v) => !v.departed_at);
+  const plannedAppointments = appointmentsForRange(
+    ws.appointments ?? [],
+    "2000-01-01",
+    "9999-12-31",
+    canManage(ws.member.role) ? taskScope : (myStaffId(ws) ?? ""),
+  );
   const findCustomer = (id: string | null) =>
     ws.customers.find((c) => c.id === id);
   function navigate(v: View) {
@@ -659,6 +680,17 @@ export default function CRM({
                     }}
                   />
                 </div>
+                <AppointmentOverview
+                  ws={ws}
+                  onSchedule={() => {
+                    setError("");
+                    setAppointmentDialog("new");
+                  }}
+                  onOpen={(a) => {
+                    setError("");
+                    setAppointmentDialog(a);
+                  }}
+                />
                 <div className="dashboard-grid">
                   <section className="panel">
                     <SectionTitle
@@ -943,6 +975,16 @@ export default function CRM({
                       <Plus size={15} />
                       Add task
                     </button>
+                    <button
+                      className="btn primary"
+                      onClick={() => {
+                        setError("");
+                        setAppointmentDialog("new");
+                      }}
+                    >
+                      <CalendarDays size={15} />
+                      Schedule appointment
+                    </button>
                   </div>
                 </div>
                 {overdue.length > 0 && (
@@ -959,6 +1001,12 @@ export default function CRM({
                   date={planDate}
                   today={today}
                   tasks={openTasks}
+                  appointments={plannedAppointments}
+                  ws={ws}
+                  onAppointment={(a) => {
+                    setError("");
+                    setAppointmentDialog(a);
+                  }}
                   taskRow={taskRow}
                   open={(t) => {
                     const c = findCustomer(t.customer_id);
@@ -1273,21 +1321,27 @@ export default function CRM({
           wide
         >
           <CustomerForm
+            ws={ws}
             existing={edit}
             busy={busy}
             error={error}
-            submit={async (data) => {
+            submit={async (data, appointment) => {
               const result = await run(
                 edit
                   ? { type: "update_customer", id: edit.id, customer: data }
-                  : { type: "create_customer", customer: data },
-                edit ? "Profile updated" : "Customer added",
+                  : { type: "create_customer", customer: data, appointment },
+                edit
+                  ? "Profile updated"
+                  : appointment
+                    ? "Customer added and appointment scheduled"
+                    : "Customer added",
               );
               if (result.ok) {
                 setModal(null);
                 setEdit(null);
                 if (result.id && !edit) {
                   setSelected(result.id);
+                  setSelectedOpp(null);
                   setProfileTab("Activity");
                   setNote("");
                 }
@@ -1295,6 +1349,26 @@ export default function CRM({
             }}
           />
         </Modal>
+      )}
+      {appointmentDialog && (
+        <AppointmentDialog
+          key={appointmentDialog === "new" ? "new" : appointmentDialog.id}
+          ws={ws}
+          existing={appointmentDialog === "new" ? undefined : appointmentDialog}
+          initialDate={
+            appointmentDialog === "new" && view === "Planner"
+              ? planDate
+              : undefined
+          }
+          busy={busy}
+          error={error}
+          run={run}
+          onClose={() => setAppointmentDialog(null)}
+          onCustomer={(c, oid) => {
+            setAppointmentDialog(null);
+            openCustomer(c, oid);
+          }}
+        />
       )}
       {modal === "inventory" && (
         <Modal
@@ -1430,7 +1504,6 @@ export default function CRM({
                 Type
                 <select name="kind">
                   <option value="task">Task</option>
-                  <option value="appointment">Appointment</option>
                   <option value="unsold_followup">Unsold follow-up</option>
                   <option value="sold_followup">Sold follow-up</option>
                 </select>
@@ -1582,6 +1655,9 @@ function Planner({
   date,
   today,
   tasks,
+  appointments,
+  ws,
+  onAppointment,
   taskRow,
   open,
   onDay,
@@ -1590,6 +1666,9 @@ function Planner({
   date: string;
   today: string;
   tasks: Task[];
+  appointments: Appointment[];
+  ws: Workspace;
+  onAppointment: (a: Appointment) => void;
   taskRow: (t: Task) => React.ReactNode;
   open: (t: Task) => void;
   onDay: (d: string) => void;
@@ -1615,13 +1694,26 @@ function Planner({
             day: "numeric",
           })}
         />
+        {appointments
+          .filter((a) => appointmentLocalParts(a.starts_at).date === date)
+          .map((a) => (
+            <AppointmentRow
+              key={a.id}
+              appointment={a}
+              ws={ws}
+              onClick={onAppointment}
+            />
+          ))}
         {tasks.filter((t) => t.due_date === date).map(taskRow)}
-        {!tasks.some((t) => t.due_date === date) && (
-          <Empty
-            title="A little breathing room."
-            body="No open tasks on this day. Add a follow-up or an appointment."
-          />
-        )}
+        {!tasks.some((t) => t.due_date === date) &&
+          !appointments.some(
+            (a) => appointmentLocalParts(a.starts_at).date === date,
+          ) && (
+            <Empty
+              title="A little breathing room."
+              body="No open tasks or appointments on this day. Plan the next conversation or visit."
+            />
+          )}
       </section>
     );
   return (
@@ -1634,7 +1726,13 @@ function Planner({
           })}
         </h2>
         <span>
-          {tasks.filter((t) => days.includes(t.due_date)).length} planned tasks
+          {
+            appointments.filter((a) =>
+              days.includes(appointmentLocalParts(a.starts_at).date),
+            ).length
+          }{" "}
+          appointments · {tasks.filter((t) => days.includes(t.due_date)).length}{" "}
+          tasks · Eastern Time
         </span>
       </div>
       <div className="calendar-grid">
@@ -1651,6 +1749,22 @@ function Planner({
             <button className="calendar-day" onClick={() => onDay(d)}>
               {Number(d.slice(8))}
             </button>
+            {appointments
+              .filter((a) => appointmentLocalParts(a.starts_at).date === d)
+              .map((a) => (
+                <button
+                  className="calendar-task appointment timed-appointment"
+                  key={a.id}
+                  onClick={() => onAppointment(a)}
+                  title={`${appointmentKinds[a.kind]} · ${ws.staff.find((s) => s.id === a.assigned_to)?.name ?? ""} · ${a.description}`}
+                >
+                  <strong>{appointmentTime(a.starts_at)}</strong>
+                  <span>
+                    {ws.customers.find((c) => c.id === a.customer_id)?.name}
+                  </span>
+                  <small>{appointmentKinds[a.kind]}</small>
+                </button>
+              ))}
             {tasks
               .filter((t) => t.due_date === d)
               .map((t) => (

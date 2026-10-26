@@ -60,6 +60,12 @@ export async function POST(req: NextRequest) {
                 : error.message === "Select an in-stock vehicle"
                   ? "That vehicle is no longer in stock. Refresh and select another vehicle."
                   : [
+                        "You can only change your own appointments",
+                        "Only managers can assign appointments to another user",
+                        "Appointment changed in another session. Reload before saving.",
+                        "This appointment is closed. Schedule another visit instead.",
+                        "An arrived appointment cannot be rescheduled. Schedule another visit instead.",
+                        "Invalid appointment status change",
                         "Manager access required",
                         "Enter an unwind reason",
                         "This trade is already in intake. Review its existing disposition first.",

@@ -53,20 +53,31 @@ export async function POST(req: NextRequest) {
       return json(
         {
           error:
-            error.code === "23505" && parsed.data.type === "save_inventory"
-              ? "That VIN or stock number is already in this dealership’s inventory."
-              : error.message === "Select an in-stock vehicle"
-                ? "That vehicle is no longer in stock. Refresh and select another vehicle."
-                : [
-                      "Closed opportunity is read-only",
-                      "Select an active opportunity",
-                      "This inventory vehicle has already been sold",
-                      "Paperwork changed in another session. Reload before saving.",
-                    ].includes(error.message)
-                  ? error.message
-                  : "The change could not be saved. Refresh and try again.",
+            error.code === "23505" && parsed.data.type === "save_staff"
+              ? "That email is already on your team."
+              : error.code === "23505" && parsed.data.type === "save_inventory"
+                ? "That VIN or stock number is already in this dealership’s inventory."
+                : error.message === "Select an in-stock vehicle"
+                  ? "That vehicle is no longer in stock. Refresh and select another vehicle."
+                  : [
+                        "Manager access required",
+                        "Select an active team member",
+                        "Choose an active replacement for unfinished work",
+                        "Only the owner can add managers",
+                        "Only the owner can manage managers; owner access is protected",
+                        "Manager access required to reassign an opportunity",
+                        "Only managers can assign tasks to another user",
+                        "You can only complete your own tasks",
+                        "Login email cannot be changed here",
+                        "Closed opportunity is read-only",
+                        "Select an active opportunity",
+                        "This inventory vehicle has already been sold",
+                        "Paperwork changed in another session. Reload before saving.",
+                      ].includes(error.message)
+                    ? error.message
+                    : "The change could not be saved. Refresh and try again.",
         },
-        400,
+        error.code === "42501" ? 403 : 400,
       );
     return json({ id, workspace: await workspace(s) });
   } catch {

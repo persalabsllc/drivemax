@@ -41,8 +41,49 @@ export type FormTemplate = {
   pages: { width: number; height: number; fields: FormField[] }[];
 };
 export const soldForms = manifest.forms as FormTemplate[];
+export type SoldPackVariant = "without-trade" | "with-trade";
+const tradePartyKeys: Record<string, string> = {
+  "dealer.name": "trade.owner_names",
+  "dealer.address": "trade.owner_address",
+  "dealer.city": "trade.owner_city",
+  "dealer.state": "trade.owner_state",
+  "dealer.zip": "trade.owner_zip",
+  "dealer.full_address": "trade.owner_full_address",
+  "buyers.names": "dealer.name",
+  "buyer.address": "dealer.address",
+  "buyer.city": "dealer.city",
+  "buyer.state": "dealer.state",
+  "buyer.zip": "dealer.zip",
+};
+export const tradeForms = ["MVR-180", "MVR-181", "MVR-63"].map(
+  (id): FormTemplate => {
+    const source = soldForms.find((f) => f.id === id)!;
+    return {
+      ...source,
+      id: "trade-" + id,
+      title: "Trade-in · " + source.title,
+      pages: source.pages.map((page) => ({
+        ...page,
+        fields: page.fields.map((field) => ({
+          ...field,
+          key: field.key?.startsWith("vehicle.")
+            ? field.key.replace("vehicle.", "trade.")
+            : id === "MVR-63" && field.key === "buyers.names"
+              ? "trade.owner_names"
+              : id !== "MVR-63" && field.key
+                ? (tradePartyKeys[field.key] ?? field.key)
+                : field.key,
+        })),
+      })),
+    };
+  },
+);
+export const soldPackForms = (variant: SoldPackVariant) =>
+  variant === "with-trade"
+    ? [...soldForms, ...tradeForms]
+    : soldForms.filter((f) => f.id !== "payoff");
 export const mvr2Form = manifest.mvr2 as FormTemplate;
-export const allForms = [...soldForms, mvr2Form];
+export const allForms = [...soldForms, ...tradeForms, mvr2Form];
 const join = (...parts: unknown[]) =>
   parts.filter((v) => v !== null && v !== undefined && v !== "").join(" ");
 const date = (v: string | null | undefined) =>
@@ -108,6 +149,10 @@ export function documentContext(
   if (co) person("co_buyer", co);
   Object.assign(out, {
     "buyers.names": join(fullName(p), co ? "& " + fullName(co) : ""),
+    "deal.salesperson":
+      closed && o.sale_snapshot?.salesperson
+        ? o.sale_snapshot.salesperson.name
+        : (ws.staff.find((s) => s.id === o.assigned_to)?.name ?? ""),
     "dealer.name": "DRIVE MAX USED CARS LLC",
     "dealer.address": "6210 Old US Hwy 70 W",
     "dealer.city": "New Bern",
@@ -127,6 +172,18 @@ export function documentContext(
     "vehicle.stock_number": v?.stock_number ?? "",
     "vehicle.color": v?.color ?? "",
     "vehicle.condition": "Used",
+    "trade.owner_names": join(fullName(p), co ? "& " + fullName(co) : ""),
+    "trade.owner_address": join(p.address1, p.address2),
+    "trade.owner_city": p.city,
+    "trade.owner_state": p.state,
+    "trade.owner_zip": p.zip,
+    "trade.owner_full_address": join(
+      p.address1,
+      p.address2,
+      p.city,
+      p.state,
+      p.zip,
+    ),
   });
   if (trade)
     Object.assign(out, {
@@ -204,7 +261,10 @@ export function formValues(
     if (form.id === "MVR-2" && f.section) {
       const prop = f.name.split(".").at(-1);
       if (prop === "buyer_name_address")
-        value = join(common["buyers.names"], common["buyer.full_mailing_address"]);
+        value = join(
+          common["buyers.names"],
+          common["buyer.full_mailing_address"],
+        );
       if (prop === "mileage") value = common["vehicle.mileage"];
       if (prop === "delivered_on") value = common["deal.date"];
       if (prop === "dealer_name") value = common["dealer.name"];
@@ -219,6 +279,7 @@ export function formValues(
   return out;
 }
 export const sharedPrintFields = [
+  ["deal.salesperson", "Salesperson"],
   ["insurance.policy_number", "Insurance policy number"],
   ["insurance.company", "Insurance company"],
   ["insurance.agent", "Insurance agent"],
@@ -228,7 +289,7 @@ export const sharedPrintFields = [
   ["insurance.collision_deductible", "Collision deductible"],
   ["insurance.comprehensive_deductible", "Comprehensive deductible"],
   ["dealer.number", "Dealer license number"],
-  ["dealer.representative", "Salesperson / dealer representative"],
+  ["dealer.representative", "Dealer representative / attorney"],
   ["vehicle.body", "Vehicle body style"],
   ["vehicle.fuel", "Vehicle fuel"],
   ["lienholder.name", "Purchase lienholder"],
@@ -239,6 +300,18 @@ export const sharedPrintFields = [
   ["lienholder.id", "Lienholder ID"],
   ["lienholder.account", "Lienholder account"],
   ["lienholder.date", "Lien date"],
+  ["trade.owner_names", "Trade legal owner(s)"],
+  ["trade.owner_address", "Trade owner street address"],
+  ["trade.owner_city", "Trade owner city"],
+  ["trade.owner_state", "Trade owner state"],
+  ["trade.owner_zip", "Trade owner ZIP"],
+  ["trade.owner_full_address", "Trade owner full address (damage form)"],
+  ["trade.vin", "Trade VIN"],
+  ["trade.year", "Trade year"],
+  ["trade.make", "Trade make"],
+  ["trade.model_trim", "Trade model / trim"],
+  ["trade.mileage", "Trade mileage"],
+  ["trade.body", "Trade body style"],
   ["trade.lienholder", "Trade payoff lender"],
   ["trade.account_number", "Trade payoff account"],
   ["trade.payoff_address", "Trade payoff mailing address"],

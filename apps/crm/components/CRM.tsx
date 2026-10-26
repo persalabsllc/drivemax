@@ -48,6 +48,9 @@ import {
   addDays,
   addMonths,
   isOpenTask,
+  canManage,
+  myStaffId,
+  visibleTasks,
   money,
   fullMoney,
   quoteMath,
@@ -60,6 +63,7 @@ import { CustomerForm } from "./CustomerForm";
 import { InventoryView, InventoryForm } from "./Inventory";
 import { Desking } from "./Desking";
 import { PriceQuotePrint } from "./PriceQuotePrint";
+import { TeamSettings } from "./TeamSettings";
 import { Showroom, visitStatus } from "./Showroom";
 import { type InventoryVehicle, vehicleName } from "../lib/vehicles";
 import { signOut } from "../app/login/actions";
@@ -120,6 +124,7 @@ export default function CRM({
     [toast, setToast] = useState(""),
     [error, setError] = useState(""),
     [note, setNote] = useState(""),
+    [taskScope, setTaskScope] = useState("all"),
     [planDate, setPlanDate] = useState(dayKey()),
     [planMode, setPlanMode] = useState<"Day" | "Week" | "Month">("Week"),
     [mobileNav, setMobileNav] = useState(false),
@@ -133,7 +138,16 @@ export default function CRM({
   );
   const today = dayKey(),
     customer = ws.customers.find((c) => c.id === selected),
-    openTasks = ws.tasks.filter(isOpenTask),
+    openTasks = visibleTasks(ws)
+      .filter(isOpenTask)
+      .filter(
+        (t) =>
+          !canManage(ws.member.role) ||
+          taskScope === "all" ||
+          (taskScope === "unassigned"
+            ? !t.assigned_to
+            : t.assigned_to === taskScope),
+      ),
     todayVisits = ws.visits.filter((v) => dayKey(v.arrived_at) === today),
     overdue = openTasks.filter((t) => t.due_date < today),
     soldMonth = ws.opportunities.filter((c) =>
@@ -278,7 +292,8 @@ export default function CRM({
         >
           <strong>{t.title}</strong>
           <span>
-            {c?.name ?? "Dealership task"} <i>·</i> {taskLabel(t)}
+            {c?.name ?? "Dealership task"} <i>·</i> {taskLabel(t)} <i>·</i>{" "}
+            {ws.staff.find((m) => m.id === t.assigned_to)?.name ?? "Unassigned"}
           </span>
         </button>
         <span className={`task-date ${t.due_date < today ? "late" : ""}`}>
@@ -421,13 +436,21 @@ export default function CRM({
               onClick={() => navigate("Workspace")}
             >
               <Settings size={18} />
-              Workspace
+              Settings
             </button>
             <div className="sidebar-user">
               <Avatar name={ws.member.name} size="small" />
               <div>
                 <strong>{ws.member.name}</strong>
-                <small>{demo ? "Demo workspace" : "Dealership owner"}</small>
+                <small>
+                  {demo
+                    ? "Demo workspace"
+                    : ws.member.role === "sales"
+                      ? "Salesperson"
+                      : ws.member.role === "manager"
+                        ? "Manager"
+                        : "Dealership owner"}
+                </small>
               </div>
               {demo ? (
                 <a href="/login" aria-label="Sign in">
@@ -562,6 +585,35 @@ export default function CRM({
                 {view === "Inventory" ? "Add vehicle" : "Add customer"}
               </button>
             </div>
+            {(view === "Overview" || view === "Planner") && (
+              <div className="task-scope">
+                <span>
+                  {canManage(ws.member.role)
+                    ? "Team follow-up"
+                    : "Your assigned follow-up"}
+                </span>
+                {canManage(ws.member.role) && (
+                  <label>
+                    Show tasks for
+                    <select
+                      aria-label="Task owner filter"
+                      value={taskScope}
+                      onChange={(e) => setTaskScope(e.target.value)}
+                    >
+                      <option value="all">Entire team</option>
+                      <option value="unassigned">Unassigned</option>
+                      {ws.staff.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name}
+                          {m.id === myStaffId(ws) ? " (me)" : ""}
+                          {!m.active ? " (inactive)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+              </div>
+            )}
             {view === "Overview" && (
               <>
                 <div className="stat-grid">
@@ -1222,6 +1274,13 @@ export default function CRM({
             )}
             {view === "Workspace" && (
               <>
+                <TeamSettings
+                  ws={ws}
+                  busy={busy}
+                  error={error}
+                  demo={demo}
+                  run={run}
+                />
                 <div className="settings-grid">
                   <section className="panel">
                     <SectionTitle
@@ -1294,8 +1353,8 @@ export default function CRM({
                       <h3>A product for more dealers</h3>
                       <p>
                         Dealership membership and data boundaries are in place.
-                        Self-service onboarding, billing, and team management
-                        come later.
+                        Team roles and task assignment are ready. Self-service
+                        dealer onboarding and billing come later.
                       </p>
                     </div>
                   </div>
@@ -1420,6 +1479,10 @@ export default function CRM({
               const result = await run(
                 {
                   type: "create_task",
+                  ...(canManage(ws.member.role) &&
+                  f.get("assigned_to") !== "auto"
+                    ? { assigned_to: String(f.get("assigned_to")) || null }
+                    : {}),
                   customer_id: String(f.get("customer")) || null,
                   title: String(f.get("title")),
                   due_date: String(f.get("date")),
@@ -1430,6 +1493,24 @@ export default function CRM({
               if (result.ok) setModal(null);
             }}
           >
+            {canManage(ws.member.role) && (
+              <label>
+                Assigned to
+                <select name="assigned_to" defaultValue="auto">
+                  <option value="auto">
+                    Use customer’s assigned salesperson
+                  </option>
+                  <option value="">Unassigned · manager queue</option>
+                  {ws.staff
+                    .filter((m) => m.active)
+                    .map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            )}
             <label>
               Task title
               <input
@@ -1444,11 +1525,17 @@ export default function CRM({
               Customer
               <select name="customer" defaultValue={customer?.id ?? ""}>
                 <option value="">Dealership task</option>
-                {ws.customers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
+                {ws.customers
+                  .filter(
+                    (c) =>
+                      canManage(ws.member.role) ||
+                      c.assigned_to === myStaffId(ws),
+                  )
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
               </select>
             </label>
             <div className="form-grid">

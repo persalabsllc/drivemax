@@ -2,7 +2,7 @@ import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import type { Workspace } from "./model";
+import { canManage, type Workspace } from "./model";
 export const ready = () =>
   !!(
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
@@ -67,7 +67,16 @@ export async function session() {
     .limit(1)
     .maybeSingle();
   if (e) throw new Error("CRM membership unavailable");
-  return data;
+  if (!data) return null;
+  const { data: staff, error: staffError } = await db()
+    .from("dmcrm_staff")
+    .select("id")
+    .eq("org_id", data.org_id)
+    .eq("user_id", user.id)
+    .eq("active", true)
+    .maybeSingle();
+  if (staffError) throw new Error("CRM team unavailable");
+  return staff ? { ...data, staff_id: staff.id } : null;
 }
 export async function workspace(
   s: NonNullable<Awaited<ReturnType<typeof session>>>,
@@ -81,17 +90,20 @@ export async function workspace(
     "quotes",
     "inventory",
     "opportunities",
+    "staff",
   ] as const;
   // Pages are fetched fully in batches; never silently truncate the customer book.
   async function all(table: string) {
     const rows: unknown[] = [];
     for (let start = 0; ; start += 1000) {
-      const { data, error } = await d
+      let query = d
         .from("dmcrm_" + table)
         .select("*")
-        .eq("org_id", s.org_id)
-        .order("id")
-        .range(start, start + 999);
+        .eq("org_id", s.org_id);
+      // Never deliver another salesperson's tasks to the browser, exports, or planner.
+      if (table === "tasks" && !canManage(s.role))
+        query = query.eq("assigned_to", s.staff_id);
+      const { data, error } = await query.order("id").range(start, start + 999);
       if (error) throw new Error("CRM records unavailable");
       rows.push(...data);
       if (data.length < 1000) break;
@@ -107,7 +119,7 @@ export async function workspace(
   const rows = await Promise.all(tables.map(all));
   return {
     org,
-    member: { id: s.user_id, name: s.name, role: s.role },
+    member: { id: s.user_id, name: s.name, role: s.role, staff_id: s.staff_id },
     ...Object.fromEntries(tables.map((t, i) => [t, rows[i]])),
   } as Workspace;
 }

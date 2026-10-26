@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Car, ArrowLeftRight } from "lucide-react";
 import {
   type Opportunity,
+  type Staff,
   type Command,
   dayKey,
   opportunitySchema,
@@ -24,6 +25,9 @@ import {
 } from "./VehicleFields";
 export function OpportunityForm({
   existing,
+  staff,
+  defaultAssignee,
+  manager,
   inventory,
   busy,
   error,
@@ -31,6 +35,9 @@ export function OpportunityForm({
   submit,
 }: {
   existing: Opportunity | null;
+  staff: Staff[];
+  defaultAssignee: string | null;
+  manager: boolean;
   inventory: InventoryVehicle[];
   busy: boolean;
   error: string;
@@ -101,6 +108,11 @@ export function OpportunityForm({
           structuredTrade = t.data;
         }
         const data = {
+          assigned_to: manager
+            ? String(f.get("assigned_to") || "") || null
+            : existing
+              ? (existing.assigned_to ?? null)
+              : defaultAssignee,
           title: String(f.get("name")),
           source: String(f.get("source")),
           status: String(f.get("status") || "new") as
@@ -150,6 +162,26 @@ export function OpportunityForm({
           maxLength={250}
           autoFocus
         />
+      </label>
+      <label>
+        Assigned salesperson
+        <select
+          name="assigned_to"
+          defaultValue={
+            (existing ? existing.assigned_to : defaultAssignee) ?? ""
+          }
+          disabled={!manager}
+        >
+          <option value="">Unassigned · manager queue</option>
+          {staff
+            .filter((m) => m.active || m.id === existing?.assigned_to)
+            .map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+                {!m.active ? " (inactive)" : ""}
+              </option>
+            ))}
+        </select>
       </label>
       <div className="form-grid">
         <label>

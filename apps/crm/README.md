@@ -7,9 +7,9 @@ A standalone Next.js application for Drive Max customer management, showroom vis
 - Vercel project: `drive-max-crm` (`prj_mMh5v8DCSJBufyLSALIeHzfGAjE9`) in the existing Persa Labs team.
 - Standalone source: this folder. It can move unchanged into its own repository root; then set Vercel Root Directory accordingly.
 - Never merge this work into the website's `main` branch without review. No domain or website routing changes are required for the separate project.
-- `/` requires a verified existing account and active CRM dealership membership.
+- `/` requires a verified account, active CRM dealership membership, and an active linked CRM team record.
 - `/demo` uses fictional, in-memory sample data. Demo mutations never reach the live API or persist in local storage.
-- `/login` uses the existing Supabase identity provider, a separate cookie name, and local-scope sign-out.
+- `/login` uses the existing Supabase identity provider, a separate cookie name, and local-scope sign-out. `/team-setup` accepts a one-use, 72-hour setup link issued by an authorized manager. Tokens are hashed in storage and carried in the URL fragment; no invitation email is sent automatically.
 - The new project has its own deployment settings and environment variables. Do not copy website email/cron settings.
 
 ## Setup
@@ -32,22 +32,27 @@ The initial workspace contains no real customer data. Existing website leads and
 - Desking starts from inventory asking price and customer trade figures. Previously negotiated saved values persist when the vehicle/trade selection is unchanged. Saved proposals snapshot the vehicle and trade; inventory changes do not rewrite old versions. Cost and ACV remain internal and are excluded from customer printouts.
 - Mark sold updates the linked CRM inventory vehicle to sold and the latest same-day visit to sold without changing its departure timestamp.
 - Customer-facing quote printing and preliminary deal-summary checklist printing; browser Save as PDF supported.
-- Workspace JSON export and server-side mutation audit log.
+- Customer opportunities preserve separate vehicles, trades, notes, proposals, and closed-deal snapshots for repeat purchases. Buyer/co-buyer identity and address fields and a separate insurance screen feed the print forms.
+- Print sold pack offers 12 pages without a trade (no payoff sheet) or 16 with a trade (payoff plus separate trade MVR-180, MVR-181, and MVR-63). Shared and per-form corrections persist independently. MVR-2 remains a separate text-only overlay for preprinted stock. MVR-63 cannot be used when a lienholder holds the title; obtain the secure MVR-63A for that case.
+- Settings manages salespeople and managers. Owners can manage managers; managers can manage salespeople. Existing login emails and owner access are protected. Setup links create new accounts or verify an existing password without changing other accounts.
+- Opportunity assignment routes unsold/sold follow-up and purchase anniversaries. The newest active opportunity sets general customer ownership, including birthdays. Reassignment moves unfinished work; completed task attribution and closed sale snapshots remain intact. Deactivation requires a replacement and immediately revokes CRM access.
+- Salespeople receive only their assigned tasks from the server; owners/managers receive the full team queue with filters. Customer profiles remain shared within the dealership. This is the routing foundation for future messaging, not an inbound-message integration.
+- Workspace JSON export (with the same task visibility as the signed-in user) and server-side mutation audit log.
 
 ## Access and tenant boundaries
 
 Every read independently verifies the authenticated user and active CRM membership, then scopes all queries by the server-resolved dealership. Every mutation is schema-validated and passed to an atomic RPC that re-checks membership and validates cross-record tenant references. Anonymous/authenticated browser roles cannot access business tables or invoke the command RPC. Composite foreign keys reject cross-dealership references. POST requires a matching Origin. Only trusted server code has the service role key.
 
-The foundation uses one active dealership per user in the UI. The database supports multiple dealerships, but self-service onboarding, organization switching, invitations, granular role enforcement, MFA enrollment UX, billing, backup/restore drills, large-book pagination, and production observability remain pre-commercial-launch work. Shared Supabase infrastructure and owner identities are still dependencies to separate when migrating to an independent hosting account.
+The foundation uses one active dealership per user in the UI. The database supports multiple dealerships, but self-service onboarding, organization switching, customer-level permissions, MFA enrollment UX, billing, backup/restore drills, large-book pagination, and production observability remain pre-commercial-launch work. Shared Supabase infrastructure and owner identities are still dependencies to separate when migrating to an independent hosting account.
 
 ## Explicitly not connected yet
 
-Two-way email/SMS, automated outbound messages, telephony, website lead import, website inventory synchronization, live book values, e-signatures, lender submissions, and regulated final contracts. Nothing is sent when a sample interaction is logged. Deal summary is not a completed legal sold pack. Current sale status represents one active opportunity per customer; a full repeat-purchase/deal ledger is a later stage.
+Two-way email/SMS, automated outbound messages, telephony, website lead import, website inventory synchronization, live book values, e-signatures, lender submissions, and regulated final contracts. Nothing is sent when a sample interaction is logged. Printed forms require review and signatures; condition attestations, signatures, and notarization are not filled automatically.
 
 ## Checks
 
 - `npm run typecheck`
-- `npm test` — quote calculations; Eastern dates; validation; demo transitions; actual PostgreSQL-compatible migration/RPC integration with PGlite, including cross-tenant and browser-role denials, visit deduplication, sale follow-up and anniversary behavior.
+- `npm test` — quote calculations; Eastern dates; validation; demo transitions; actual PostgreSQL-compatible migration/RPC integration with PGlite, including cross-tenant and browser-role denials, visit deduplication, sale follow-up and anniversary behavior; team ownership/permissions, secure invitation claims and handoffs, and real 12/16-page sold packs with independent trade fields.
 - `npm run build`
 
 Manual acceptance: create customer → add note/call → check in → create quote → mark sold → confirm visit remains open → check out → confirm follow-up → reload and verify persistence. For inventory: add/decode VIN → select inventory in a customer → enter required trade values → verify desking price/cost/days/trade → save → end an unsold visit → confirm Left and retained visit → reload. Test the demo separately; a demo pass alone is not evidence of live backend integration.

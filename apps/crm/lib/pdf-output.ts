@@ -68,11 +68,12 @@ export async function buildSoldPack(
   context: PaperValues,
   paperwork: Paperwork,
   load: Loader,
+  forms: FormTemplate[] = soldForms,
 ) {
   const packet = await PDFDocument.create();
   packet.setTitle("Drive Max sold pack");
   packet.setAuthor("Drive Max");
-  for (const spec of soldForms) {
+  for (const spec of forms) {
     const pdf = await PDFDocument.load(await load(spec)),
       font = await pdf.embedFont(StandardFonts.Helvetica),
       form = pdf.getForm(),

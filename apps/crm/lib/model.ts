@@ -20,6 +20,7 @@ import {
 export type { InventoryVehicle, VehicleDetails, Trade } from "./vehicles";
 
 export type Customer = {
+  assigned_to?: string | null;
   id: string;
   org_id: string;
   name: string;
@@ -41,6 +42,7 @@ export type Customer = {
   updated_at: string;
 };
 export type Opportunity = {
+  assigned_to?: string | null;
   id: string;
   org_id: string;
   customer_id: string;
@@ -61,6 +63,7 @@ export type Opportunity = {
     customer: Customer;
     quote: Quote | null;
     insurance: Insurance | null;
+    salesperson?: { id: string; name: string } | null;
   } | null;
   paperwork: Record<string, Record<string, string | boolean>>;
   paperwork_revision: number;
@@ -107,6 +110,7 @@ export type Activity = {
   created_by: string;
 };
 export type Task = {
+  assigned_to?: string | null;
   opportunity_id?: string | null;
   id: string;
   org_id: string;
@@ -138,9 +142,22 @@ export type Quote = {
   trade_input?: Trade | null;
   snapshot_version?: number;
 };
+export type Staff = {
+  id: string;
+  org_id: string;
+  user_id: string | null;
+  name: string;
+  email: string;
+  role: "owner" | "manager" | "sales";
+  active: boolean;
+  created_at: string;
+};
+export const canManage = (role: string) =>
+  role === "owner" || role === "manager";
 export type Workspace = {
   org: { id: string; name: string; slug: string };
-  member: { id: string; name: string; role: string };
+  member: { id: string; name: string; role: string; staff_id?: string };
+  staff: Staff[];
   customers: Customer[];
   opportunities: Opportunity[];
   inventory: InventoryVehicle[];
@@ -273,6 +290,7 @@ export const quoteSchema = z.object({
   selectedDown: z.number().int().min(0).max(2).optional(),
 });
 export const opportunitySchema = z.object({
+  assigned_to: z.uuid().nullable().optional(),
   title: text.min(1),
   source: text,
   status: z.enum(["new", "working", "appointment"]),
@@ -283,6 +301,29 @@ export const opportunitySchema = z.object({
   trade: tradeSchema.nullable(),
 });
 export const commandSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("save_staff"),
+    id: z.uuid().optional(),
+    staff: z.object({
+      name: z.string().trim().min(2).max(120),
+      email: z
+        .email()
+        .max(250)
+        .transform((v) => v.trim().toLowerCase()),
+      role: z.enum(["sales", "manager"]),
+    }),
+  }),
+  z.object({
+    type: z.literal("set_staff_active"),
+    id: z.uuid(),
+    active: z.boolean(),
+    reassign_to: z.uuid().optional(),
+  }),
+  z.object({
+    type: z.literal("assign_opportunity"),
+    id: z.uuid(),
+    assigned_to: z.uuid().nullable(),
+  }),
   z.object({
     type: z.literal("create_opportunity"),
     customer_id: z.uuid(),
@@ -346,6 +387,7 @@ export const commandSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("mark_sold"), customer_id: z.uuid() }),
   z.object({
     type: z.literal("create_task"),
+    assigned_to: z.uuid().nullable().optional(),
     opportunity_id: z.uuid().nullable().optional(),
     customer_id: z.uuid().nullable(),
     title: text.min(2),
@@ -363,6 +405,12 @@ export const commandSchema = z.discriminatedUnion("type", [
 ]);
 export type Command = z.infer<typeof commandSchema>;
 export const isOpenTask = (t: Task) => !t.completed_at && !t.canceled_at;
+export const myStaffId = (ws: Workspace) =>
+  ws.member.staff_id ?? ws.staff.find((s) => s.user_id === ws.member.id)?.id;
+export const visibleTasks = (ws: Workspace) =>
+  canManage(ws.member.role)
+    ? ws.tasks
+    : ws.tasks.filter((t) => t.assigned_to === myStaffId(ws));
 
 // Demo uses the same command contracts; it never writes live records.
 export function demoCommand(
@@ -376,6 +424,120 @@ export function demoCommand(
     today = dayKey(now),
     id = () => crypto.randomUUID(),
     org_id = s.org.id;
+  const manager = canManage(s.member.role),
+    me = myStaffId(s);
+  const requireManager = () => {
+    if (!manager) throw Error("Manager access required");
+  };
+  const validAssignee = (value: string | null | undefined) => {
+    if (value && !s.staff.some((m) => m.id === value && m.active))
+      throw Error("Select an active team member");
+    return value ?? null;
+  };
+  const taskAssignee = (cid?: string | null, oid?: string | null) =>
+    oid
+      ? (s.opportunities.find((o) => o.id === oid)?.assigned_to ?? null)
+      : cid
+        ? (s.customers.find((c) => c.id === cid)?.assigned_to ?? null)
+        : (me ?? null);
+  const assign = (o: Opportunity, who: string | null) => {
+    o.assigned_to = validAssignee(who);
+    s.tasks
+      .filter((t) => t.opportunity_id === o.id && isOpenTask(t))
+      .forEach((t) => (t.assigned_to = who));
+    const later = s.opportunities.some(
+      (x) =>
+        x.customer_id === o.customer_id &&
+        opportunityOpen(x) &&
+        (x.created_at > o.created_at ||
+          (x.created_at === o.created_at && x.id > o.id)),
+    );
+    if (
+      !later &&
+      (opportunityOpen(o) ||
+        !s.opportunities.some(
+          (x) => x.customer_id === o.customer_id && opportunityOpen(x),
+        ))
+    ) {
+      const c = s.customers.find((c) => c.id === o.customer_id)!;
+      s.tasks
+        .filter(
+          (t) =>
+            t.customer_id === c.id &&
+            !t.opportunity_id &&
+            t.assigned_to === c.assigned_to &&
+            isOpenTask(t),
+        )
+        .forEach((t) => (t.assigned_to = who));
+      c.assigned_to = who;
+    }
+  };
+  if (p.type === "save_staff" || p.type === "set_staff_active") {
+    requireManager();
+    const old = s.staff.find((m) => m.id === p.id);
+    if (p.id && !old) throw Error("Team member unavailable");
+    if (
+      old &&
+      (old.role === "owner" ||
+        old.id === me ||
+        (s.member.role === "manager" && old.role !== "sales"))
+    )
+      throw Error(
+        "Owner access is protected; only the owner can manage managers",
+      );
+    if (p.type === "save_staff") {
+      if (p.staff.role === "manager" && s.member.role !== "owner")
+        throw Error("Only the owner can add managers");
+      if (
+        s.staff.some(
+          (m) => m.id !== p.id && m.email.toLowerCase() === p.staff.email,
+        )
+      )
+        throw Error("That email is already on your team");
+      if (old?.user_id && old.email !== p.staff.email)
+        throw Error("Login email cannot be changed here");
+      if (old) Object.assign(old, p.staff);
+      else
+        s.staff.unshift({
+          ...p.staff,
+          id: id(),
+          org_id,
+          user_id: null,
+          active: true,
+          created_at: stamp,
+        });
+    } else if (old) {
+      if (!p.active) {
+        if (!p.reassign_to || p.reassign_to === old.id)
+          throw Error("Choose an active replacement for unfinished work");
+        validAssignee(p.reassign_to);
+        s.opportunities
+          .filter((o) => o.assigned_to === old.id)
+          .forEach((o) => (o.assigned_to = p.reassign_to));
+        s.customers
+          .filter((c) => c.assigned_to === old.id)
+          .forEach((c) => (c.assigned_to = p.reassign_to));
+        s.tasks
+          .filter((t) => t.assigned_to === old.id && isOpenTask(t))
+          .forEach((t) => (t.assigned_to = p.reassign_to));
+      }
+      old.active = p.active;
+    }
+    return s;
+  }
+  if (p.type === "assign_opportunity") {
+    requireManager();
+    const o = s.opportunities.find((o) => o.id === p.id);
+    if (!o) throw Error("Opportunity unavailable");
+    assign(o, p.assigned_to);
+    return s;
+  }
+  if (
+    p.type === "complete_task" &&
+    !manager &&
+    !s.tasks.some((t) => t.id === p.id && t.assigned_to === me)
+  )
+    throw Error("You can only complete your own tasks");
   const activity = (
     cid: string,
     body: string,
@@ -404,6 +566,7 @@ export function demoCommand(
       org_id,
       customer_id: cid,
       opportunity_id: oid,
+      assigned_to: taskAssignee(cid, oid),
       title,
       due_date: due,
       kind,
@@ -414,6 +577,11 @@ export function demoCommand(
     o: z.infer<typeof opportunitySchema>,
     old?: Opportunity,
   ) => {
+    if (o.assigned_to !== undefined) {
+      validAssignee(o.assigned_to);
+      if (!manager && o.assigned_to !== (old ? old.assigned_to : me))
+        throw Error("Manager access required to reassign an opportunity");
+    }
     if (o.inventory_id) {
       const v = s.inventory.find((v) => v.id === o.inventory_id);
       if (!v) throw Error("Vehicle unavailable");
@@ -430,6 +598,8 @@ export function demoCommand(
   const addOpp = (cid: string, data: z.infer<typeof opportunitySchema>) => {
     const o: Opportunity = {
       ...canonical(data),
+      assigned_to:
+        data.assigned_to === undefined ? taskAssignee(cid) : data.assigned_to,
       id: id(),
       org_id,
       customer_id: cid,
@@ -443,6 +613,7 @@ export function demoCommand(
       updated_at: stamp,
     };
     s.opportunities.unshift(o);
+    assign(o, o.assigned_to ?? null);
     activity(cid, "Opportunity created", "system", o.id);
     task(
       cid,
@@ -480,6 +651,7 @@ export function demoCommand(
   if (p.type === "create_customer") {
     const c: Customer = {
       ...p.customer,
+      assigned_to: me ?? null,
       status: "new",
       id: id(),
       org_id,
@@ -550,6 +722,8 @@ export function demoCommand(
     if (!o || !opportunityOpen(o))
       throw Error("Closed opportunity is read-only");
     Object.assign(o, canonical(p.opportunity, o), { updated_at: stamp });
+    if (p.opportunity.assigned_to !== undefined)
+      assign(o, p.opportunity.assigned_to);
     activity(
       o.customer_id,
       "Opportunity vehicle and trade updated",
@@ -581,6 +755,7 @@ export function demoCommand(
     o.lost_reason = p.type === "close_opportunity" ? p.reason || "" : "";
     o.updated_at = stamp;
     o.sale_snapshot = {
+      salesperson: s.staff.find((m) => m.id === o.assigned_to) ?? null,
       customer: structuredClone(c),
       insurance: structuredClone(c.insurance ?? null),
       quote: structuredClone(
@@ -717,14 +892,22 @@ export function demoCommand(
       );
     }
   }
-  if (p.type === "create_task")
+  if (p.type === "create_task") {
+    const assigned_to =
+      p.assigned_to === undefined
+        ? taskAssignee(p.customer_id, p.opportunity_id)
+        : validAssignee(p.assigned_to);
+    if (!manager && assigned_to !== me)
+      throw Error("Only managers can assign tasks to another user");
     s.tasks.push({
       ...p,
+      assigned_to,
       id: id(),
       org_id,
       completed_at: null,
       canceled_at: null,
     });
+  }
   if (p.type === "complete_task") {
     const t = s.tasks.find((t) => t.id === p.id);
     if (t && isOpenTask(t)) {

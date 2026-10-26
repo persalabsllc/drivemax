@@ -50,7 +50,7 @@
               "width": 200.0,
               "height": 16.0,
               "fontSize": 10.0,
-              "key": "dealer.representative"
+              "key": "deal.salesperson"
             },
             {
               "name": "cash_sale",
@@ -3317,7 +3317,7 @@
               "width": 188.0,
               "height": 11.0,
               "fontSize": 7.92,
-              "key": "dealer.representative"
+              "key": "deal.salesperson"
             },
             {
               "name": "payment_method",

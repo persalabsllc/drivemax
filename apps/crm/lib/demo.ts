@@ -82,7 +82,44 @@ export function demoWorkspace(now = new Date()): Workspace {
   ];
   const workspace: Workspace = {
     org: { id: org, name: "Drive Max Used Cars", slug: "drive-max" },
-    member: { id: "demo", name: "Kyle Kratoville", role: "owner" },
+    member: {
+      id: "demo",
+      name: "Kyle Kratoville",
+      role: "owner",
+      staff_id: "00000000-0000-4000-8000-000000000090",
+    },
+    staff: [
+      {
+        id: "00000000-0000-4000-8000-000000000090",
+        org_id: org,
+        user_id: "demo",
+        name: "Kyle Kratoville",
+        email: "owner@example.invalid",
+        role: "owner",
+        active: true,
+        created_at: stamp,
+      },
+      {
+        id: "00000000-0000-4000-8000-000000000091",
+        org_id: org,
+        user_id: null,
+        name: "Avery Brooks",
+        email: "avery@example.invalid",
+        role: "sales",
+        active: true,
+        created_at: stamp,
+      },
+      {
+        id: "00000000-0000-4000-8000-000000000092",
+        org_id: org,
+        user_id: null,
+        name: "Morgan Reed",
+        email: "morgan@example.invalid",
+        role: "manager",
+        active: true,
+        created_at: stamp,
+      },
+    ],
     customers,
     opportunities: [],
     inventory: demoInventory(org, today),
@@ -218,5 +255,12 @@ export function demoWorkspace(now = new Date()): Workspace {
         insurance: null,
         quote: workspace.quotes.find((q) => q.opportunity_id === o.id) ?? null,
       };
+  for (const rows of [
+    workspace.customers,
+    workspace.opportunities,
+    workspace.tasks,
+  ])
+    for (const row of rows)
+      (row as { assigned_to?: string }).assigned_to = workspace.member.staff_id;
   return workspace;
 }

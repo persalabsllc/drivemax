@@ -24,6 +24,9 @@ import {
   opportunityCustomer,
   dayKey,
   isOpenTask,
+  canManage,
+  myStaffId,
+  visibleTasks,
 } from "../lib/model";
 import { personFromCustomer, fullName } from "../lib/people";
 import { Avatar, Badge, Modal, Empty } from "./ui";
@@ -75,10 +78,14 @@ export function CustomerProfile({
       | "sold"
       | "lost"
       | "pack"
+      | "pack-choice"
       | "mvr2"
       | "task"
       | null
     >(null),
+    [packVariant, setPackVariant] = useState<"with-trade" | "without-trade">(
+      "without-trade",
+    ),
     [note, setNote] = useState(""),
     [kind, setKind] = useState<"note" | "call" | "email" | "sms">("note"),
     [reason, setReason] = useState("");
@@ -95,6 +102,9 @@ export function CustomerProfile({
           (a.opportunity_id ?? null) === (o?.id ?? null),
       )
       .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const manager = canManage(ws.member.role),
+    me = myStaffId(ws),
+    assigned = o ? o.assigned_to : customer.assigned_to;
   const person = personFromCustomer(effective),
     co = effective.co_buyer;
   function choose(id: string | null) {
@@ -198,6 +208,33 @@ export function CustomerProfile({
                     : o.source}
               </p>
             </div>
+            <label className="opportunity-assignee">
+              Assigned salesperson
+              <select
+                value={o.assigned_to ?? ""}
+                disabled={busy || !manager}
+                onChange={(e) =>
+                  run(
+                    {
+                      type: "assign_opportunity",
+                      id: o.id,
+                      assigned_to: e.target.value || null,
+                    },
+                    "Salesperson and unfinished follow-ups updated",
+                  )
+                }
+              >
+                <option value="">Unassigned · manager queue</option>
+                {ws.staff
+                  .filter((m) => m.active || m.id === o.assigned_to)
+                  .map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                      {!m.active ? " (inactive)" : ""}
+                    </option>
+                  ))}
+              </select>
+            </label>
             {!closed && (
               <button
                 className="btn small"
@@ -242,7 +279,11 @@ export function CustomerProfile({
               Check in
             </button>
           )}
-          <button className="btn small" onClick={() => setModal("task")}>
+          <button
+            className="btn small"
+            disabled={!manager && assigned !== me}
+            onClick={() => setModal("task")}
+          >
             <Plus size={14} />
             Add task
           </button>
@@ -268,7 +309,10 @@ export function CustomerProfile({
           </button>
           {o && (
             <>
-              <button className="btn small" onClick={() => setModal("pack")}>
+              <button
+                className="btn small"
+                onClick={() => setModal("pack-choice")}
+              >
                 <Printer size={14} />
                 Print sold pack
               </button>
@@ -525,7 +569,7 @@ export function CustomerProfile({
               </>
             )}
             <h3>Follow-up</h3>
-            {ws.tasks
+            {visibleTasks(ws)
               .filter(
                 (t) =>
                   t.customer_id === customer.id &&
@@ -627,6 +671,12 @@ export function CustomerProfile({
                   await run(
                     {
                       type: "create_task",
+                      ...(manager
+                        ? {
+                            assigned_to:
+                              String(data.get("assigned_to")) || null,
+                          }
+                        : {}),
                       customer_id: customer.id,
                       opportunity_id: o?.id ?? null,
                       title: String(data.get("title")),
@@ -648,6 +698,26 @@ export function CustomerProfile({
               Due date
               <input name="date" type="date" required defaultValue={dayKey()} />
             </label>
+            {manager && (
+              <label>
+                Assigned to
+                <select name="assigned_to" defaultValue={assigned ?? ""}>
+                  <option value="">Unassigned · manager queue</option>
+                  {ws.staff
+                    .filter((m) => m.active)
+                    .map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            )}
+            {error && (
+              <p className="form-error" role="alert">
+                {error}
+              </p>
+            )}
             <button className="btn primary" disabled={busy}>
               Add task
             </button>
@@ -694,6 +764,11 @@ export function CustomerProfile({
         >
           <OpportunityForm
             existing={modal === "edit-opportunity" ? (o ?? null) : null}
+            staff={ws.staff}
+            manager={manager}
+            defaultAssignee={
+              manager ? (customer.assigned_to ?? me ?? null) : (me ?? null)
+            }
             inventory={ws.inventory}
             demo={demo}
             busy={busy}
@@ -778,12 +853,44 @@ export function CustomerProfile({
           </form>
         </Modal>
       )}
+      {modal === "pack-choice" && o && (
+        <Modal
+          title="Choose a sold pack"
+          subtitle="Both options include the forms for the vehicle being sold."
+          onClose={() => setModal(null)}
+        >
+          <div className="sold-pack-choices">
+            <button
+              onClick={() => {
+                setPackVariant("without-trade");
+                setModal("pack");
+              }}
+            >
+              <strong>Sold without trade</strong>
+              <span>12 forms · No trade payoff sheet.</span>
+            </button>
+            <button
+              onClick={() => {
+                setPackVariant("with-trade");
+                setModal("pack");
+              }}
+            >
+              <strong>Sold with trade</strong>
+              <span>
+                16 forms · Includes payoff and a separate MVR-180, MVR-181, and
+                MVR-63 for the trade-in.
+              </span>
+            </button>
+          </div>
+        </Modal>
+      )}
       {(modal === "pack" || modal === "mvr2") && o && (
         <SoldPack
           workspace={ws}
           customer={customer}
           opportunity={o}
           mode={modal === "mvr2" ? "mvr2" : "pack"}
+          variant={packVariant}
           demo={demo}
           busy={busy}
           run={run}

@@ -20,7 +20,8 @@ import {
   documentContext,
   fieldKey,
   formValues,
-  soldForms,
+  soldPackForms,
+  type SoldPackVariant,
   mvr2Form,
   sharedPrintFields,
   type FormTemplate,
@@ -171,6 +172,7 @@ export function SoldPack({
   customer,
   opportunity: o,
   mode,
+  variant = "without-trade",
   demo,
   busy,
   run,
@@ -180,6 +182,7 @@ export function SoldPack({
   customer: Customer;
   opportunity: Opportunity;
   mode: "pack" | "mvr2";
+  variant?: SoldPackVariant;
   demo: boolean;
   busy: boolean;
   run: (c: Command, message?: string) => Promise<{ ok: boolean }>;
@@ -200,7 +203,8 @@ export function SoldPack({
     () => documentContext(workspace, customer, o),
     [workspace, customer, o],
   );
-  const form = mode === "mvr2" ? mvr2Form : soldForms[index],
+  const forms = useMemo(() => soldPackForms(variant), [variant]);
+  const form = mode === "mvr2" ? mvr2Form : forms[index],
     section = Number(paperwork.$mvr2?.section) || 1,
     values = formValues(form, context, paperwork, section);
   useEffect(() => {
@@ -260,7 +264,7 @@ export function SoldPack({
       }
       const bytes =
           mode === "pack"
-            ? await buildSoldPack(context, paperwork, template)
+            ? await buildSoldPack(context, paperwork, template, forms)
             : await buildMvr2(context, paperwork, template, test),
         blob = new Blob([new Uint8Array(bytes)], { type: "application/pdf" }),
         url = URL.createObjectURL(blob);
@@ -269,7 +273,7 @@ export function SoldPack({
       } else {
         const a = document.createElement("a");
         a.href = url;
-        a.download = `Drive-Max-${mode === "pack" ? "Sold-Pack" : test ? "MVR2-Alignment-Test" : "MVR2-Text-Only"}-${o.id.slice(0, 8)}.pdf`;
+        a.download = `Drive-Max-${mode === "pack" ? "Sold-Pack-" + variant : test ? "MVR2-Alignment-Test" : "MVR2-Text-Only"}-${o.id.slice(0, 8)}.pdf`;
         a.click();
       }
       setTimeout(() => URL.revokeObjectURL(url), 300000);
@@ -298,7 +302,9 @@ export function SoldPack({
       <header className="paperwork-head">
         <div>
           <span className="eyebrow">
-            {mode === "pack" ? "SOLD PACK" : "PREPRINTED FORM"}
+            {mode === "pack"
+              ? `SOLD ${variant === "with-trade" ? "WITH TRADE" : "WITHOUT TRADE"}`
+              : "PREPRINTED FORM"}
           </span>
           <h2>
             {mode === "pack" ? "Review, then print." : "MVR-2 text overlay"}
@@ -414,9 +420,11 @@ export function SoldPack({
         <aside className="paperwork-sidebar">
           {mode === "pack" ? (
             <>
-              <span className="eyebrow">13 FORMS · IN PRINT ORDER</span>
+              <span className="eyebrow">
+                {forms.length} FORMS · IN PRINT ORDER
+              </span>
               <nav aria-label="Sold pack forms">
-                {soldForms.map((f, i) => (
+                {forms.map((f, i) => (
                   <button
                     key={f.id}
                     className={i === index ? "selected" : ""}
@@ -500,7 +508,7 @@ export function SoldPack({
             <strong>{form.title}</strong>
             {mode === "pack" && (
               <span>
-                {index + 1} / {soldForms.length}
+                {index + 1} / {forms.length}
               </span>
             )}
           </div>
@@ -508,6 +516,13 @@ export function SoldPack({
             <p className="paperwork-hint">
               No matching saved Desking proposal. Deal amounts remain blank;
               save a proposal or enter the amounts on the forms.
+            </p>
+          )}
+          {form.id === "trade-MVR-63" && (
+            <p className="paperwork-hint">
+              MVR-63 cannot be used when a lienholder holds the title. Those
+              trades require the secure MVR-63A form. Verify the trade’s legal
+              owner and attorney before signing.
             </p>
           )}
           <PdfPage
@@ -534,7 +549,7 @@ export function SoldPack({
               </button>
               <button
                 className="btn small"
-                disabled={index === soldForms.length - 1}
+                disabled={index === forms.length - 1}
                 onClick={() => setIndex((i) => i + 1)}
               >
                 Next form

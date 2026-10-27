@@ -24,10 +24,13 @@ import {
 import {
   dayKey,
   canManage,
+  fullMoney,
   type Command,
   type Customer,
   type Workspace,
 } from "../lib/model";
+import { pendingTitleTotals, titleAmounts } from "../lib/title-clerk-money";
+import { titleFormGroups } from "../lib/title-form-catalog";
 import {
   calendarDays,
   checklistProgress,
@@ -124,6 +127,7 @@ export function TitleClerk(props: Props) {
   const urgentTags = tags.filter(
     (t) => tagTiming(t, today).expiring || tagTiming(t, today).expired,
   );
+  const totals = pendingTitleTotals(ws, cases);
   const matches = (c: TitleCase) =>
     search
       .toLowerCase()
@@ -164,7 +168,9 @@ export function TitleClerk(props: Props) {
           ? titleAge(c, today) >= 30
           : filter === "due"
             ? !!c.next_action_on && c.next_action_on <= today
-            : c.status === filter),
+            : filter === "missing_amounts"
+              ? titleAmounts(ws, c).total === null
+              : c.status === filter),
     )
     .sort((a, b) => a.sold_on.localeCompare(b.sold_on));
   const tagRows = tags
@@ -206,6 +212,76 @@ export function TitleClerk(props: Props) {
           <strong>{open.length}</strong>
           <span>deals in progress</span>
         </div>
+      </section>
+      <section
+        className="tc-money-panel"
+        aria-label="DMV amounts for all unfinished deals"
+      >
+        <div className="tc-section-heading">
+          <div>
+            <h3>DMV amounts on open deals</h3>
+            <p>
+              All {totals.count} unfinished title files, including files at DMV
+              and pending items.
+            </p>
+          </div>
+          <span className="tc-eyebrow">SAVED SALE AMOUNTS</span>
+        </div>
+        <div className="tc-money-grid">
+          <div>
+            <span>DMV fees due</span>
+            <output aria-label="Total DMV fees due">
+              {totals.fees === null ? "Not recorded" : fullMoney(totals.fees)}
+            </output>
+            <small>
+              Title / registration fees
+              {totals.missingFees > 0
+                ? ` · ${totals.missingFees} not recorded`
+                : ""}
+            </small>
+          </div>
+          <div>
+            <span>Taxes due</span>
+            <output aria-label="Total taxes due">
+              {totals.taxes === null ? "Not recorded" : fullMoney(totals.taxes)}
+            </output>
+            <small>
+              Highway-use tax + other verified taxes
+              {totals.missingTaxes > 0
+                ? ` · ${totals.missingTaxes} not recorded`
+                : ""}
+            </small>
+          </div>
+          <div>
+            <span>
+              {totals.missingDeals
+                ? "Known combined subtotal"
+                : "Combined total"}
+            </span>
+            <output aria-label="Combined DMV and tax total">
+              {totals.total === null ? "Not recorded" : fullMoney(totals.total)}
+            </output>
+            <small>Open-deal amounts before DMV payments</small>
+          </div>
+        </div>
+        {totals.missingDeals > 0 && (
+          <div className="tc-money-missing">
+            <span>
+              {totals.missingDeals}{" "}
+              {totals.missingDeals === 1 ? "deal needs" : "deals need"} saved
+              fee or tax amounts. Missing amounts are excluded from the totals.
+            </span>
+            <button
+              className="text-btn"
+              onClick={() => {
+                setSearch("");
+                switchPage("queue", "missing_amounts");
+              }}
+            >
+              Review deals <ArrowUpRight size={14} />
+            </button>
+          </div>
+        )}
       </section>
       <div className="tc-stats">
         <button onClick={() => switchPage("queue")}>
@@ -291,6 +367,9 @@ export function TitleClerk(props: Props) {
                   ))}
                   <option value="aging">30+ days old</option>
                   <option value="due">Follow-up due</option>
+                  <option value="missing_amounts">
+                    Missing fee / tax amounts
+                  </option>
                 </>
               )}
             </select>
@@ -518,6 +597,7 @@ function TitleCaseDetail({
     [revision, setRevision] = useState(c.revision),
     [dirty, setDirty] = useState(false),
     [error, setError] = useState(""),
+    [formSearch, setFormSearch] = useState(""),
     [printForms, setPrintForms] = useState<string[] | null>(null);
   useEffect(() => {
     if (!dirty) {
@@ -527,6 +607,7 @@ function TitleCaseDetail({
   }, [c, dirty]);
   const customer = ws.customers.find((x) => x.id === c.customer_id),
     opportunity = ws.opportunities.find((o) => o.id === c.opportunity_id);
+  const amounts = titleAmounts(ws, c);
   const progress = checklistProgress(draft),
     stale = dirty && c.revision !== revision;
   function change(values: Partial<typeof draft>) {
@@ -627,6 +708,29 @@ function TitleCaseDetail({
           )}
         </div>
       </section>
+      <div className="tc-deal-amounts" aria-label="This sale's DMV amounts">
+        <span>
+          DMV fees{" "}
+          <strong>
+            {amounts.fees === null ? "Not recorded" : fullMoney(amounts.fees)}
+          </strong>
+        </span>
+        <span>
+          Taxes{" "}
+          <strong>
+            {amounts.taxes === null ? "Not recorded" : fullMoney(amounts.taxes)}
+          </strong>
+        </span>
+        <span>
+          Combined{" "}
+          <strong>
+            {amounts.total === null
+              ? "Incomplete amounts"
+              : fullMoney(amounts.total)}
+          </strong>
+        </span>
+        <small>Saved sale amounts, before DMV payments.</small>
+      </div>
       {!active && (
         <div className="tc-notice">
           This sale was unwound. Its documents and history remain available;
@@ -882,22 +986,58 @@ function TitleCaseDetail({
                 Open archived copies in Documents for an unwound sale.
               </p>
             )}
-            <div className="tc-print-grid">
-              {dmvForms.map((f) => (
-                <button
-                  key={f.id}
-                  disabled={!active || !customer || !opportunity}
-                  onClick={() => setPrintForms([f.id])}
-                >
-                  <FileText size={23} />
-                  <strong>{f.label}</strong>
-                  <small>{f.detail}</small>
-                  <span>
-                    Preview & print <ArrowUpRight size={15} />
-                  </span>
-                </button>
-              ))}
-            </div>
+            <label className="tc-form-search">
+              <Search size={16} />
+              <input
+                type="search"
+                aria-label="Find DMV form"
+                placeholder="Find a form by name or MVR number…"
+                value={formSearch}
+                onChange={(e) => setFormSearch(e.target.value)}
+              />
+            </label>
+            {titleFormGroups.map((group) => {
+              const matches = group.forms.filter((f) =>
+                `${f.label} ${f.detail} ${f.help}`
+                  .toLowerCase()
+                  .replace(/[^a-z0-9]/g, "")
+                  .includes(formSearch.toLowerCase().replace(/[^a-z0-9]/g, "")),
+              );
+              return matches.length > 0 ? (
+                <section className="tc-form-group" key={group.label}>
+                  <h4>{group.label}</h4>
+                  <div className="tc-print-grid">
+                    {matches.map((f) => (
+                      <button
+                        key={f.id}
+                        disabled={!active || !customer || !opportunity}
+                        onClick={() => setPrintForms([f.id])}
+                      >
+                        <FileText size={23} />
+                        <strong>{f.label}</strong>
+                        <small>{f.detail}</small>
+                        <p>{f.help}</p>
+                        <span>
+                          Preview & print <ArrowUpRight size={15} />
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              ) : null;
+            })}
+            {!titleFormGroups.some((g) =>
+              g.forms.some((f) =>
+                `${f.label} ${f.detail} ${f.help}`
+                  .toLowerCase()
+                  .replace(/[^a-z0-9]/g, "")
+                  .includes(formSearch.toLowerCase().replace(/[^a-z0-9]/g, "")),
+              ),
+            ) && (
+              <p className="tc-notice">
+                No matching forms. Try an MVR number or “lien”.
+              </p>
+            )}
             <p className="tc-muted">
               A reprinted form needs any required signatures. Previously
               uploaded signed copies stay in Documents.
@@ -947,8 +1087,8 @@ function TitleCaseDetail({
           workspace={ws}
           customer={customer}
           opportunity={opportunity}
-          mode="pack"
-          formIds={printForms}
+          mode={printForms[0] === "MVR-2" ? "mvr2" : "pack"}
+          formIds={printForms[0] === "MVR-2" ? undefined : printForms}
           titleCaseId={c.id}
           demo={demo}
           busy={busy}

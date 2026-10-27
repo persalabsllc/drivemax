@@ -4,6 +4,124 @@
   min-width: 0;
   color: #293a50;
 }
+.tc-money-panel {
+  background: #fff;
+  border: 1px solid #dce5f1;
+  border-radius: 15px;
+  padding: 23px 26px;
+  box-shadow: 0 5px 18px #38537b09;
+}
+.tc-money-panel .tc-section-heading {
+  margin-bottom: 18px;
+}
+.tc-money-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.tc-money-grid > div {
+  display: grid;
+  gap: 9px;
+  padding: 18px 20px;
+  border: 1px solid #dce8f4;
+  border-radius: 12px;
+  background: linear-gradient(120deg, #fafcff, #f0f6fd);
+}
+.tc-money-grid > div:nth-child(2) {
+  border-color: #e5ddf1;
+  background: linear-gradient(120deg, #fefcff, #f5f0fc);
+}
+.tc-money-grid > div:nth-child(3) {
+  border-color: #d4e9e2;
+  background: linear-gradient(120deg, #fbfffd, #edf7f3);
+}
+.tc-money-grid span {
+  font-size: 11px;
+  color: #637a95;
+  font-weight: 650;
+}
+.tc-money-grid output {
+  font-size: clamp(19px, 2.2vw, 29px);
+  color: #3d5e84;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.7px;
+  overflow-wrap: anywhere;
+}
+.tc-money-grid > div:nth-child(2) output {
+  color: #77608f;
+}
+.tc-money-grid > div:nth-child(3) output {
+  color: #387f6b;
+}
+.tc-money-grid small {
+  font-size: 10px;
+  color: #8996a8;
+  line-height: 1.6;
+}
+.tc-money-missing {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  margin-top: 17px;
+  font-size: 11px;
+  color: #a57238;
+  line-height: 1.6;
+}
+.tc-deal-amounts {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 16px 24px;
+  border: 1px solid #e0e7f1;
+  border-radius: 12px;
+  background: #fff;
+  font-size: 10px;
+  color: #8191a7;
+}
+.tc-deal-amounts strong {
+  display: block;
+  margin-top: 5px;
+  color: #4c6b90;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.tc-deal-amounts small {
+  margin-left: auto;
+  font-size: 10px;
+}
+@media (max-width: 800px) {
+  .tc-money-panel {
+    padding: 20px;
+  }
+  .tc-money-grid {
+    gap: 10px;
+  }
+  .tc-money-grid > div {
+    padding: 14px;
+  }
+}
+@media (max-width: 520px) {
+  .tc-money-grid {
+    grid-template-columns: 1fr;
+  }
+  .tc-money-grid > div {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
+  .tc-money-grid small {
+    grid-column: 1 / -1;
+  }
+  .tc-money-panel .tc-eyebrow {
+    display: none;
+  }
+  .tc-deal-amounts small {
+    margin: 0;
+    width: 100%;
+  }
+}
 .tc-hero {
   display: flex;
   align-items: center;
@@ -647,6 +765,51 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 15px;
   margin: 22px 0;
+}
+.tc-form-search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid #dce5f1;
+  border-radius: 10px;
+  padding: 0 12px;
+  max-width: 480px;
+  color: #8295ad;
+}
+.tc-form-search input {
+  width: 100%;
+  padding: 12px 0;
+  border: 0;
+  background: transparent;
+  color: #4c6587;
+  font: inherit;
+  font-size: 12px;
+}
+.tc-form-search:focus-within {
+  outline: 2px solid #97b4d5;
+  outline-offset: 2px;
+}
+.tc-form-search input:focus {
+  outline: none;
+}
+.tc-form-group {
+  margin-top: 25px;
+}
+.tc-form-group h4 {
+  margin: 0 0 12px;
+  color: #607b9b;
+  font-size: 12px;
+  font-weight: 600;
+}
+.tc-print-grid p {
+  margin: 0;
+  color: #7b8da4;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+.tc-print-grid button > span {
+  margin-top: auto;
 }
 .tc-print-grid button {
   display: grid;

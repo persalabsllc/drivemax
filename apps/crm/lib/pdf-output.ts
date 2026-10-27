@@ -93,7 +93,10 @@ export async function buildSoldPack(
         else field.uncheck();
       } else if (field instanceof PDFTextField) {
         const label = spec.title + " / " + f.label,
-          text = printable(String(value ?? ""), label);
+          text = printable(
+            f.textCheckbox ? (value === true ? "X" : "") : String(value ?? ""),
+            label,
+          );
         field.setText(text);
         if (f.multiline) field.enableMultiline();
         field.setFontSize(fittedSize(text, f, font, label));

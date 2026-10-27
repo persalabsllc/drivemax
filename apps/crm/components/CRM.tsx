@@ -13,7 +13,6 @@ import { IntegrationSettings } from "./IntegrationSettings";
 import { PushSettings } from "./PushSettings";
 import {
   FolderLock,
-  Bell,
   LayoutDashboard,
   Users,
   DoorOpen,
@@ -95,6 +94,7 @@ import {
   type Appointment,
 } from "../lib/appointments";
 import { AttentionCenter, useAttention } from "./Attention";
+import { AttentionBell } from "./AttentionBell";
 import type { AttentionItem } from "../lib/attention";
 import { TaskAction, MessageComposer, type Compose } from "./Communications";
 import { CustomerSearch } from "./CustomerSearch";
@@ -638,19 +638,13 @@ export default function CRM({
                   }}
                 />
               </label>
-              <button
-                className={`attention-bell ${alerts.feed.total ? "has-alerts" : ""}`}
-                aria-label={`${alerts.feed.total} items need attention${alerts.error ? ". Alerts could not refresh" : ""}`}
-                onClick={() => {
-                  setSelected(null);
-                  navigate("Overview");
-                }}
-              >
-                <Bell size={18} />
-                <span aria-live="polite">
-                  {alerts.error ? "!" : alerts.feed.total}
-                </span>
-              </button>
+              <AttentionBell
+                feed={alerts.feed}
+                error={alerts.error}
+                busy={busy}
+                onOpen={openAttention}
+                onRefresh={alerts.reload}
+              />
               <button
                 className="icon-btn refresh-btn"
                 aria-label="Refresh workspace"

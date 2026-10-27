@@ -7,6 +7,7 @@ import { verifyInventoryWebsite } from "./verify-inventory-website.mjs";
 import { verifyEmail } from "./verify-email.mjs";
 import { verifyWorkflows } from "./verify-workflows.mjs";
 import { verifyAppraisals } from "./verify-appraisals.mjs";
+import { verifyTitleClerk } from "./verify-title-clerk.mjs";
 import { verifyFacebook } from "./verify-facebook.mjs";
 import { verifyDocumentVault } from "./verify-document-vault.mjs";
 import { setupWorkflowScheduler } from "./setup-workflow-scheduler.mjs";
@@ -87,8 +88,14 @@ if (process.env.VERCEL_ENV === "production") {
     await verifyWorkflows(client);
     await verifyAppraisals(client);
     await verifyDocumentVault(client);
+    await verifyTitleClerk(client);
+    console.log(
+      "Verified title clerk: automatic sold queue, tag history, private document links and resale isolation; all fixtures rolled back.",
+    );
     await verifyFacebook(client);
-    console.log("Verified Facebook intake: retry deduplication and repeat messages, with all fixtures rolled back.");
+    console.log(
+      "Verified Facebook intake: retry deduplication and repeat messages, with all fixtures rolled back.",
+    );
     console.log(
       "Verified document vault with rolled-back fixtures: private storage, historical stock/VIN, idempotent filing and retention protection.",
     );

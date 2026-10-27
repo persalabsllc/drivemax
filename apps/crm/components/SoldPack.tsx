@@ -30,6 +30,8 @@ import {
   type PaperValues,
   type FormField,
 } from "../lib/documents";
+import { uploadDocument } from "../lib/document-upload";
+import { dayKey } from "../lib/model";
 import { buildSoldPack, buildMvr2 } from "../lib/pdf-output";
 const cache = new Map<string, Promise<Uint8Array>>();
 function template(f: FormTemplate) {
@@ -174,6 +176,8 @@ export function SoldPack({
   opportunity: o,
   mode,
   variant = "without-trade",
+  formIds,
+  titleCaseId,
   demo,
   busy,
   run,
@@ -184,6 +188,8 @@ export function SoldPack({
   opportunity: Opportunity;
   mode: "pack" | "mvr2";
   variant?: SoldPackVariant;
+  formIds?: readonly string[];
+  titleCaseId?: string;
   demo: boolean;
   busy: boolean;
   run: (c: Command, message?: string) => Promise<{ ok: boolean }>;
@@ -206,7 +212,10 @@ export function SoldPack({
     () => documentContext(workspace, customer, o),
     [workspace, customer, o],
   );
-  const forms = useMemo(() => soldPackForms(variant), [variant]);
+  const forms = useMemo(() => {
+    const all = soldPackForms(variant);
+    return formIds?.length ? all.filter((f) => formIds.includes(f.id)) : all;
+  }, [variant, formIds]);
   const form = mode === "mvr2" ? mvr2Form : forms[index],
     section = Number(paperwork.$mvr2?.section) || 1,
     values = formValues(form, context, paperwork, section);
@@ -272,24 +281,59 @@ export function SoldPack({
         blob = new Blob([new Uint8Array(bytes)], { type: "application/pdf" }),
         url = URL.createObjectURL(blob);
       if (mode === "pack" && archivePacket && !demo) {
-        const data = new FormData();
-        data.set(
-          "file",
-          blob,
-          `Drive-Max-Sold-Pack-${variant}-${new Date().toISOString().slice(0, 10)}.pdf`,
-        );
-        data.set("customer_id", customer.id);
-        data.set("opportunity_id", o.id);
-        data.set("kind", "packet");
-        const r = await fetch("/api/deal-files", {
-          method: "POST",
-          body: data,
-        });
-        if (!r.ok) {
+        try {
+          if (titleCaseId) {
+            const file = new File(
+              [blob],
+              `Drive-Max-DMV-${formIds?.length === 1 ? formIds[0] : "Packet"}-${dayKey()}.pdf`,
+              { type: "application/pdf" },
+            );
+            const saved = await uploadDocument(file, {
+              customer_id: customer.id,
+              opportunity_id: o.id,
+              inventory_id: null,
+              kind: "title",
+              document_date: dayKey(),
+              notes:
+                "Generated DMV paperwork; review and obtain required signatures.",
+            });
+            const linked = await run(
+              {
+                type: "attach_title_document",
+                id: titleCaseId,
+                file_id: saved.id,
+                purpose: "supporting",
+              },
+              "DMV copy archived",
+            );
+            if (!linked.ok)
+              throw Error(
+                "The PDF is saved in Document Vault. Attach it from the title file’s Documents tab, or uncheck archive to print without another copy.",
+              );
+          } else {
+            const data = new FormData();
+            data.set(
+              "file",
+              blob,
+              `Drive-Max-${formIds ? "DMV" : "Sold-Pack-" + variant}-${new Date().toISOString().slice(0, 10)}.pdf`,
+            );
+            data.set("customer_id", customer.id);
+            data.set("opportunity_id", o.id);
+            data.set("kind", "packet");
+            const r = await fetch("/api/deal-files", {
+              method: "POST",
+              body: data,
+            });
+            if (!r.ok) {
+              URL.revokeObjectURL(url);
+              throw Error(
+                "The packet could not be archived. Try again, or uncheck archive to print without saving a copy.",
+              );
+            }
+          }
+        } catch (e) {
           URL.revokeObjectURL(url);
-          throw Error(
-            "The packet could not be archived. Try again, or uncheck archive to print without saving a copy.",
-          );
+          throw e;
         }
       }
       if (win) {
@@ -297,7 +341,7 @@ export function SoldPack({
       } else {
         const a = document.createElement("a");
         a.href = url;
-        a.download = `Drive-Max-${mode === "pack" ? "Sold-Pack-" + variant : test ? "MVR2-Alignment-Test" : "MVR2-Text-Only"}-${o.id.slice(0, 8)}.pdf`;
+        a.download = `Drive-Max-${mode === "pack" ? (formIds ? "DMV" : "Sold-Pack-" + variant) : test ? "MVR2-Alignment-Test" : "MVR2-Text-Only"}-${o.id.slice(0, 8)}.pdf`;
         a.click();
       }
       setTimeout(() => URL.revokeObjectURL(url), 300000);
@@ -317,7 +361,13 @@ export function SoldPack({
     <dialog
       ref={dialog}
       className="paperwork-modal"
-      aria-label={mode === "pack" ? "Sold pack preview" : "MVR-2 print preview"}
+      aria-label={
+        mode === "pack"
+          ? formIds
+            ? "DMV document preview"
+            : "Sold pack preview"
+          : "MVR-2 print preview"
+      }
       onCancel={(e) => {
         e.preventDefault();
         close();
@@ -327,7 +377,9 @@ export function SoldPack({
         <div>
           <span className="eyebrow">
             {mode === "pack"
-              ? `SOLD ${variant === "with-trade" ? "WITH TRADE" : "WITHOUT TRADE"}`
+              ? formIds
+                ? "DMV PAPERWORK"
+                : `SOLD ${variant === "with-trade" ? "WITH TRADE" : "WITHOUT TRADE"}`
               : "PREPRINTED FORM"}
           </span>
           <h2>

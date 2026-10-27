@@ -1,6 +1,8 @@
 "use client";
 import { useState, useMemo, useEffect } from "react";
 import { WorkToday } from "./WorkToday";
+import { TitleClerk } from "./TitleClerk";
+import { seedTitleClerk } from "../lib/title-clerk-demo";
 import { DocumentVault } from "./DocumentVault";
 import { Appraisals } from "./Appraisals";
 import { OverviewFunnel } from "./OverviewFunnel";
@@ -116,6 +118,7 @@ type View =
   | "Showroom"
   | "Planner"
   | "Desking"
+  | "Title Clerk"
   | "Document Vault"
   | "Appraisals"
   | "Trade-ins"
@@ -133,6 +136,7 @@ const nav = [
   { name: "Inventory", icon: Car },
   { name: "Trade-ins", icon: RefreshCw },
   { name: "Appraisals", icon: Car },
+  { name: "Title Clerk", icon: ShieldCheck },
   { name: "Document Vault", icon: FolderLock },
   { name: "Accounting", icon: TrendingUp },
   { name: "Sales reports", icon: Target },
@@ -157,7 +161,9 @@ export default function CRM({
   demo: boolean;
 }) {
   const [ws, setWs] = useState(() =>
-      demo ? seedSalesWorkspace(seedOperations(initial)) : initial,
+      demo
+        ? seedTitleClerk(seedSalesWorkspace(seedOperations(initial)))
+        : initial,
     ),
     [view, setView] = useState<View>("Overview"),
     [search, setSearch] = useState(""),
@@ -351,7 +357,9 @@ export default function CRM({
             ? "Emails"
             : item.channel === "sms"
               ? "Texts"
-              : item.channel === "facebook" ? "Facebook" : "Activity",
+              : item.channel === "facebook"
+                ? "Facebook"
+                : "Activity",
         );
       }
     } catch (e) {
@@ -717,6 +725,8 @@ export default function CRM({
                         "A thoughtful follow-up starts with a clear plan.",
                       Desking:
                         "Build the proposal. Keep the history. Move the deal forward.",
+                      "Title Clerk":
+                        "From sold deal to completed title. Every step, document and temporary tag.",
                       "Document Vault":
                         "Private paperwork, organized by customer and vehicle.",
                       Appraisals:
@@ -748,7 +758,8 @@ export default function CRM({
                 )}
                 {!quickQuoteOpen &&
                   view !== "Workspace" &&
-                  view !== "Document Vault" && (
+                  view !== "Document Vault" &&
+                  view !== "Title Clerk" && (
                     <button
                       className={view === "Desking" ? "btn" : "btn primary"}
                       onClick={() => {
@@ -1267,6 +1278,16 @@ export default function CRM({
                 </div>
               </section>
             )}
+            {view === "Title Clerk" && (
+              <TitleClerk
+                ws={ws}
+                demo={demo}
+                run={run}
+                busy={busy}
+                onRefresh={refresh}
+                onCustomer={openCustomer}
+              />
+            )}
             {view === "Document Vault" && (
               <DocumentVault
                 ws={ws}
@@ -1290,7 +1311,13 @@ export default function CRM({
                 query={search}
                 onOpen={(c, channel) => {
                   openCustomer(c);
-                  setProfileTab(channel === "facebook" ? "Facebook" : channel === "sms" ? "Texts" : "Emails");
+                  setProfileTab(
+                    channel === "facebook"
+                      ? "Facebook"
+                      : channel === "sms"
+                        ? "Texts"
+                        : "Emails",
+                  );
                 }}
               />
             )}

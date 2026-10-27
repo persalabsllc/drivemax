@@ -148,13 +148,42 @@ export async function buildInventoryPrintPdf(
 
   if (options.sticker && logoBytes) {
     const page = pdf.addPage([612, 792]);
-    const logo = await pdf.embedPng(logoBytes);
-    const imageSize = logo.scaleToFit(192, 96);
-    page.drawImage(logo, {
-      x: 36,
-      y: 792 - 33 - imageSize.height,
-      ...imageSize,
-    });
+    const white = rgb(1, 1, 1),
+      pale = rgb(0.95, 0.955, 0.96),
+      rule = rgb(0.72, 0.75, 0.78);
+    const specs = options.specifications;
+    const rectangle = (
+      x: number,
+      top: number,
+      width: number,
+      height: number,
+      fill = white,
+      border = rule,
+      weight = 0.6,
+    ) =>
+      page.drawRectangle({
+        x,
+        y: 792 - top - height,
+        width,
+        height,
+        color: fill,
+        borderColor: border,
+        borderWidth: weight,
+      });
+    const line = (
+      x: number,
+      top: number,
+      endX: number,
+      endTop: number,
+      color = rule,
+      thickness = 0.6,
+    ) =>
+      page.drawLine({
+        start: { x, y: 792 - top },
+        end: { x: endX, y: 792 - endTop },
+        color,
+        thickness,
+      });
     const put = (
       value: string,
       x: number,
@@ -177,206 +206,377 @@ export async function buildInventoryPrintPdf(
         color,
         min,
       });
-    put(
-      options.dealerName,
-      284,
-      45,
-      292,
-      30,
-      13,
-      "Dealer name",
-      true,
-      navy,
-      10,
-    );
+    const section = (
+      title: string,
+      x: number,
+      top: number,
+      width: number,
+      height: number,
+    ) => {
+      rectangle(x, top, width, height);
+      rectangle(x, top, width, 23, pale, rule);
+      rectangle(x, top, 4, 23, red, red, 0);
+      put(title, x + 12, top + 6, width - 24, 12, 9, title, true);
+    };
+
+    // A restrained, dealership-style frame stays crisp in color or grayscale.
+    rectangle(24, 24, 564, 744, white, navy, 1.2);
+    rectangle(29, 29, 554, 734, white, rule, 0.35);
+    rectangle(24, 24, 564, 5, red, red, 0);
+    const logo = await pdf.embedPng(logoBytes);
+    const imageSize = logo.scaleToFit(187, 68);
+    page.drawImage(logo, {
+      x: 43,
+      y: 792 - 40 - imageSize.height,
+      ...imageSize,
+    });
+    put(options.dealerName, 268, 43, 300, 20, 12, "Dealer name", true, navy, 9);
     put(
       options.address,
-      284,
-      80,
-      292,
-      28,
-      10,
+      268,
+      68,
+      300,
+      25,
+      9,
       "Dealer address",
       false,
       muted,
-      9,
+      8,
     );
-    put(options.phone, 284, 113, 292, 17, 12, "Dealer phone", true);
-    page.drawLine({
-      start: { x: 36, y: 646 },
-      end: { x: 576, y: 646 },
-      thickness: 2,
-      color: red,
-    });
-    put("PRE-OWNED VEHICLE", 36, 164, 540, 14, 10, "Heading", true, red);
+    put(options.phone, 268, 96, 200, 14, 11, "Dealer phone", true);
+    line(36, 118, 576, 118, red, 2);
+    for (let i = 0; i < 4; i++)
+      line(529 + i * 11, 108, 535 + i * 11, 98, red, 3);
+
+    rectangle(36, 131, 540, 87, navy, navy, 0);
     put(
-      `${vehicle.year} ${vehicle.make}\n${vehicle.model}`,
-      36,
-      190,
-      540,
-      94,
-      34,
-      "Vehicle name",
-      true,
-      navy,
-      22,
-    );
-    put(
-      vehicle.trim || "",
-      36,
-      287,
-      540,
+      `${vehicle.year} ${vehicle.make.toUpperCase()}`,
+      49,
+      141,
+      365,
       20,
       14,
-      "Vehicle trim",
-      false,
-      muted,
+      "Year and make",
+      true,
+      white,
       10,
     );
+    put(vehicle.model, 48, 162, 365, 34, 29, "Vehicle model", true, white, 16);
+    put(
+      vehicle.trim || "PRE-OWNED VEHICLE",
+      49,
+      199,
+      365,
+      13,
+      10,
+      "Vehicle trim",
+      false,
+      white,
+      8,
+    );
+    line(429, 145, 429, 204, rgb(0.4, 0.45, 0.5), 0.7);
+    put("STOCK NUMBER", 443, 146, 119, 10, 7, "Stock label", true, white);
+    put(
+      vehicle.stock_number,
+      443,
+      160,
+      119,
+      20,
+      13,
+      "Stock number",
+      true,
+      white,
+      8,
+    );
+    put(
+      `${vehicle.mileage.toLocaleString("en-US")} miles`,
+      443,
+      190,
+      119,
+      17,
+      11,
+      "Mileage",
+      true,
+      white,
+      8,
+    );
+    put(`VIN  ${vehicle.vin}`, 43, 229, 309, 14, 10, "VIN", true);
+    put(
+      `COLOR  ${vehicle.color || "Not listed"}`,
+      365,
+      229,
+      204,
+      14,
+      9,
+      "Exterior color",
+      false,
+      muted,
+      8,
+    );
 
+    section("VEHICLE SPECIFICATIONS", 36, 256, 328, 136);
     const fact = (
       label: string,
-      value: string,
+      val: string,
       x: number,
       top: number,
       width: number,
     ) => {
+      put(label, x, top, width, 9, 6.7, `${label} label`, true, muted);
       put(
-        label.toUpperCase(),
+        val || "Not listed",
         x,
-        top,
+        top + 11,
         width,
-        12,
-        8,
-        "Field label",
+        20,
+        10,
+        label,
+        true,
+        navy,
+        7.5,
+      );
+    };
+    fact("ENGINE", specs.engine, 48, 287, 151);
+    fact(
+      "HORSEPOWER",
+      specs.horsepower ? `${specs.horsepower} hp` : "",
+      214,
+      287,
+      137,
+    );
+    line(48, 319, 352, 319, rule, 0.35);
+    fact("TRANSMISSION", specs.transmission, 48, 324, 151);
+    fact("DRIVETRAIN", specs.drivetrain, 214, 324, 137);
+    line(48, 356, 352, 356, rule, 0.35);
+    fact("FUEL TYPE", specs.fuel, 48, 361, 151);
+    fact("BODY STYLE", specs.body, 214, 361, 137);
+
+    const hasEconomy = !!(
+      specs.cityMpg ||
+      specs.highwayMpg ||
+      specs.combinedMpg
+    );
+    section(
+      specs.epaId && hasEconomy ? "EPA FUEL ECONOMY" : "FUEL ECONOMY",
+      376,
+      256,
+      200,
+      136,
+    );
+    if (hasEconomy) {
+      const cells = [
+        ["CITY", specs.cityMpg],
+        ["COMBINED", specs.combinedMpg],
+        ["HIGHWAY", specs.highwayMpg],
+      ];
+      cells.forEach(([label, val], i) => {
+        const x = 387 + i * 62;
+        put(
+          val || "--",
+          x,
+          287,
+          58,
+          34,
+          i === 1 ? 30 : 26,
+          `${label} economy`,
+          true,
+          i === 1 ? red : navy,
+          20,
+        );
+        put(label, x, 324, 58, 10, 7, `${label} economy label`, true, muted);
+      });
+      line(388, 341, 564, 341, rule, 0.5);
+      put(
+        `${specs.economyUnit} · ${specs.economyFuel || specs.fuel || "Fuel economy"}`,
+        388,
+        348,
+        176,
+        25,
+        9,
+        "Rating units and fuel",
+        true,
+        navy,
+        7.5,
+      );
+      put(
+        "Actual mileage will vary.",
+        388,
+        377,
+        176,
+        10,
+        7,
+        "Mileage disclaimer",
+        false,
+        muted,
+      );
+    } else {
+      put(
+        "RATINGS NOT LISTED",
+        390,
+        300,
+        170,
+        16,
+        11,
+        "Unavailable economy",
         true,
         muted,
       );
       put(
-        value || "Not specified",
-        x,
-        top + 17,
-        width,
-        25,
-        13,
-        label,
-        true,
-        navy,
+        "Ask our team for fuel-economy information on this vehicle.",
+        390,
+        332,
+        170,
+        38,
         9,
-      );
-    };
-    fact("Stock number", vehicle.stock_number, 36, 326, 255);
-    fact(
-      "Mileage",
-      `${vehicle.mileage.toLocaleString("en-US")} miles`,
-      321,
-      326,
-      255,
-    );
-    fact("VIN", vehicle.vin, 36, 382, 255);
-    fact("Exterior color", vehicle.color, 321, 382, 255);
-
-    page.drawRectangle({
-      x: 36,
-      y: 792 - 446 - 150,
-      width: 540,
-      height: 150,
-      color: rgb(0.95, 0.96, 0.97),
-      borderColor: rgb(0.87, 0.89, 0.91),
-      borderWidth: 0.7,
-    });
-    put("TOTAL ASKING PRICE", 56, 463, 500, 18, 11, "Price label", true, muted);
-    put(
-      currency(stickerTotal(options.price, options.administrationFee)),
-      56,
-      487,
-      500,
-      63,
-      52,
-      "Total asking price",
-      true,
-      navy,
-      40,
-    );
-    put(
-      `Vehicle price ${currency(options.price)}  +  Dealer administration fee ${currency(options.administrationFee)}`,
-      56,
-      558,
-      500,
-      26,
-      10,
-      "Price itemization",
-      false,
-      muted,
-      9,
-    );
-
-    if (options.highlights) {
-      put(
-        "VEHICLE HIGHLIGHTS",
-        36,
-        618,
-        540,
-        14,
-        9,
-        "Highlights heading",
-        true,
-        red,
-      );
-      put(
-        options.highlights,
-        36,
-        640,
-        540,
-        62,
-        11,
-        "Vehicle highlights",
-        false,
-        navy,
-        9,
-      );
-    } else {
-      put(
-        "LET'S FIND YOUR NEXT DRIVE.",
-        36,
-        627,
-        540,
-        25,
-        18,
-        "Footer heading",
-        true,
-      );
-      put(
-        "Ask our team about this vehicle and available protection options.",
-        36,
-        662,
-        540,
-        25,
-        11,
-        "Footer message",
+        "Economy information",
         false,
         muted,
       );
     }
-    page.drawLine({
-      start: { x: 36, y: 77 },
-      end: { x: 576, y: 77 },
-      thickness: 0.7,
-      color: rgb(0.82, 0.85, 0.88),
-    });
-    put(options.website, 36, 727, 300, 17, 12, "Dealer website", true, red, 9);
-    put(options.phone, 365, 727, 211, 17, 12, "Dealer phone", true);
+
+    section("FEATURES & EQUIPMENT", 36, 406, 540, 153);
+    const features = specs.features
+      .split(/\r?\n/)
+      .map((value) => value.trim())
+      .filter(Boolean);
+    if (features.length) {
+      const rows = Math.ceil(features.length / 2);
+      const spacing = Math.min(34, 114 / rows);
+      features.forEach((feature, i) => {
+        const column = i < rows ? 0 : 1,
+          row = i < rows ? i : i - rows;
+        const x = 49 + column * 266,
+          top = 438 + row * spacing;
+        page.drawCircle({ x: x + 2, y: 792 - top - 6, size: 1.8, color: red });
+        put(
+          feature,
+          x + 11,
+          top,
+          238,
+          18,
+          10,
+          "Equipment item",
+          false,
+          navy,
+          7.5,
+        );
+      });
+      line(306, 439, 306, 547, rule, 0.35);
+    } else {
+      put(
+        "GET TO KNOW YOUR NEXT VEHICLE.",
+        50,
+        450,
+        500,
+        24,
+        17,
+        "Equipment introduction",
+        true,
+      );
+      put(
+        "Explore the comfort, technology and safety equipment in person.\nAsk our team for a walkaround and a test drive.",
+        50,
+        487,
+        495,
+        44,
+        11,
+        "Equipment fallback",
+        false,
+        muted,
+      );
+    }
+    put(
+      options.highlights
+        ? "VEHICLE HIGHLIGHTS"
+        : "YOUR NEXT DRIVE STARTS HERE.",
+      43,
+      573,
+      526,
+      14,
+      9,
+      "Highlights heading",
+      true,
+      red,
+    );
+    put(
+      options.highlights ||
+        "See it. Drive it. Make it yours. Ask our team about this vehicle and available protection options.",
+      43,
+      591,
+      526,
+      40,
+      10,
+      "Vehicle highlights",
+      false,
+      navy,
+      8,
+    );
+
+    rectangle(36, 641, 540, 76, pale, navy, 1);
+    rectangle(36, 641, 5, 76, red, red, 0);
+    put(
+      "PRICE BREAKDOWN",
+      50,
+      652,
+      225,
+      12,
+      8,
+      "Price breakdown heading",
+      true,
+      muted,
+    );
+    put(
+      `Vehicle price ${currency(options.price)}\nDealer administration fee ${currency(options.administrationFee)}`,
+      50,
+      671,
+      235,
+      30,
+      9,
+      "Price itemization",
+      false,
+      navy,
+      8,
+    );
+    put("TOTAL ASKING PRICE", 305, 650, 257, 13, 9, "Price label", true, muted);
+    put(
+      currency(stickerTotal(options.price, options.administrationFee)),
+      302,
+      669,
+      260,
+      42,
+      37,
+      "Total asking price",
+      true,
+      red,
+      26,
+    );
+    put(options.website, 43, 728, 303, 15, 11, "Dealer website", true, navy, 8);
+    put(options.phone, 378, 728, 193, 15, 11, "Dealer phone", true, navy, 8);
     put(
       "Excludes tax, title and registration. Optional products cost extra. See Buyers Guide for warranty terms.",
-      36,
-      755,
-      540,
-      17,
-      8,
+      43,
+      746,
+      526,
+      10,
+      7,
       "Price disclosure",
       false,
       muted,
     );
+    const sources = [
+      specs.vinDecoded
+        ? "VIN specs: NHTSA + dealer entries."
+        : "Specs: dealer-provided.",
+      hasEconomy
+        ? specs.epaId
+          ? `EPA rating: FuelEconomy.gov #${specs.epaId}.`
+          : "Economy: dealer-provided."
+        : "",
+      "Verify equipment. Dealer window sticker.",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    put(sources, 43, 756, 526, 9, 6, "Specifications source", false, muted);
     // With duplex printing, preserve a separate sticker and a two-sided Guide.
     if (options.buyersGuide) pdf.addPage([612, 792]);
   }

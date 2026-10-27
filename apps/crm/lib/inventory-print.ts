@@ -1,5 +1,9 @@
 import { z } from "zod";
 import { vinSchema, type InventoryVehicle } from "./vehicles";
+import {
+  emptyStickerSpecs,
+  stickerSpecsSchema,
+} from "./vehicle-specifications";
 
 // Public vehicle fields only. Never pass acquisition costs, recon, or deal data
 // to a customer-facing document.
@@ -33,6 +37,7 @@ export const printMaterialsSchema = z
     price: numericText("vehicle price", 1000000),
     administrationFee: numericText("administration fee", 10000),
     highlights: text("Vehicle highlights", 500),
+    specifications: stickerSpecsSchema.default(emptyStickerSpecs),
     warranty: z.enum(["dealer", "as_is", "implied"]),
     warrantyType: z.enum(["limited", "full"]),
     labor: numericText("labor percentage", 100),
@@ -83,6 +88,7 @@ export function defaultPrintMaterials(
     // Same itemization as the website's lib/vehicle-pricing.ts.
     administrationFee: "399",
     highlights: "",
+    specifications: emptyStickerSpecs(),
     warranty: "dealer",
     warrantyType: "limited",
     labor: "100",

@@ -1,9 +1,30 @@
+import {
+  titleClerkCommands,
+  type TitleCase,
+  type TempTag,
+  type TitleDocument,
+  type TitleEvent,
+} from "./title-clerk";
+import { demoTitleClerk, seedTitleClerk } from "./title-clerk-demo";
 import type { FacebookMessage } from "./facebook";
 import { attentionCommand } from "./attention-schema";
 import { appraisalCommands, type Appraisal } from "./appraisals";
 import { demoAppraisal } from "./appraisals-demo";
-import { workflowCommands, type WorkflowRule, type WorkflowJob, type WorkflowPause, type WorkflowHealth } from "./workflows";
-import { salesWorkCommands, type DealProgress, type BuyerPreference, type InventoryPrep, type SalesEvent, type DealFile } from "./sales-work";
+import {
+  workflowCommands,
+  type WorkflowRule,
+  type WorkflowJob,
+  type WorkflowPause,
+  type WorkflowHealth,
+} from "./workflows";
+import {
+  salesWorkCommands,
+  type DealProgress,
+  type BuyerPreference,
+  type InventoryPrep,
+  type SalesEvent,
+  type DealFile,
+} from "./sales-work";
 import { demoSalesWork } from "./sales-work-demo";
 import type { AttentionFeed } from "./attention";
 import type { WebsiteInventoryLink } from "./website-inventory";
@@ -202,6 +223,10 @@ export type Staff = Partial<Omit<StaffDetails, "role" | "name" | "email">> & {
 export const canManage = (role: string) =>
   role === "owner" || role === "manager";
 export type Workspace = {
+  title_cases?: TitleCase[];
+  temp_tags?: TempTag[];
+  title_documents?: TitleDocument[];
+  title_events?: TitleEvent[];
   appraisals?: Appraisal[];
   workflow_rules?: WorkflowRule[];
   workflow_jobs?: WorkflowJob[];
@@ -396,9 +421,13 @@ export const opportunitySchema = z.object({
 });
 export const commandSchema = z.discriminatedUnion("type", [
   ...appraisalCommands,
-  z.object({ type: z.literal("save_profile_name"), profile: profileNameSchema }),
+  z.object({
+    type: z.literal("save_profile_name"),
+    profile: profileNameSchema,
+  }),
   ...workflowCommands,
   ...salesWorkCommands,
+  ...titleClerkCommands,
   ...emailCommands,
   z.object({
     type: z.literal("convert_quick_quote"),
@@ -516,12 +545,14 @@ export const visibleTasks = (ws: Workspace) =>
     : ws.tasks.filter((t) => t.assigned_to === myStaffId(ws));
 
 // Demo uses the same command contracts; it never writes live records.
-export function demoCommand(
+function demoCommandInner(
   ws: Workspace,
   command: Command,
   now = new Date(),
 ): Workspace {
   const parsed = commandSchema.parse(command);
+  const titleResult = demoTitleClerk(ws, parsed, now);
+  if (titleResult) return titleResult;
   const appraisalResult = demoAppraisal(ws, parsed, now);
   if (appraisalResult) return appraisalResult;
   const salesWorkResult = demoSalesWork(ws, parsed);
@@ -583,7 +614,7 @@ function baseDemoCommand(
   const manager = canManage(s.member.role),
     me = myStaffId(s);
   if (p.type === "save_profile_name") {
-    const staff = s.staff.find(m => m.id === me && m.active);
+    const staff = s.staff.find((m) => m.id === me && m.active);
     if (!staff) throw Error("Active team membership required");
     const name = `${p.profile.first_name} ${p.profile.last_name}`;
     Object.assign(staff, p.profile, { name });
@@ -1118,4 +1149,12 @@ function baseDemoCommand(
     });
   }
   return s;
+}
+
+export function demoCommand(
+  ws: Workspace,
+  command: Command,
+  now = new Date(),
+): Workspace {
+  return seedTitleClerk(demoCommandInner(ws, command, now));
 }

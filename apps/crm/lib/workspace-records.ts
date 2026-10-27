@@ -30,6 +30,10 @@ export const workspaceTables = [
   "deal_files",
   "appraisals",
   "facebook_messages",
+  "title_cases",
+  "temp_tags",
+  "title_documents",
+  "title_events",
 ] as const;
 export type WorkspaceRecords = Pick<
   Workspace,
@@ -50,14 +54,14 @@ export async function readWorkspaceRecords(
           table === "facebook_messages"
             ? "id,org_id,customer_id,opportunity_id,body,referral,received_at"
             : table === "sales" && !canManage(s.role)
-            ? "id,org_id,opportunity_id,customer_id,sold_on,status,unwound_at,unwind_reason"
-            : table === "staff" && !canManage(s.role)
-              ? "id,org_id,user_id,name,email,role,active,created_at"
-              : table === "deal_files"
-                ? "id,org_id,customer_id,opportunity_id,inventory_id,name,kind,size,created_at,created_by,customer_name,stock_number,vin,vehicle_label,document_date,notes,retain_until,sha256"
-                : table === "workflow_jobs"
-                  ? "id,org_id,rule_id,customer_id,opportunity_id,appointment_id,event,run_at,state,reason,message_id,task_id,created_at"
-                  : "*",
+              ? "id,org_id,opportunity_id,customer_id,sold_on,status,unwound_at,unwind_reason"
+              : table === "staff" && !canManage(s.role)
+                ? "id,org_id,user_id,name,email,role,active,created_at"
+                : table === "deal_files"
+                  ? "id,org_id,customer_id,opportunity_id,inventory_id,name,kind,size,created_at,created_by,customer_name,stock_number,vin,vehicle_label,document_date,notes,retain_until,sha256"
+                  : table === "workflow_jobs"
+                    ? "id,org_id,rule_id,customer_id,opportunity_id,appointment_id,event,run_at,state,reason,message_id,task_id,created_at"
+                    : "*",
         )
         .eq("org_id", s.org_id);
       if (table === "inventory" || table === "trades")
@@ -89,6 +93,17 @@ export async function readWorkspaceRecords(
       records.opportunities
         .filter((o) => o.assigned_to === s.staff_id)
         .map((o) => o.id),
+    );
+    records.title_cases = records.title_cases?.filter((c) =>
+      assigned.has(c.opportunity_id),
+    );
+    const cases = new Set(records.title_cases?.map((c) => c.id));
+    records.temp_tags = records.temp_tags?.filter((t) => cases.has(t.case_id));
+    records.title_documents = records.title_documents?.filter((d) =>
+      cases.has(d.case_id),
+    );
+    records.title_events = records.title_events?.filter((e) =>
+      cases.has(e.case_id),
     );
     records.deal_files = records.deal_files?.filter(
       (f) => f.opportunity_id && assigned.has(f.opportunity_id),

@@ -14,7 +14,10 @@ export async function GET() {
     const s = await session();
     if (!s) return json({ error: "Sign in to view alerts." }, 401);
     const feed = await attention(s);
-    if (feed.emailQueue?.pending) after(() => dispatchEmail(s.org_id));
+    if (feed.emailQueue?.pending)
+      after(async () => {
+        await dispatchEmail(s.org_id);
+      });
     return json(feed);
   } catch {
     return json({ error: "Alerts could not refresh. Try again." }, 503);

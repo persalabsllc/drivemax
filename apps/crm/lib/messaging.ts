@@ -47,16 +47,18 @@ export async function dispatchEmail(org: string, id?: string) {
     process.env.VERCEL_ENV !== "production" ||
     !process.env.CRM_EMAIL_WORKER_SECRET
   )
-    return;
+    return false;
   try {
-    await fetch(workerUrl, {
+    const response = await fetch(workerUrl, {
       method: "POST",
       headers: headers(),
       body: JSON.stringify(id ? { id } : {}),
       cache: "no-store",
       signal: AbortSignal.timeout(50000),
     });
+    return response.ok;
   } catch {
     console.error("Email remains queued for the next delivery attempt.");
+    return false;
   }
 }

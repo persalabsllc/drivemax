@@ -1,5 +1,11 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { WorkToday } from "./WorkToday";
+import { WorkflowSettings } from "./WorkflowSettings";
+import { BuyerMatches } from "./BuyerMatches";
+import { InventoryPreparation } from "./InventoryPreparation";
+import { SalesReports } from "./SalesReports";
+import { PushSettings } from "./PushSettings";
 import {
   Bell,
   LayoutDashboard,
@@ -88,12 +94,15 @@ import { TaskAction, MessageComposer, type Compose } from "./Communications";
 import { CustomerSearch } from "./CustomerSearch";
 import { Accounting } from "./Accounting";
 import { TradeIntake } from "./TradeIntake";
+import { seedSalesWorkspace } from "../lib/sales-work-demo";
 import { seedOperations } from "../lib/operations-demo";
 import { Showroom, visitStatus } from "./Showroom";
 import { type InventoryVehicle, vehicleName } from "../lib/vehicles";
 import { signOut } from "../app/login/actions";
 
 type View =
+  | "Work Today"
+  | "Sales reports"
   | "Overview"
   | "Customers"
   | "Inventory"
@@ -107,10 +116,12 @@ type View =
   | "Workspace";
 const nav = [
   { name: "Overview", icon: LayoutDashboard },
+  { name: "Work Today", icon: CheckCircle2 },
   { name: "Customers", icon: Users },
   { name: "Inventory", icon: Car },
   { name: "Trade-ins", icon: RefreshCw },
   { name: "Accounting", icon: TrendingUp },
+  { name: "Sales reports", icon: Target },
   { name: "Showroom", icon: DoorOpen },
   { name: "Planner", icon: CalendarDays },
   { name: "Desking", icon: FileText },
@@ -137,7 +148,7 @@ export default function CRM({
   demo: boolean;
 }) {
   const [ws, setWs] = useState(() =>
-      demo ? seedOperations(initial) : initial,
+      demo ? seedSalesWorkspace(seedOperations(initial)) : initial,
     ),
     [view, setView] = useState<View>("Overview"),
     [search, setSearch] = useState(""),
@@ -172,6 +183,41 @@ export default function CRM({
     null,
   );
   const alerts = useAttention(ws, demo, busy);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("customer");
+    if (id && initial.customers.some((c) => c.id === id)) {
+      setSelected(id);
+      setSelectedOpp(params.get("opportunity"));
+      setProfileTab("Activity");
+    } else if (params.get("view") === "work") setView("Work Today");
+  }, [initial]);
+  useEffect(() => {
+    if (
+      demo ||
+      busy ||
+      selected ||
+      (view !== "Work Today" && view !== "Overview")
+    )
+      return;
+    let canceled = false;
+    const refreshQuietly = async () => {
+      if (document.visibilityState !== "visible") return;
+      try {
+        const response = await fetch("/api/workspace", { cache: "no-store" });
+        if (response.ok && !canceled) setWs(await response.json());
+      } catch {
+        /* Header refresh remains available. */
+      }
+    };
+    const timer = setInterval(refreshQuietly, 60000);
+    window.addEventListener("focus", refreshQuietly);
+    return () => {
+      canceled = true;
+      clearInterval(timer);
+      window.removeEventListener("focus", refreshQuietly);
+    };
+  }, [demo, busy, selected, view]);
   const [attentionTask, setAttentionTask] = useState<Task | null>(null);
   const [attentionCompose, setAttentionCompose] = useState<{
     customer: Customer;
@@ -639,6 +685,10 @@ export default function CRM({
                     {
                       Overview:
                         "Your sales day, in focus. Let’s move a few opportunities forward.",
+                      "Work Today":
+                        "The customers, appointments and deals that need your attention next.",
+                      "Sales reports":
+                        "See where opportunities progress and where the process needs attention.",
                       Inventory:
                         "Your stock, your numbers, ready for the next conversation.",
                       Customers:
@@ -723,6 +773,43 @@ export default function CRM({
                   </label>
                 )}
               </div>
+            )}
+            {(view === "Work Today" || view === "Overview") && (
+              <>
+                <WorkToday
+                  ws={ws}
+                  compact={view === "Overview"}
+                  onCustomer={openCustomer}
+                  onTask={setAttentionTask}
+                  onAppointment={setAppointmentDialog}
+                  onEmail={(customer, opportunity_id) =>
+                    setAttentionCompose({
+                      customer,
+                      compose: { channel: "email", opportunity_id },
+                    })
+                  }
+                />
+                {view === "Overview" && (
+                  <button
+                    className="text-btn work-open"
+                    onClick={() => navigate("Work Today")}
+                  >
+                    Open all of Work Today <ArrowRight size={14} />
+                  </button>
+                )}
+                {view === "Work Today" && (
+                  <BuyerMatches
+                    ws={ws}
+                    run={run}
+                    busy={busy}
+                    onCustomer={openCustomer}
+                  />
+                )}
+              </>
+            )}
+            {view === "Sales reports" && <SalesReports ws={ws} />}
+            {view === "Inventory" && (
+              <InventoryPreparation ws={ws} run={run} busy={busy} />
             )}
             {view === "Overview" && (
               <>
@@ -1337,6 +1424,8 @@ export default function CRM({
             )}
             {view === "Workspace" && (
               <>
+                <WorkflowSettings ws={ws} run={run} busy={busy} demo={demo} />
+                <PushSettings demo={demo} />
                 <EmailSettingsPanel
                   ws={ws}
                   busy={busy}

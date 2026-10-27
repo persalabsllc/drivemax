@@ -114,7 +114,9 @@ export async function POST(req: NextRequest) {
         409,
       );
     }
-    after(() => dispatchEmail(s.org_id, id));
+    after(async () => {
+      await dispatchEmail(s.org_id, id);
+    });
     return json({ ok: true, id, status: "queued" }, 202);
   } catch {
     return json(

@@ -1,5 +1,8 @@
 "use client";
 import { customerActivity } from "../lib/activity";
+import { CustomerWorkflows } from "./WorkflowSettings";
+import { BuyerPreferences } from "./BuyerMatches";
+import { DealDelivery } from "./DealDelivery";
 import { useState } from "react";
 import {
   Plus,
@@ -51,7 +54,15 @@ const SoldPack = dynamic(() => import("./SoldPack").then((m) => m.SoldPack), {
   ssr: false,
 });
 type Tab =
-  "Activity" | "Details" | "Desking" | "Insurance" | "Texts" | "Emails";
+  | "Activity"
+  | "Details"
+  | "Desking"
+  | "Insurance"
+  | "Texts"
+  | "Emails"
+  | "Follow-up"
+  | "Wish list"
+  | "Delivery";
 export function CustomerProfile({
   ws,
   customer,
@@ -426,9 +437,12 @@ export function CustomerProfile({
               "Insurance",
               "Texts",
               "Emails",
+              "Follow-up",
+              "Wish list",
+              "Delivery",
             ] as Tab[]
           )
-            .filter((t) => !!o || t !== "Desking")
+            .filter((t) => !!o || (t !== "Desking" && t !== "Delivery"))
             .map((t) => (
               <button
                 key={t}
@@ -443,6 +457,34 @@ export function CustomerProfile({
           <p className="form-error profile-error" role="alert">
             {error}
           </p>
+        )}
+        {tab === "Follow-up" && (
+          <CustomerWorkflows
+            ws={ws}
+            customerId={customer.id}
+            run={run}
+            busy={busy}
+          />
+        )}
+        {tab === "Wish list" && (
+          <BuyerPreferences
+            key={customer.id}
+            ws={ws}
+            customer={customer}
+            run={run}
+            busy={busy}
+          />
+        )}
+        {tab === "Delivery" && o && (
+          <DealDelivery
+            key={o.id}
+            ws={ws}
+            opportunity={o}
+            run={run}
+            busy={busy}
+            demo={demo}
+            onRefresh={onRefresh}
+          />
         )}
         {(tab === "Texts" || tab === "Emails") && (
           <Communications

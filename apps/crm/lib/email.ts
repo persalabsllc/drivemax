@@ -9,6 +9,7 @@ export const emailTokens = [
   "dealership",
   "phone",
   "website",
+  "appointment_time", "appointment_type", "appointment_link", "address",
 ] as const;
 export const emailCategories = [
   "New lead",
@@ -66,7 +67,7 @@ const templateText = (max: number) =>
       (value) =>
         !value
           .replace(
-            /{{\s*(first_name|customer_name|vehicle|salesperson|dealership|phone|website)\s*}}/g,
+            /{{\s*(first_name|customer_name|vehicle|salesperson|dealership|phone|website|appointment_time|appointment_type|appointment_link|address)\s*}}/g,
             "",
           )
           .includes("{{"),
@@ -135,6 +136,10 @@ export function renderEmailTemplate(
     dealership: ws.org.name,
     phone: "(252) 541-0040",
     website: "https://www.drivemaxusedcars.com",
+    appointment_time: "[appointment date and time]",
+    appointment_type: "visit",
+    appointment_link: "[included automatically in appointment emails]",
+    address: "6210 Old US Hwy 70 W, New Bern, NC 28562",
   };
   const render = (value: string) =>
     value.replace(

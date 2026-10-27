@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { deliveryChecks } from "../lib/sales-work";
 import {
   Download,
   Printer,
@@ -198,7 +199,9 @@ export function SoldPack({
     [working, setWorking] = useState(false),
     [error, setError] = useState(""),
     [showShared, setShowShared] = useState(false),
-    [confirmClose, setConfirmClose] = useState(false);
+    [confirmClose, setConfirmClose] = useState(false),
+    [archivePacket, setArchivePacket] = useState(!demo);
+  const missing = deliveryChecks(workspace, o).filter((c) => !c.ready);
   const context = useMemo(
     () => documentContext(workspace, customer, o),
     [workspace, customer, o],
@@ -268,6 +271,27 @@ export function SoldPack({
             : await buildMvr2(context, paperwork, template, test),
         blob = new Blob([new Uint8Array(bytes)], { type: "application/pdf" }),
         url = URL.createObjectURL(blob);
+      if (mode === "pack" && archivePacket && !demo) {
+        const data = new FormData();
+        data.set(
+          "file",
+          blob,
+          `Drive-Max-Sold-Pack-${variant}-${new Date().toISOString().slice(0, 10)}.pdf`,
+        );
+        data.set("customer_id", customer.id);
+        data.set("opportunity_id", o.id);
+        data.set("kind", "packet");
+        const r = await fetch("/api/deal-files", {
+          method: "POST",
+          body: data,
+        });
+        if (!r.ok) {
+          URL.revokeObjectURL(url);
+          throw Error(
+            "The packet could not be archived. Try again, or uncheck archive to print without saving a copy.",
+          );
+        }
+      }
       if (win) {
         win.location.href = url;
       } else {
@@ -324,6 +348,27 @@ export function SoldPack({
           <X size={20} />
         </button>
       </header>
+      {mode === "pack" && (
+        <div className="print-preflight">
+          <strong>Delivery review</strong>
+          <p>
+            {missing.length
+              ? `Profile information to review: ${missing.map((c) => c.label).join("; ")}. Packet overrides may already contain your corrections.`
+              : "Buyer, vehicle, saved figures, insurance and trade information are present. Review disclosures and signatures before delivery."}
+          </p>
+          {!demo && (
+            <label className="check-line">
+              <input
+                type="checkbox"
+                checked={archivePacket}
+                onChange={(e) => setArchivePacket(e.target.checked)}
+              />
+              Archive this exact PDF in the customer's Delivery → Deal file when
+              printed or downloaded
+            </label>
+          )}
+        </div>
+      )}
       <div className="paperwork-toolbar">
         <button
           className="btn small"

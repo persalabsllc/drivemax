@@ -98,6 +98,14 @@ export async function workspace(
     "messages",
     "appointments",
     "email_templates",
+    "workflow_rules",
+    "workflow_jobs",
+    "workflow_pauses",
+    "deal_progress",
+    "buyer_preferences",
+    "inventory_prep",
+    "sales_events",
+    "deal_files",
   ] as const;
   // Pages are fetched fully in batches; never silently truncate the customer book.
   async function all(table: string) {
@@ -111,7 +119,11 @@ export async function workspace(
             ? "id,org_id,opportunity_id,customer_id,sold_on,status,unwound_at,unwind_reason"
             : table === "staff" && !canManage(s.role)
               ? "id,org_id,user_id,name,email,role,active,created_at"
-              : "*",
+              : table === "deal_files"
+                ? "id,org_id,customer_id,opportunity_id,name,kind,size,created_at,created_by"
+                : table === "workflow_jobs"
+                  ? "id,org_id,rule_id,customer_id,opportunity_id,appointment_id,event,run_at,state,reason,message_id,task_id,created_at"
+                  : "*",
         )
         .eq("org_id", s.org_id);
       if (table === "inventory" || table === "trades")
@@ -137,6 +149,11 @@ export async function workspace(
   // Attention can recover pending website inquiries. Finish those writes before
   // reading the customer book so alerts and profiles arrive in the same response.
   const alerts = await attention(s);
+  const workflowHealth = await d
+    .from("dmcrm_workflow_health")
+    .select("last_background_at")
+    .eq("org_id", s.org_id)
+    .maybeSingle();
   const [rows, websiteInventory, emailSettings, emailSignature, connection] =
     await Promise.all([
       Promise.all(tables.map(all)),
@@ -161,6 +178,19 @@ export async function workspace(
     throw new Error("Website inventory status unavailable");
   if (emailSettings.error || emailSignature.error)
     throw new Error("Email settings unavailable");
+  const records = Object.fromEntries(
+    tables.map((t, i) => [t, rows[i]]),
+  ) as unknown as Pick<Workspace, (typeof tables)[number]>;
+  if (!canManage(s.role)) {
+    const assigned = new Set(
+      records.opportunities
+        .filter((o) => o.assigned_to === s.staff_id)
+        .map((o) => o.id),
+    );
+    records.deal_files = records.deal_files?.filter(
+      (f) => !!f.opportunity_id && assigned.has(f.opportunity_id),
+    );
+  }
   return {
     org,
     attention: alerts,
@@ -168,8 +198,13 @@ export async function workspace(
     email_settings: emailSettings.data ?? undefined,
     email_signature: emailSignature.data,
     email_connection: connection,
+    workflow_health: {
+      last_run_at: workflowHealth.data?.last_background_at ?? null,
+      scheduled: 0,
+      failed: 0,
+    },
     member: { id: s.user_id, name: s.name, role: s.role, staff_id: s.staff_id },
-    ...Object.fromEntries(tables.map((t, i) => [t, rows[i]])),
+    ...records,
   } as Workspace;
 }
 

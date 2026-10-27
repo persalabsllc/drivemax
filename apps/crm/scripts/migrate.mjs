@@ -5,6 +5,8 @@ import pg from "pg";
 import { verifyWebsiteIntake } from "./verify-website-intake.mjs";
 import { verifyInventoryWebsite } from "./verify-inventory-website.mjs";
 import { verifyEmail } from "./verify-email.mjs";
+import { verifyWorkflows } from "./verify-workflows.mjs";
+import { setupWorkflowScheduler } from "./setup-workflow-scheduler.mjs";
 if (process.env.VERCEL_ENV === "production") {
   if (!process.env.POSTGRES_URL)
     throw new Error("CRM database configuration is required.");
@@ -79,6 +81,10 @@ if (process.env.VERCEL_ENV === "production") {
     console.log(
       "Verified CRM email with rolled-back fixtures: drafts, idempotent sends, delivery events, replies, automatic acknowledgments.",
     );
+    await verifyWorkflows(client);
+    console.log("Verified workflows with rolled-back fixtures: appointment changes, reminder cancellation, customer responses and no persistent test emails.");
+    await setupWorkflowScheduler(client);
+    console.log("Configured existing database scheduler: five-minute CRM email and device-notification checks.");
     await client.query("commit");
   } catch (e) {
     await client.query("rollback").catch(() => {});

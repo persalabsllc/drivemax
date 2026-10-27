@@ -1,6 +1,7 @@
 "use client";
 import { useState, useMemo, useEffect } from "react";
 import { WorkToday } from "./WorkToday";
+import { DocumentVault } from "./DocumentVault";
 import { Appraisals } from "./Appraisals";
 import { OverviewFunnel } from "./OverviewFunnel";
 import { UserProfileSettings } from "./UserProfileSettings";
@@ -10,6 +11,7 @@ import { InventoryPreparation } from "./InventoryPreparation";
 import { SalesReports } from "./SalesReports";
 import { PushSettings } from "./PushSettings";
 import {
+  FolderLock,
   Bell,
   LayoutDashboard,
   Users,
@@ -112,6 +114,7 @@ type View =
   | "Showroom"
   | "Planner"
   | "Desking"
+  | "Document Vault"
   | "Appraisals"
   | "Trade-ins"
   | "Accounting"
@@ -128,6 +131,7 @@ const nav = [
   { name: "Inventory", icon: Car },
   { name: "Trade-ins", icon: RefreshCw },
   { name: "Appraisals", icon: Car },
+  { name: "Document Vault", icon: FolderLock },
   { name: "Accounting", icon: TrendingUp },
   { name: "Sales reports", icon: Target },
 ] as const;
@@ -667,7 +671,9 @@ export default function CRM({
                 </button>
               </div>
             )}
-            <div className="page-heading">
+            <div
+              className={`page-heading ${view === "Overview" ? "overview-heading" : ""}`}
+            >
               <div>
                 <div className="eyebrow">
                   {view === "Overview"
@@ -703,6 +709,8 @@ export default function CRM({
                         "A thoughtful follow-up starts with a clear plan.",
                       Desking:
                         "Build the proposal. Keep the history. Move the deal forward.",
+                      "Document Vault":
+                        "Private paperwork, organized by customer and vehicle.",
                       Appraisals:
                         "Keep your trade conversations and working values together.",
                       "Trade-ins":
@@ -730,23 +738,25 @@ export default function CRM({
                     Quick quote
                   </button>
                 )}
-                {!quickQuoteOpen && view !== "Workspace" && (
-                  <button
-                    className={view === "Desking" ? "btn" : "btn primary"}
-                    onClick={() => {
-                      if (view === "Inventory") {
-                        setInventoryEdit(null);
-                        setModal("inventory");
-                      } else {
-                        setEdit(null);
-                        setModal("customer");
-                      }
-                    }}
-                  >
-                    <Plus size={17} />
-                    {view === "Inventory" ? "Add vehicle" : "Add customer"}
-                  </button>
-                )}
+                {!quickQuoteOpen &&
+                  view !== "Workspace" &&
+                  view !== "Document Vault" && (
+                    <button
+                      className={view === "Desking" ? "btn" : "btn primary"}
+                      onClick={() => {
+                        if (view === "Inventory") {
+                          setInventoryEdit(null);
+                          setModal("inventory");
+                        } else {
+                          setEdit(null);
+                          setModal("customer");
+                        }
+                      }}
+                    >
+                      <Plus size={17} />
+                      {view === "Inventory" ? "Add vehicle" : "Add customer"}
+                    </button>
+                  )}
               </div>
             </div>
             {view === "Planner" && (
@@ -1248,6 +1258,14 @@ export default function CRM({
                   selected payment option, taxes, and fees before delivery.
                 </div>
               </section>
+            )}
+            {view === "Document Vault" && (
+              <DocumentVault
+                ws={ws}
+                demo={demo}
+                onRefresh={refresh}
+                onCustomer={openCustomer}
+              />
             )}
             {view === "Appraisals" && (
               <Appraisals
@@ -1812,7 +1830,7 @@ function Stat({
   onClick: () => void;
 }) {
   return (
-    <button className="stat-card" onClick={onClick}>
+    <button className={`stat-card stat-${color}`} onClick={onClick}>
       <div>
         <span>{title}</span>
         <span className={`stat-icon ${color}`}>{icon}</span>

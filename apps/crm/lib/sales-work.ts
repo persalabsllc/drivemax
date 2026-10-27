@@ -162,8 +162,17 @@ export type SalesEvent = {
 export type DealFile = {
   id: string;
   org_id: string;
-  customer_id: string;
+  customer_id: string | null;
   opportunity_id: string | null;
+  inventory_id?: string | null;
+  customer_name?: string;
+  stock_number?: string;
+  vin?: string;
+  vehicle_label?: string;
+  document_date?: string;
+  notes?: string;
+  retain_until?: string;
+  sha256?: string | null;
   name: string;
   kind: string;
   size: number;

@@ -3,7 +3,6 @@ import { useState } from "react";
 import {
   CheckCircle2,
   AlertCircle,
-  Upload,
   Download,
   Save,
   ExternalLink,
@@ -21,6 +20,7 @@ import {
   fundingStages,
   deliveryChecks,
 } from "../lib/sales-work";
+import { DocumentUpload } from "./DocumentUpload";
 import { SectionTitle } from "./ui";
 export function DealDelivery({
   ws,
@@ -51,40 +51,10 @@ export function DealDelivery({
       },
   );
   const [error, setError] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [kind, setKind] = useState("signed");
-  const [file, setFile] = useState<File | null>(null);
   const patch = (values: Partial<typeof draft>) =>
     setDraft({ ...draft, ...values });
   const checks = deliveryChecks(ws, o);
   const manager = canManage(ws.member.role);
-  async function upload() {
-    if (!file) return;
-    if (demo) {
-      setError(
-        "Uploads are available in the live workspace. Demo files are not stored.",
-      );
-      return;
-    }
-    setUploading(true);
-    setError("");
-    try {
-      const data = new FormData();
-      data.set("file", file);
-      data.set("customer_id", o.customer_id);
-      data.set("opportunity_id", o.id);
-      data.set("kind", kind);
-      const r = await fetch("/api/deal-files", { method: "POST", body: data });
-      const result = await r.json();
-      if (!r.ok) throw Error(result.error || "Upload failed");
-      setFile(null);
-      await onRefresh?.();
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setUploading(false);
-    }
-  }
   return (
     <section className="profile-work-section">
       <SectionTitle
@@ -240,42 +210,18 @@ export function DealDelivery({
       <div className="deal-files">
         <SectionTitle
           title="Deal file"
-          subtitle="Signed paperwork, insurance, and finalized print packets. PDF, JPG or PNG up to 4 MB."
+          subtitle="Signed paperwork, insurance, and finalized packets. Also searchable in Document Vault."
         />
-        <div className="form-grid">
-          <label>
-            Document type
-            <select value={kind} onChange={(e) => setKind(e.target.value)}>
-              {[
-                ["signed", "Signed paperwork"],
-                ["insurance", "Insurance"],
-                ["identification", "Identification"],
-                ["stipulation", "Lender stipulation"],
-                ["other", "Other"],
-              ].map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            File
-            <input
-              type="file"
-              accept="application/pdf,image/jpeg,image/png"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            />
-          </label>
-        </div>
-        <button
-          className="btn"
-          disabled={!file || uploading || busy}
-          onClick={upload}
-        >
-          <Upload size={15} />
-          {uploading ? "Uploading…" : "Upload document"}
-        </button>
+        <DocumentUpload
+          metadata={{
+            customer_id: o.customer_id,
+            opportunity_id: o.id,
+            inventory_id: null,
+          }}
+          demo={demo}
+          disabled={busy}
+          onRefresh={onRefresh}
+        />
         {(ws.deal_files ?? [])
           .filter((f) => f.opportunity_id === o.id)
           .sort((a, b) => b.created_at.localeCompare(a.created_at))

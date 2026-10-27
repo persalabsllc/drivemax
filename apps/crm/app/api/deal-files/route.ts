@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { createHash } from "node:crypto";
 import { db, session } from "../../../lib/server";
 import { canManage } from "../../../lib/model";
 export const dynamic = "force-dynamic";
@@ -15,7 +16,6 @@ export async function POST(req: NextRequest) {
   if (!s) return json({ error: "Sign in to upload documents." }, 401);
   if (Number(req.headers.get("content-length")) > 4300000)
     return json({ error: "Choose a file smaller than 4 MB." }, 413);
-  let uploaded: string | null = null;
   try {
     const form = await req.formData(),
       file = form.get("file"),
@@ -69,37 +69,32 @@ export async function POST(req: NextRequest) {
       .from("dmcrm-deal-files")
       .upload(path, bytes, { contentType: type, upsert: false });
     if (upload.error) throw Error();
-    uploaded = path;
-    const saved = await d
-      .from("dmcrm_deal_files")
-      .insert({
-        id,
-        org_id: s.org_id,
-        customer_id: cid,
-        opportunity_id: oid,
-        name,
-        kind,
-        size: file.size,
-        mime: type,
-        path,
-        created_by: s.user_id,
-      });
+    const saved = await d.from("dmcrm_deal_files").insert({
+      id,
+      org_id: s.org_id,
+      customer_id: cid,
+      opportunity_id: oid,
+      name,
+      kind,
+      size: file.size,
+      mime: type,
+      path,
+      created_by: s.user_id,
+      sha256: createHash("sha256").update(bytes).digest("hex"),
+    });
     if (saved.error) throw Error();
-    uploaded = null;
-    await d
-      .from("dmcrm_activities")
-      .insert({
-        org_id: s.org_id,
-        customer_id: cid,
-        opportunity_id: oid,
-        kind: "system",
-        body: `${kind === "packet" ? "Finalized print packet archived" : "Document uploaded"}: ${name}`,
-        created_by: s.name,
-      });
+    await d.from("dmcrm_activities").insert({
+      org_id: s.org_id,
+      customer_id: cid,
+      opportunity_id: oid,
+      kind: "system",
+      body: `${kind === "packet" ? "Finalized print packet archived" : "Document uploaded"}: ${name}`,
+      created_by: s.name,
+    });
     return json({ id });
   } catch {
-    if (uploaded)
-      await db().storage.from("dmcrm-deal-files").remove([uploaded]);
+    // Do not remove an uploaded original after an uncertain database response:
+    // the insert may have committed even if the network response was lost.
     return json({ error: "Document could not be saved. Try again." }, 400);
   }
 }

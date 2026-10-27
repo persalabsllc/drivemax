@@ -7,6 +7,7 @@ import { verifyInventoryWebsite } from "./verify-inventory-website.mjs";
 import { verifyEmail } from "./verify-email.mjs";
 import { verifyWorkflows } from "./verify-workflows.mjs";
 import { verifyAppraisals } from "./verify-appraisals.mjs";
+import { verifyDocumentVault } from "./verify-document-vault.mjs";
 import { setupWorkflowScheduler } from "./setup-workflow-scheduler.mjs";
 if (process.env.VERCEL_ENV === "production") {
   if (!process.env.POSTGRES_URL)
@@ -84,10 +85,20 @@ if (process.env.VERCEL_ENV === "production") {
     );
     await verifyWorkflows(client);
     await verifyAppraisals(client);
-    console.log("Verified appraisals with rolled-back fixtures: approval, ACV isolation, audit revisions and immutable saved quotes.");
-    console.log("Verified workflows with rolled-back fixtures: appointment changes, reminder cancellation, customer responses and no persistent test emails.");
+    await verifyDocumentVault(client);
+    console.log(
+      "Verified document vault with rolled-back fixtures: private storage, historical stock/VIN, idempotent filing and retention protection.",
+    );
+    console.log(
+      "Verified appraisals with rolled-back fixtures: approval, ACV isolation, audit revisions and immutable saved quotes.",
+    );
+    console.log(
+      "Verified workflows with rolled-back fixtures: appointment changes, reminder cancellation, customer responses and no persistent test emails.",
+    );
     await setupWorkflowScheduler(client);
-    console.log("Configured existing database scheduler: five-minute CRM email and device-notification checks.");
+    console.log(
+      "Configured existing database scheduler: five-minute CRM email and device-notification checks.",
+    );
     // PostgREST refreshes its table/function cache asynchronously after DDL.
     // Deliver the notification at commit; the REST release check waits for it.
     await client.query("notify pgrst, 'reload schema'");

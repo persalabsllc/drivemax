@@ -728,7 +728,7 @@ test("sales workflows: real SQL scheduling, deduplication, appointment changes, 
         // Only transport is replaced: generated select/filter/order expressions
         // are executed by PostgreSQL, including tables with composite keys.
         const identifier = (value: string) => {
-          assert.match(value, /^[a-z_]+$/);
+          assert.match(value, /^[a-z_][a-z0-9_]*$/);
           return `"${value}"`;
         };
         const d = createClient("https://workspace.test", "test-key", {

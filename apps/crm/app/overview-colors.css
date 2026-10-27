@@ -1,0 +1,230 @@
+/* Color cues stay scoped to Overview; existing card actions and layout are unchanged. */
+.overview-heading {
+  padding: 24px 28px;
+  border: 1px solid #7892d64d;
+  border-radius: 18px;
+  background:
+    radial-gradient(ellipse at 95% 0, #c4adff70, transparent 58%),
+    radial-gradient(ellipse at 10% 110%, #86dce04d, transparent 55%),
+    linear-gradient(125deg, #f3f7ff, #fdfaff);
+  box-shadow:
+    0 7px 25px #546ba515,
+    inset 0 1px 0 #fff;
+  gap: 20px;
+}
+.overview-heading .eyebrow {
+  color: #526db2;
+}
+.overview-heading h1 {
+  color: #263b63;
+}
+.overview-heading p {
+  color: #5d6b85;
+}
+.overview-dashboard .stat-card {
+  --overview-accent: #346bd2;
+  --overview-tint: #edf3ff;
+  --overview-glow: #477de52c;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--overview-accent) 35%, white);
+  border-top: 3px solid var(--overview-accent);
+  background: linear-gradient(120deg, #fff 20%, var(--overview-tint));
+  box-shadow:
+    0 6px 19px var(--overview-glow),
+    inset 0 1px 0 #fff;
+  transition:
+    box-shadow 0.2s,
+    transform 0.2s;
+}
+.overview-dashboard .stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 9px 24px var(--overview-glow),
+    0 0 0 1px color-mix(in srgb, var(--overview-accent) 40%, white);
+}
+.overview-dashboard .stat-card:focus-visible {
+  outline: 3px solid var(--overview-accent);
+  outline-offset: 4px;
+}
+.overview-dashboard .stat-red {
+  --overview-accent: #b64a79;
+  --overview-tint: #fcebf4;
+  --overview-glow: #bf568325;
+}
+.overview-dashboard .stat-amber {
+  --overview-accent: #b57a19;
+  --overview-tint: #fff5dc;
+  --overview-glow: #d5a23426;
+}
+.overview-dashboard .stat-green {
+  --overview-accent: #128176;
+  --overview-tint: #e5faf4;
+  --overview-glow: #179d8626;
+}
+.overview-dashboard .stat-card > strong {
+  color: var(--overview-accent);
+}
+.overview-dashboard .stat-card > div > span:first-child {
+  color: #3c4b64;
+  font-weight: 650;
+}
+.overview-dashboard .stat-icon {
+  background: var(--overview-tint);
+  color: var(--overview-accent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--overview-accent) 25%, transparent),
+    0 3px 10px var(--overview-glow);
+}
+.overview-column > .panel,
+.overview-work .panel {
+  --panel-tone: #5779c0;
+  --panel-wash: #eff4ff;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--panel-tone) 30%, white);
+  border-top: 3px solid var(--panel-tone);
+  background: linear-gradient(135deg, #fff 25%, var(--panel-wash));
+  box-shadow:
+    0 7px 22px color-mix(in srgb, var(--panel-tone) 12%, transparent),
+    inset 0 1px 0 #fff;
+}
+.overview-dashboard .attention-center {
+  --panel-tone: #bb7d26;
+  --panel-wash: #fff9ee;
+}
+.overview-dashboard .appt-overview {
+  --panel-tone: #8655c5;
+  --panel-wash: #f8f1ff;
+}
+.overview-dashboard .overview-floor {
+  --panel-tone: #198a89;
+  --panel-wash: #effcf8;
+}
+.overview-dashboard .overview-recent {
+  --panel-tone: #627c9c;
+  --panel-wash: #f2f6fb;
+}
+.overview-work .panel {
+  --panel-tone: #4e79ce;
+  --panel-wash: #edf5ff;
+}
+.overview-dashboard .overview-funnel {
+  --panel-tone: #6c61c4;
+  --panel-wash: #f4f3ff;
+}
+.overview-dashboard .section-heading h2 {
+  color: color-mix(in srgb, var(--panel-tone) 65%, #172235);
+}
+.overview-dashboard .empty > span {
+  color: var(--panel-tone);
+  background: color-mix(in srgb, var(--panel-tone) 10%, white);
+  box-shadow: 0 3px 14px color-mix(in srgb, var(--panel-tone) 15%, transparent);
+}
+.overview-dashboard .attention-item {
+  border-color: #e9d8bc;
+  background: #fffdf9;
+  box-shadow: 0 2px 8px #af895b0b;
+}
+.overview-dashboard .website-intake-status {
+  background: #e9f7ed;
+  border: 1px solid #bde2c8;
+  color: #316248;
+  border-radius: 8px;
+}
+.overview-dashboard .appt-controls .segmented {
+  border-color: #d4c4eb;
+  background: #f6f1fc;
+}
+.overview-dashboard .appt-controls .segmented button.active {
+  background: #fff;
+  color: #6541a0;
+  box-shadow: 0 2px 7px #755aa324;
+}
+.overview-dashboard .appt-row:hover {
+  background: #eee7f870;
+}
+.overview-dashboard .appt-when strong {
+  color: #7345ad;
+}
+.overview-floor .visit-card {
+  background: #ffffffbf;
+  border-color: #b8ded7;
+  box-shadow: 0 3px 10px #13816b10;
+}
+.overview-floor .visit-vehicle {
+  background: #e8f5f1;
+  border-radius: 7px;
+}
+.overview-work .work-hero {
+  border-bottom: 1px solid #c9d9f2;
+  margin-bottom: 10px;
+  color: #31558e;
+}
+.overview-work .work-hero-count strong {
+  color: #346bd2;
+}
+.overview-work .work-stats {
+  border: 1px solid #cbdcf4;
+  border-radius: 10px;
+  background: #ffffffbd;
+  overflow: hidden;
+}
+.overview-work .work-stats strong {
+  color: #3568ad;
+}
+.overview-recent .activity-icon {
+  background: #e9eef9;
+  color: #5577b6;
+}
+.overview-recent .recent-list > button:hover {
+  background: #eaf0fb70;
+}
+.overview-dashboard .funnel-steps {
+  padding: 10px 0;
+  border-radius: 14px;
+  background: radial-gradient(ellipse at 50% 40%, #c7cbf540, transparent 70%);
+}
+.overview-dashboard .funnel-step::before {
+  background: linear-gradient(
+    115deg,
+    var(--funnel-color),
+    color-mix(in srgb, var(--funnel-color) 78%, #142344)
+  );
+  box-shadow: inset 0 1px 0 #ffffff55;
+}
+.overview-dashboard .funnel-leads {
+  --funnel-color: #4e63c8;
+}
+.overview-dashboard .funnel-contacted {
+  --funnel-color: #2878be;
+}
+.overview-dashboard .funnel-appointments {
+  --funnel-color: #8854ba;
+}
+.overview-dashboard .funnel-visits {
+  --funnel-color: #168b99;
+}
+.overview-dashboard .funnel-sold {
+  --funnel-color: #16835f;
+}
+@media (max-width: 600px) {
+  .overview-heading {
+    padding: 20px;
+    flex-wrap: wrap;
+  }
+  .overview-heading h1 {
+    font-size: 25px;
+  }
+  .overview-dashboard .stat-card:hover {
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .overview-dashboard .stat-card {
+    transition: none;
+  }
+  .overview-dashboard .stat-card:hover {
+    transform: none;
+  }
+}

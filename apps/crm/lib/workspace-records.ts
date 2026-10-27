@@ -1,33 +1,43 @@
-import type {SupabaseClient} from "@supabase/supabase-js";
-import {canManage,type Workspace} from "./model";
-export type WorkspaceScope={org_id:string;staff_id:string;role:Workspace["member"]["role"]};
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { canManage, type Workspace } from "./model";
+export type WorkspaceScope = {
+  org_id: string;
+  staff_id: string;
+  role: Workspace["member"]["role"];
+};
 export const workspaceTables = [
-    "customers",
-    "visits",
-    "activities",
-    "tasks",
-    "quotes",
-    "inventory",
-    "opportunities",
-    "staff",
-    "sales",
-    "trades",
-    "commissions",
-    "messages",
-    "appointments",
-    "email_templates",
-    "workflow_rules",
-    "workflow_jobs",
-    "workflow_pauses",
-    "deal_progress",
-    "buyer_preferences",
-    "inventory_prep",
-    "sales_events",
-    "deal_files",
-    "appraisals",
-  ] as const;
-export type WorkspaceRecords=Pick<Workspace,(typeof workspaceTables)[number]>;
-export async function readWorkspaceRecords(d:SupabaseClient,s:WorkspaceScope):Promise<WorkspaceRecords>{
+  "customers",
+  "visits",
+  "activities",
+  "tasks",
+  "quotes",
+  "inventory",
+  "opportunities",
+  "staff",
+  "sales",
+  "trades",
+  "commissions",
+  "messages",
+  "appointments",
+  "email_templates",
+  "workflow_rules",
+  "workflow_jobs",
+  "workflow_pauses",
+  "deal_progress",
+  "buyer_preferences",
+  "inventory_prep",
+  "sales_events",
+  "deal_files",
+  "appraisals",
+] as const;
+export type WorkspaceRecords = Pick<
+  Workspace,
+  (typeof workspaceTables)[number]
+>;
+export async function readWorkspaceRecords(
+  d: SupabaseClient,
+  s: WorkspaceScope,
+): Promise<WorkspaceRecords> {
   // Pages are fetched fully in batches; never silently truncate the customer book.
   async function all(table: string) {
     if (table === "trades" && !canManage(s.role)) return [];
@@ -41,7 +51,7 @@ export async function readWorkspaceRecords(d:SupabaseClient,s:WorkspaceScope):Pr
             : table === "staff" && !canManage(s.role)
               ? "id,org_id,user_id,name,email,role,active,created_at"
               : table === "deal_files"
-                ? "id,org_id,customer_id,opportunity_id,name,kind,size,created_at,created_by"
+                ? "id,org_id,customer_id,opportunity_id,inventory_id,name,kind,size,created_at,created_by,customer_name,stock_number,vin,vehicle_label,document_date,notes,retain_until,sha256"
                 : table === "workflow_jobs"
                   ? "id,org_id,rule_id,customer_id,opportunity_id,appointment_id,event,run_at,state,reason,message_id,task_id,created_at"
                   : "*",
@@ -54,13 +64,32 @@ export async function readWorkspaceRecords(d:SupabaseClient,s:WorkspaceScope):Pr
         query = query.eq("assigned_to", s.staff_id);
       if (table === "commissions" && !canManage(s.role))
         query = query.eq("staff_id", s.staff_id);
-      const { data, error } = await query.order(table === "workflow_pauses" ? "customer_id" : "id").range(start, start + 999);
-      if (error) throw new Error(`CRM records unavailable (${table}: ${error.code || "unknown"})`);
+      const { data, error } = await query
+        .order(table === "workflow_pauses" ? "customer_id" : "id")
+        .range(start, start + 999);
+      if (error)
+        throw new Error(
+          `CRM records unavailable (${table}: ${error.code || "unknown"})`,
+        );
       rows.push(...data);
       if (data.length < 1000) break;
     }
     return rows;
   }
- const rows=await Promise.all(workspaceTables.map(all));
- return Object.fromEntries(workspaceTables.map((t,i)=>[t,rows[i]])) as WorkspaceRecords;
+  const rows = await Promise.all(workspaceTables.map(all));
+  const records = Object.fromEntries(
+    workspaceTables.map((t, i) => [t, rows[i]]),
+  ) as WorkspaceRecords;
+  // File names and metadata follow the same scope as the private download route.
+  if (!canManage(s.role)) {
+    const assigned = new Set(
+      records.opportunities
+        .filter((o) => o.assigned_to === s.staff_id)
+        .map((o) => o.id),
+    );
+    records.deal_files = records.deal_files?.filter(
+      (f) => f.opportunity_id && assigned.has(f.opportunity_id),
+    );
+  }
+  return records;
 }

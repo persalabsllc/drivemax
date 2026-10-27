@@ -4,7 +4,7 @@ import { db, session } from "../../../../lib/server";
 import { canManage } from "../../../../lib/model";
 export const dynamic = "force-dynamic";
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const s = await session();
@@ -32,7 +32,13 @@ export async function GET(
   }
   const { data, error: e } = await d.storage
     .from("dmcrm-deal-files")
-    .createSignedUrl(f.path, 60, { download: f.name });
+    .createSignedUrl(
+      f.path,
+      60,
+      req.nextUrl.searchParams.get("view") === "inline"
+        ? {}
+        : { download: f.name },
+    );
   if (e || !data) return new Response("File unavailable", { status: 503 });
   return new Response(null, {
     status: 302,

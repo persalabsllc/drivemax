@@ -5,6 +5,7 @@ import "./appointments.css";
 import "./fi-menu.css";
 import "./staff.css";
 import "./inventory-print.css";
+import "./sales-work.css";
 export const metadata: Metadata = {
   title: "Drive Max CRM",
   applicationName: "Drive Max CRM",

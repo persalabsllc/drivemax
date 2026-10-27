@@ -1,4 +1,7 @@
 import { attentionCommand } from "./attention-schema";
+import { workflowCommands, type WorkflowRule, type WorkflowJob, type WorkflowPause, type WorkflowHealth } from "./workflows";
+import { salesWorkCommands, type DealProgress, type BuyerPreference, type InventoryPrep, type SalesEvent, type DealFile } from "./sales-work";
+import { demoSalesWork } from "./sales-work-demo";
 import type { AttentionFeed } from "./attention";
 import type { WebsiteInventoryLink } from "./website-inventory";
 import {
@@ -196,6 +199,15 @@ export type Staff = Partial<Omit<StaffDetails, "role" | "name" | "email">> & {
 export const canManage = (role: string) =>
   role === "owner" || role === "manager";
 export type Workspace = {
+  workflow_rules?: WorkflowRule[];
+  workflow_jobs?: WorkflowJob[];
+  workflow_pauses?: WorkflowPause[];
+  workflow_health?: WorkflowHealth;
+  deal_progress?: DealProgress[];
+  buyer_preferences?: BuyerPreference[];
+  inventory_prep?: InventoryPrep[];
+  sales_events?: SalesEvent[];
+  deal_files?: DealFile[];
   email_templates?: EmailTemplate[];
   email_settings?: EmailSettings;
   email_signature?: EmailSignature | null;
@@ -378,6 +390,8 @@ export const opportunitySchema = z.object({
   trade: tradeSchema.nullable(),
 });
 export const commandSchema = z.discriminatedUnion("type", [
+  ...workflowCommands,
+  ...salesWorkCommands,
   ...emailCommands,
   z.object({
     type: z.literal("convert_quick_quote"),
@@ -501,6 +515,8 @@ export function demoCommand(
   now = new Date(),
 ): Workspace {
   const parsed = commandSchema.parse(command);
+  const salesWorkResult = demoSalesWork(ws, parsed);
+  if (salesWorkResult) return salesWorkResult;
   const emailResult = demoEmailCommand(ws, parsed);
   if (emailResult) return emailResult;
   if (

@@ -434,7 +434,7 @@ export function AppointmentDialog({
               <span>
                 {existing
                   ? "Changes are recorded in customer history."
-                  : "No customer notification is sent."}
+                  : "Enabled email workflows send confirmations, changes and reminders. Text delivery is inactive."}
               </span>
               <button className="btn primary" disabled={busy}>
                 {busy

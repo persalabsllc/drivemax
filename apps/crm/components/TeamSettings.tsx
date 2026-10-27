@@ -241,7 +241,7 @@ export function TeamSettings({
         <p className="fine-print">
           Create a login with an initial password, or share a private setup
           link. Phone and address details are visible to managers only.
-          Notification delivery will be connected in a future update.
+          Enable browser or home-screen notifications in Device notifications. Phone numbers remain available for future text alerts.
         </p>
       )}
       <div className="team-commission-defaults">

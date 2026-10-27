@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
+import { dispatchEmail } from "../../../lib/messaging";
 import { session, workspace, db } from "../../../lib/server";
 import { commandSchema } from "../../../lib/model";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 const json = (value: unknown, status = 200) =>
   NextResponse.json(value, {
     status,
@@ -115,12 +117,24 @@ export async function POST(req: NextRequest) {
                         "Complete the trade vehicle details or remove the trade before marking this deal sold.",
                         "This inventory vehicle has already been sold",
                         "Paperwork changed in another session. Reload before saving.",
+                        "This template is used by an automation. Change the automation first.",
+                        "Workflow changed. Refresh before saving.",
+                        "Assigned salesperson or manager required",
+                        "Record changed. Refresh before saving.",
+                        "Manager access required for funding changes",
+                        "Enter the funded date",
+                        "Check recon items",
+                        "Sold inventory recon is read-only; adjust the sale accounting",
+                        "This email has already entered delivery",
                       ].includes(error.message)
                     ? error.message
                     : "The change could not be saved. Refresh and try again.",
         },
         error.code === "42501" ? 403 : 400,
       );
+    after(async () => {
+      await dispatchEmail(s.org_id);
+    });
     return json({ id, workspace: await workspace(s) });
   } catch {
     return json(

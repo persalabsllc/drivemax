@@ -598,7 +598,7 @@ export function AppointmentOverview({
     <section className="panel appt-overview" aria-label="Appointment schedule">
       <SectionTitle
         title="Appointments"
-        subtitle="Know who’s coming in, who’s helping, and what comes next. All times Eastern."
+        subtitle="Visits and deliveries. All times Eastern."
         action={
           <button className="btn primary small" onClick={onSchedule}>
             <Plus size={15} />

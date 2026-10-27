@@ -4,7 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { canManage, type Workspace } from "./model";
 import { emailConnection } from "./messaging";
-import {readWorkspaceRecords} from "./workspace-records";
+import { readWorkspaceRecords } from "./workspace-records";
 export const ready = () =>
   !!(
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
@@ -72,13 +72,13 @@ export async function session() {
   if (!data) return null;
   const { data: staff, error: staffError } = await db()
     .from("dmcrm_staff")
-    .select("id")
+    .select("id,name")
     .eq("org_id", data.org_id)
     .eq("user_id", user.id)
     .eq("active", true)
     .maybeSingle();
   if (staffError) throw new Error("CRM team unavailable");
-  return staff ? { ...data, staff_id: staff.id } : null;
+  return staff ? { ...data, name: staff.name, staff_id: staff.id } : null;
 }
 export async function workspace(
   s: NonNullable<Awaited<ReturnType<typeof session>>>,
@@ -144,7 +144,12 @@ export async function workspace(
       scheduled: 0,
       failed: 0,
     },
-    member: { id: s.user_id, name: s.name, role: s.role, staff_id: s.staff_id },
+    member: {
+      id: s.user_id,
+      name: records.staff.find((m) => m.id === s.staff_id)?.name ?? s.name,
+      role: s.role,
+      staff_id: s.staff_id,
+    },
     ...records,
   } as Workspace;
 }

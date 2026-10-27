@@ -3,7 +3,10 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
 import { createClient } from "@supabase/supabase-js";
-import { readWorkspaceRecords, workspaceTables } from "../lib/workspace-records";
+import {
+  readWorkspaceRecords,
+  workspaceTables,
+} from "../lib/workspace-records";
 import { demoWorkspace } from "../lib/demo";
 import {
   workToday,
@@ -51,10 +54,21 @@ test("sales workflows: real SQL scheduling, deduplication, appointment changes, 
     );
     for (const f of (await fs.readdir(new URL("../db/", import.meta.url)))
       .filter((f) => /^\d{3}_.*\.sql$/.test(f))
-      .sort())
+      .sort()) {
+      if (f === "018_profile_names.sql") {
+        await pg.query(
+          "update dmcrm_staff set name='Kyle',first_name='Kyle',last_name='' where org_id=$1 and user_id=$2",
+          [org, owner],
+        );
+        await pg.query(
+          "update dmcrm_members set name='Kyle' where org_id=$1 and user_id=$2",
+          [org, owner],
+        );
+      }
       await pg.exec(
         await fs.readFile(new URL("../db/" + f, import.meta.url), "utf8"),
       );
+    }
     const staff = (
       await one("select id from dmcrm_staff where org_id=$1 and user_id=$2", [
         org,
@@ -75,6 +89,79 @@ test("sales workflows: real SQL scheduling, deduplication, appointment changes, 
       );
       return { c, o };
     };
+    await t.test(
+      "full names stay consistent and profile editing cannot change another user or role",
+      async () => {
+        const savedOwner = await one(
+          "select s.name,s.first_name,s.last_name,m.name as member_name from dmcrm_staff s join dmcrm_members m on m.org_id=s.org_id and m.user_id=s.user_id where s.org_id=$1 and s.user_id=$2",
+          [org, owner],
+        );
+        assert.deepEqual(savedOwner, {
+          name: "Kyle Kratoville",
+          first_name: "Kyle",
+          last_name: "Kratoville",
+          member_name: "Kyle Kratoville",
+        });
+        await command(
+          {
+            type: "save_profile_name",
+            id: staff,
+            role: "owner",
+            profile: { first_name: " Avery ", last_name: "Brooks" },
+          },
+          sales,
+        );
+        const changed = await one(
+          "select s.name,s.role,m.name as member_name from dmcrm_staff s join dmcrm_members m on m.org_id=s.org_id and m.user_id=s.user_id where s.org_id=$1 and s.user_id=$2",
+          [org, sales],
+        );
+        assert.deepEqual(changed, {
+          name: "Avery Brooks",
+          role: "sales",
+          member_name: "Avery Brooks",
+        });
+        assert.equal(
+          (await one("select name from dmcrm_staff where id=$1", [staff])).name,
+          "Kyle Kratoville",
+        );
+        await assert.rejects(
+          command({
+            type: "save_profile_name",
+            profile: { first_name: "Kyle", last_name: "" },
+          }),
+          /First and last name/,
+        );
+        await assert.rejects(
+          command(
+            {
+              type: "save_profile_name",
+              profile: { first_name: "Avery", last_name: "Brooks" },
+            },
+            sales,
+            other,
+          ),
+          /Active team membership/,
+        );
+        await pg.query(
+          "update dmcrm_members set active=false where org_id=$1 and user_id=$2",
+          [org, sales],
+        );
+        await assert.rejects(
+          command(
+            {
+              type: "save_profile_name",
+              profile: { first_name: "Avery", last_name: "Brooks" },
+            },
+            sales,
+          ),
+          /Active team membership/,
+        );
+        await pg.query(
+          "update dmcrm_members set active=true where org_id=$1 and user_id=$2",
+          [org, sales],
+        );
+      },
+    );
     await t.test(
       "enrolls future lead steps once and excludes SMS",
       async () => {
@@ -634,59 +721,98 @@ test("sales workflows: real SQL scheduling, deduplication, appointment changes, 
         );
       },
     );
-    await t.test("signed-in workspace queries match the migrated schema for both roles", async () => {
-      // Run the actual Supabase query builder against the real migrated tables.
-      // Only transport is replaced: generated select/filter/order expressions
-      // are executed by PostgreSQL, including tables with composite keys.
-      const identifier = (value: string) => {
-        assert.match(value, /^[a-z_]+$/);
-        return `"${value}"`;
-      };
-      const d = createClient("https://workspace.test", "test-key", {
-        auth: { persistSession: false, autoRefreshToken: false },
-        global: { fetch: async (input) => {
-          const url = new URL(String(input));
-          const table = url.pathname.split("/").at(-1)!;
-          assert.ok(table.startsWith("dmcrm_"));
-          const columns = url.searchParams.get("select") || "*";
-          const selected = columns === "*" ? "*" : columns.split(",").map(identifier).join(",");
-          const args: string[] = [], filters: string[] = [];
-          for (const [key, value] of url.searchParams) {
-            if (["select", "order", "limit", "offset"].includes(key)) continue;
-            if (value === "is.null") filters.push(`${identifier(key)} is null`);
-            else {
-              assert.ok(value.startsWith("eq."));
-              args.push(value.slice(3));
-              filters.push(`${identifier(key)}=$${args.length}`);
-            }
+    await t.test(
+      "signed-in workspace queries match the migrated schema for both roles",
+      async () => {
+        // Run the actual Supabase query builder against the real migrated tables.
+        // Only transport is replaced: generated select/filter/order expressions
+        // are executed by PostgreSQL, including tables with composite keys.
+        const identifier = (value: string) => {
+          assert.match(value, /^[a-z_]+$/);
+          return `"${value}"`;
+        };
+        const d = createClient("https://workspace.test", "test-key", {
+          auth: { persistSession: false, autoRefreshToken: false },
+          global: {
+            fetch: async (input) => {
+              const url = new URL(String(input));
+              const table = url.pathname.split("/").at(-1)!;
+              assert.ok(table.startsWith("dmcrm_"));
+              const columns = url.searchParams.get("select") || "*";
+              const selected =
+                columns === "*"
+                  ? "*"
+                  : columns.split(",").map(identifier).join(",");
+              const args: string[] = [],
+                filters: string[] = [];
+              for (const [key, value] of url.searchParams) {
+                if (["select", "order", "limit", "offset"].includes(key))
+                  continue;
+                if (value === "is.null")
+                  filters.push(`${identifier(key)} is null`);
+                else {
+                  assert.ok(value.startsWith("eq."));
+                  args.push(value.slice(3));
+                  filters.push(`${identifier(key)}=$${args.length}`);
+                }
+              }
+              const order = url.searchParams.get("order")?.split(".")[0];
+              const limit = Number(url.searchParams.get("limit") || 1000);
+              const offset = Number(url.searchParams.get("offset") || 0);
+              assert.ok(
+                Number.isSafeInteger(limit) && Number.isSafeInteger(offset),
+              );
+              try {
+                const result = await pg.query(
+                  `select ${selected} from ${identifier(table)}${filters.length ? " where " + filters.join(" and ") : ""}${order ? " order by " + identifier(order) : ""} limit ${limit} offset ${offset}`,
+                  args,
+                );
+                return Response.json(result.rows);
+              } catch (error) {
+                const e = error as { message: string; code: string };
+                return Response.json(
+                  {
+                    message: e.message,
+                    code: e.code,
+                    details: null,
+                    hint: null,
+                  },
+                  { status: 400 },
+                );
+              }
+            },
+          },
+        });
+        const broken = await d
+          .from("dmcrm_workflow_pauses")
+          .select("*")
+          .order("id");
+        assert.equal(
+          broken.error?.code,
+          "42703",
+          "reproduces the production failure",
+        );
+        for (const role of ["owner", "sales"] as const) {
+          const records = await readWorkspaceRecords(d, {
+            org_id: org,
+            staff_id: staff,
+            role,
+          });
+          assert.ok(
+            workspaceTables.every((table) => Array.isArray(records[table])),
+          );
+          assert.ok(records.customers.length > 0);
+          assert.ok(records.workflow_pauses!.length > 0);
+          if (role === "sales") {
+            assert.equal(records.trades!.length, 0);
+            assert.ok(
+              records.tasks.every((task) => task.assigned_to === staff),
+            );
+            assert.ok(records.staff.every((member) => !("phone" in member)));
           }
-          const order = url.searchParams.get("order")?.split(".")[0];
-          const limit = Number(url.searchParams.get("limit") || 1000);
-          const offset = Number(url.searchParams.get("offset") || 0);
-          assert.ok(Number.isSafeInteger(limit) && Number.isSafeInteger(offset));
-          try {
-            const result = await pg.query(`select ${selected} from ${identifier(table)}${filters.length ? " where " + filters.join(" and ") : ""}${order ? " order by " + identifier(order) : ""} limit ${limit} offset ${offset}`, args);
-            return Response.json(result.rows);
-          } catch (error) {
-            const e = error as { message: string; code: string };
-            return Response.json({ message: e.message, code: e.code, details: null, hint: null }, { status: 400 });
-          }
-        } },
-      });
-      const broken = await d.from("dmcrm_workflow_pauses").select("*").order("id");
-      assert.equal(broken.error?.code, "42703", "reproduces the production failure");
-      for (const role of ["owner", "sales"] as const) {
-        const records = await readWorkspaceRecords(d, { org_id: org, staff_id: staff, role });
-        assert.ok(workspaceTables.every((table) => Array.isArray(records[table])));
-        assert.ok(records.customers.length > 0);
-        assert.ok(records.workflow_pauses!.length > 0);
-        if (role === "sales") {
-          assert.equal(records.trades!.length, 0);
-          assert.ok(records.tasks.every((task) => task.assigned_to === staff));
-          assert.ok(records.staff.every((member) => !("phone" in member)));
         }
-      }
-    });
+      },
+    );
     await t.test(
       "release verification runs entirely inside a rollback",
       async () => {

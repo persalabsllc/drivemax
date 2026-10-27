@@ -12,6 +12,7 @@ import {
   stickerTotal,
 } from "../lib/inventory-print";
 import { buildInventoryPrintPdf } from "../lib/inventory-print-pdf";
+import { emptyStickerSpecs } from "../lib/vehicle-specifications";
 
 const vehicle = demoInventory("private-org-id", "2026-10-26")[0];
 const defaults = () => defaultPrintMaterials(vehicle);
@@ -113,6 +114,68 @@ test("Buyers Guide preserves the official front and reverse with dealer terms in
     pdf.catalog.getOrCreateViewerPreferences().getDuplex(),
     Duplex.DuplexFlipLongEdge,
   );
+});
+
+test("window sticker prints sourced equipment and fuel economy without mislabeling edited ratings", async () => {
+  const specifications = {
+    ...emptyStickerSpecs(),
+    engine: "3.0L V6",
+    horsepower: "221",
+    transmission: "Automatic 6-spd",
+    drivetrain: "Front-Wheel Drive",
+    fuel: "Gasoline",
+    body: "Sedan",
+    features: "Tire pressure monitoring\nFront side-impact airbags",
+    cityMpg: "18",
+    highwayMpg: "26",
+    combinedMpg: "21",
+    epaId: "25490",
+    epaLabel: "2009 Ford Fusion FWD",
+    economyFuel: "Regular Gasoline",
+    vinDecoded: true,
+  };
+  const { text, pdf } = await inspect(
+    await buildInventoryPrintPdf(
+      vehicle,
+      { ...defaults(), buyersGuide: false, specifications },
+      assets,
+    ),
+  );
+  assert.equal(pdf.getPageCount(), 1);
+  for (const expected of [
+    "VEHICLE SPECIFICATIONS",
+    "221 hp",
+    "3.0L V6",
+    "EPA FUEL ECONOMY",
+    "Tire pressure monitoring",
+    "Front side-impact airbags",
+    "FuelEconomy.gov #25490",
+    "Actual mileage will vary.",
+  ])
+    assert.ok(text[0].includes(expected), expected);
+  const manual = await inspect(
+    await buildInventoryPrintPdf(
+      vehicle,
+      {
+        ...defaults(),
+        buyersGuide: false,
+        specifications: {
+          ...specifications,
+          epaId: "",
+          epaLabel: "",
+          economyUnit: "MPGe",
+          economyFuel: "Electricity",
+          cityMpg: "120",
+          highwayMpg: "105",
+          combinedMpg: "112",
+        },
+      },
+      assets,
+    ),
+  );
+  assert.match(manual.text[0], /MPGe/);
+  assert.match(manual.text[0], /Economy: dealer-provided/);
+  assert.doesNotMatch(manual.text[0], /EPA FUEL ECONOMY|FuelEconomy.gov/);
 });
 
 test("combined duplex packet keeps the sticker separate from the two-sided Buyers Guide", async () => {

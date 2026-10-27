@@ -13,6 +13,8 @@ import {
   type PrintMaterialsDraft,
 } from "../lib/inventory-print";
 import { money } from "../lib/model";
+import StickerSpecifications from "./StickerSpecifications";
+import { emptyStickerSpecs } from "../lib/vehicle-specifications";
 
 export default function InventoryPrintMaterials({
   vehicle,
@@ -23,6 +25,7 @@ export default function InventoryPrintMaterials({
 }) {
   const [draft, setDraft] = useState(() => defaultPrintMaterials(vehicle));
   const [working, setWorking] = useState(false);
+  const [lookingUp, setLookingUp] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const generating = useRef(false);
@@ -119,7 +122,10 @@ export default function InventoryPrintMaterials({
           information comes from saved inventory. Changes here apply to this
           printout only.
         </p>
-        <fieldset disabled={working} className="inventory-print-fields">
+        <fieldset
+          disabled={working || lookingUp}
+          className="inventory-print-fields"
+        >
           <legend className="sr-only">Print material options</legend>
           <div className="inventory-print-choices">
             <label className={draft.sticker ? "selected" : ""}>
@@ -214,6 +220,19 @@ export default function InventoryPrintMaterials({
                   placeholder="Example: Leather seating, heated front seats, backup camera"
                 />
               </label>
+              <StickerSpecifications
+                vehicle={vehicle}
+                specs={draft.specifications ?? emptyStickerSpecs()}
+                onBusy={setLookingUp}
+                onChange={(update) =>
+                  setDraft((previous) => ({
+                    ...previous,
+                    specifications: update(
+                      previous.specifications ?? emptyStickerSpecs(),
+                    ),
+                  }))
+                }
+              />
             </section>
           )}
 
@@ -429,7 +448,9 @@ export default function InventoryPrintMaterials({
           <button
             type="button"
             className="btn"
-            disabled={working || (!draft.sticker && !draft.buyersGuide)}
+            disabled={
+              working || lookingUp || (!draft.sticker && !draft.buyersGuide)
+            }
             onClick={() => void output(false)}
           >
             <Download size={16} /> Download PDF
@@ -437,7 +458,9 @@ export default function InventoryPrintMaterials({
           <button
             type="button"
             className="btn primary"
-            disabled={working || (!draft.sticker && !draft.buyersGuide)}
+            disabled={
+              working || lookingUp || (!draft.sticker && !draft.buyersGuide)
+            }
             onClick={() => void output(true)}
           >
             <Printer size={16} />

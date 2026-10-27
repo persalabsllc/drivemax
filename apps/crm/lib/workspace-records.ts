@@ -24,6 +24,7 @@ export const workspaceTables = [
     "inventory_prep",
     "sales_events",
     "deal_files",
+    "appraisals",
   ] as const;
 export type WorkspaceRecords=Pick<Workspace,(typeof workspaceTables)[number]>;
 export async function readWorkspaceRecords(d:SupabaseClient,s:WorkspaceScope):Promise<WorkspaceRecords>{

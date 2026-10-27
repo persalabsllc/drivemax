@@ -62,6 +62,17 @@ export async function POST(req: NextRequest) {
                 : error.message === "Select an in-stock vehicle"
                   ? "That vehicle is no longer in stock. Refresh and select another vehicle."
                   : [
+                        "Appraisal changed in another session. Reload before saving.",
+                        "Appraisal source cannot be changed",
+                        "Closed deal appraisals are read-only",
+                        "Only the assigned salesperson or a manager can edit this appraisal",
+                        "This trade already has an appraisal. Reload to open it.",
+                        "Check the appraisal vehicle and values",
+                        "Enter an offer and expected selling price before approval",
+                        "Trade details changed. Refresh the appraisal vehicle before approval.",
+                        "Approve a linked trade appraisal before applying its ACV",
+                        "Opportunity changed. Reload before applying this appraisal.",
+                        "This appraisal has already been applied",
                         "You can only change your own appointments",
                         "Only managers can assign appointments to another user",
                         "Appointment changed in another session. Reload before saving.",

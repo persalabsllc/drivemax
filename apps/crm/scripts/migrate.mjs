@@ -6,6 +6,7 @@ import { verifyWebsiteIntake } from "./verify-website-intake.mjs";
 import { verifyInventoryWebsite } from "./verify-inventory-website.mjs";
 import { verifyEmail } from "./verify-email.mjs";
 import { verifyWorkflows } from "./verify-workflows.mjs";
+import { verifyAppraisals } from "./verify-appraisals.mjs";
 import { setupWorkflowScheduler } from "./setup-workflow-scheduler.mjs";
 if (process.env.VERCEL_ENV === "production") {
   if (!process.env.POSTGRES_URL)
@@ -82,6 +83,8 @@ if (process.env.VERCEL_ENV === "production") {
       "Verified CRM email with rolled-back fixtures: drafts, idempotent sends, delivery events, replies, automatic acknowledgments.",
     );
     await verifyWorkflows(client);
+    await verifyAppraisals(client);
+    console.log("Verified appraisals with rolled-back fixtures: approval, ACV isolation, audit revisions and immutable saved quotes.");
     console.log("Verified workflows with rolled-back fixtures: appointment changes, reminder cancellation, customer responses and no persistent test emails.");
     await setupWorkflowScheduler(client);
     console.log("Configured existing database scheduler: five-minute CRM email and device-notification checks.");

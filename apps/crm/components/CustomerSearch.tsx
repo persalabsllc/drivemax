@@ -8,6 +8,7 @@ import {
   type ZipPoints,
 } from "../lib/operations";
 import { Empty } from "./ui";
+import { customerOpportunityBadges } from "../lib/customer-status";
 const defaults: SearchFilters = {
   query: "",
   vehicle: "",
@@ -85,7 +86,7 @@ export function CustomerSearch({
   const pageCount = Math.max(1, Math.ceil(display.length / 50)),
     current = Math.min(page, pageCount - 1);
   return (
-    <section className="panel ops-search">
+    <section className="panel ops-search customer-color-search">
       <div className="section-heading">
         <div>
           <h2>
@@ -237,6 +238,7 @@ export function CustomerSearch({
             <thead>
               <tr>
                 <th>Customer</th>
+                <th>Opportunities</th>
                 <th>Email</th>
                 <th>Source</th>
                 <th>ZIP / distance</th>
@@ -247,37 +249,70 @@ export function CustomerSearch({
             <tbody>
               {display
                 .slice(current * 50, current * 50 + 50)
-                .map(({ customer: c, zip, miles }) => (
-                  <tr key={c.id}>
-                    <td>
-                      <button className="name-button" onClick={() => onOpen(c)}>
-                        {c.name}
-                      </button>
-                      <small className="subtext">{c.phone || c.email}</small>
-                    </td>
-                    <td>{c.email || "—"}</td>
-                    <td>{c.source || "—"}</td>
-                    <td>
-                      {zip || "—"}
-                      {!!f.radius && miles !== null && (
-                        <small className="subtext">{miles.toFixed(1)} mi</small>
-                      )}
-                    </td>
-                    <td>
-                      {ws.staff.find((s) => s.id === c.assigned_to)?.name ||
-                        "Unassigned"}
-                    </td>
-                    <td>
-                      <button
-                        className="icon-btn"
-                        aria-label={`Open ${c.name} profile`}
-                        onClick={() => onOpen(c)}
-                      >
-                        <ArrowUpRight size={17} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                .map(({ customer: c, zip, miles }) => {
+                  const status = customerOpportunityBadges(
+                    ws.opportunities,
+                    c.id,
+                  );
+                  return (
+                    <tr
+                      key={c.id}
+                      className={`customer-status-row customer-tone-${status.tone}`}
+                    >
+                      <td>
+                        <button
+                          className="name-button"
+                          onClick={() => onOpen(c)}
+                        >
+                          {c.name}
+                        </button>
+                        <small className="subtext">{c.phone || c.email}</small>
+                      </td>
+                      <td>
+                        <div className="customer-status-badges">
+                          {status.badges.length ? (
+                            status.badges.map((b) => (
+                              <span
+                                key={b.status}
+                                className={`customer-status-tag ${b.status}`}
+                              >
+                                {b.label}
+                                {b.count > 1 ? ` · ${b.count}` : ""}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="customer-status-tag none">
+                              No opportunities
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td>{c.email || "—"}</td>
+                      <td>{c.source || "—"}</td>
+                      <td>
+                        {zip || "—"}
+                        {!!f.radius && miles !== null && (
+                          <small className="subtext">
+                            {miles.toFixed(1)} mi
+                          </small>
+                        )}
+                      </td>
+                      <td>
+                        {ws.staff.find((s) => s.id === c.assigned_to)?.name ||
+                          "Unassigned"}
+                      </td>
+                      <td>
+                        <button
+                          className="icon-btn"
+                          aria-label={`Open ${c.name} profile`}
+                          onClick={() => onOpen(c)}
+                        >
+                          <ArrowUpRight size={17} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
             </tbody>
           </table>
         </div>

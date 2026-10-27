@@ -153,3 +153,14 @@ Migrations 015–017 add an assigned work queue, future-event email/task steps, 
 - **Settings → Device notifications:** opt-in browser/home-screen push for new leads, replies and a daily task digest, with recipient permissions rechecked before delivery. Generic notification text contains no customer PII. On supported iPhones, add the CRM to the Home Screen and enable notifications from the installed app.
 
 Verification: full TypeScript/build checks, 107 passing tests (run with `--test-concurrency=1` when the local WASM runtime cannot sustain parallel PGlite workers), browser interaction and print checks. Production migrations run rollback-only workflow fixtures and require an active five-minute scheduler before commit.
+
+
+### Vehicle appraisal workspace
+
+Appraisals automatically includes all opportunity trades, with completed/lost opportunities under History. Street and auction valuations can be created without a customer. Saved worksheets include VIN/vehicle/condition, dated staff-entered book values, separate asking/sold/wholesale comparables, recon line items and a cost/target-gross calculation. Drive Max comparables use completed (not unwound) sale snapshots and current inventory asking prices, matching make/model within three years. No invented book or market values are generated.
+
+Migration `019_appraisals.sql` stores valuation revisions and actor attribution. Active staff can create standalone valuations; only their creator, the assigned salesperson or a manager can edit. Only managers approve and apply ACV. A linked trade must still be open and match the approved VIN, mileage, year, make, model and trim. Applying requires the latest appraisal revision and opportunity timestamp, updates only working trade ACV, and logs activity. Allowance, payoff, saved quote versions and completed sale accounting remain unchanged. Editing a saved valuation clears its approval. Archived standalone/open-deal appraisals can be restored by saving again.
+
+KBB and J.D. Power buttons open public research pages. Their figures are recorded manually until licensed provider access is configured. No subscriptions are created by this release. An optional server-only `MARKETCHECK_API_KEY` enables a manager-initiated `/api/appraisals/market` search; it is never requested automatically. It uses the official US used inventory endpoint, exact year/make/model/trim, ZIP/radius, ten deduplicated retail asking listings, and strips credential-bearing links. Configure a licensed plan and provider usage limits before enabling the key. Retail listings are not sold prices or appraised trade values.
+
+`tests/appraisals.test.ts` covers math, data provenance, SQL permissions/concurrency/closed deals and financial isolation. The production migration also runs `verify-appraisals.mjs` in a rolled-back savepoint before committing. Workspace REST verification includes the new table to prevent a schema/API mismatch from breaking sign-in.

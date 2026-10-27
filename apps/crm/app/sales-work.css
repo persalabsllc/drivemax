@@ -453,6 +453,52 @@
 .sidebar nav {
   overflow-y: auto;
   min-height: 0;
+  color-scheme: dark;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #65748a transparent;
+  --nav-scrollbar-thumb: #65748a;
+}
+.sidebar nav:is(:hover, :focus-within) {
+  scrollbar-color: #8390a3 transparent;
+  --nav-scrollbar-thumb: #8390a3;
+}
+/* Keep the native scrolling behavior, with a quiet rounded handle. */
+@media (forced-colors: none) {
+  @supports selector(::-webkit-scrollbar) {
+    .sidebar nav,
+    .sidebar nav:is(:hover, :focus-within) {
+      scrollbar-width: auto;
+      scrollbar-color: auto;
+    }
+    .sidebar nav::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+    .sidebar nav::-webkit-scrollbar-track,
+    .sidebar nav::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+    .sidebar nav::-webkit-scrollbar-thumb {
+      min-height: 36px;
+      border: 2px solid transparent;
+      border-radius: 999px;
+      background: var(--nav-scrollbar-thumb);
+      background-clip: padding-box;
+    }
+    .sidebar nav::-webkit-scrollbar-button {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+  }
+}
+@media (forced-colors: active) {
+  .sidebar nav,
+  .sidebar nav:is(:hover, :focus-within) {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
 }
 .push-settings {
   padding: 24px;

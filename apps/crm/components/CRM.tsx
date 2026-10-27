@@ -102,6 +102,7 @@ import { TradeIntake } from "./TradeIntake";
 import { seedSalesWorkspace } from "../lib/sales-work-demo";
 import { seedOperations } from "../lib/operations-demo";
 import { Showroom, visitStatus } from "./Showroom";
+import { showroomVisitContext } from "../lib/showroom";
 import { type InventoryVehicle, vehicleName } from "../lib/vehicles";
 import { signOut } from "../app/login/actions";
 
@@ -438,11 +439,8 @@ export default function CRM({
   const visitCard = (v: Workspace["visits"][number]) => {
     const c = findCustomer(v.customer_id);
     if (!c) return null;
-    const opportunity = ws.opportunities.find((o) => o.id === v.opportunity_id);
-    const inventory =
-      opportunity && opportunityOpen(opportunity)
-        ? ws.inventory.find((i) => i.id === opportunity.inventory_id)
-        : null;
+    const { opportunity, choices, vehicleLabel } = showroomVisitContext(v, ws);
+    const profileOpportunityId = opportunity?.id ?? v.opportunity_id ?? null;
     return (
       <article className={`visit-card visit-${visitStatus(v)}`} key={v.id}>
         <div className="visit-top">
@@ -450,21 +448,36 @@ export default function CRM({
           <div>
             <button
               className="name-button"
-              onClick={() => openCustomer(c, v.opportunity_id ?? null)}
+              onClick={() => openCustomer(c, profileOpportunityId)}
             >
               {c.name}
             </button>
-            <span>{c.source}</span>
+            <span>{opportunity?.source || c.source}</span>
           </div>
           <Badge value={visitStatus(v)} />
         </div>
         <div className="visit-vehicle">
           <Car size={17} />
-          <span>
-            {inventory
-              ? vehicleName(inventory)
-              : opportunity?.vehicle_interest || "Vehicle to be selected"}
-          </span>
+          {choices.length ? (
+            <select
+              aria-label={`Open an active opportunity for ${c.name}`}
+              value=""
+              onChange={(e) =>
+                e.target.value && openCustomer(c, e.target.value)
+              }
+            >
+              <option value="">
+                Choose an active opportunity ({choices.length})
+              </option>
+              {choices.map((o) => (
+                <option value={o.id} key={o.id}>
+                  {o.title} · {o.vehicle_interest || "No vehicle selected"}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span>{vehicleLabel}</span>
+          )}
         </div>
         <div className="visit-times">
           <span>
@@ -478,7 +491,7 @@ export default function CRM({
         <div className="visit-actions">
           <button
             className="btn small"
-            onClick={() => openCustomer(c, v.opportunity_id ?? null)}
+            onClick={() => openCustomer(c, profileOpportunityId)}
           >
             Open profile
             <ArrowUpRight size={13} />

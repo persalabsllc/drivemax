@@ -1,0 +1,104 @@
+.profile-vehicles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  background: transparent;
+  padding: 18px 28px;
+}
+
+.profile-vehicles .profile-vehicle-card {
+  --vehicle-accent: #315baf;
+  --vehicle-border: #b8ccef;
+  --vehicle-glow: #3868bd14;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
+  padding: 17px 19px;
+  text-align: left;
+  color: #24364f;
+  border: 1px solid var(--vehicle-border);
+  border-top: 3px solid var(--vehicle-accent);
+  border-radius: 12px;
+  background: linear-gradient(125deg, #edf4ff, #fcfdff);
+  box-shadow: 0 3px 15px var(--vehicle-glow);
+}
+
+.profile-vehicles .trade-card {
+  --vehicle-accent: #247761;
+  --vehicle-border: #aed8c9;
+  --vehicle-glow: #24776114;
+  background: linear-gradient(125deg, #edf8f3, #fcfefd);
+}
+
+.profile-vehicle-card:not(:disabled):hover {
+  border-color: var(--vehicle-accent);
+  box-shadow:
+    0 0 0 3px var(--vehicle-glow),
+    0 5px 20px var(--vehicle-glow);
+}
+
+.profile-vehicle-card:focus-visible {
+  outline: 3px solid var(--vehicle-accent);
+  outline-offset: 3px;
+}
+
+.profile-vehicles .profile-vehicle-card:disabled {
+  opacity: 1;
+}
+
+.profile-vehicle-card .vehicle-card-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  color: var(--vehicle-accent);
+}
+
+.profile-vehicles .vehicle-card-heading small {
+  color: var(--vehicle-accent) !important;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.09em;
+  margin: 0;
+}
+
+.profile-vehicles .profile-vehicle-card strong {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  color: #24364f;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.vehicle-card-detail {
+  color: #526477;
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.vehicle-card-action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 5px;
+  color: var(--vehicle-accent);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+@media (max-width: 600px) {
+  .profile-vehicles {
+    grid-template-columns: 1fr;
+    padding: 16px 18px;
+    gap: 10px;
+  }
+
+  .profile-vehicles .profile-vehicle-card {
+    padding: 14px 16px;
+  }
+}

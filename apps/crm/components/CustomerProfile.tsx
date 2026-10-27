@@ -17,6 +17,7 @@ import {
   MessageSquare,
   Car,
   ArrowLeftRight,
+  Pencil,
 } from "lucide-react";
 import {
   type Workspace,
@@ -109,6 +110,8 @@ export function CustomerProfile({
       | "customer"
       | "new-opportunity"
       | "edit-opportunity"
+      | "edit-vehicle"
+      | "edit-trade"
       | "sold"
       | "lost"
       | "pack"
@@ -135,6 +138,10 @@ export function CustomerProfile({
     assigned = o ? o.assigned_to : customer.assigned_to;
   const person = personFromCustomer(effective),
     co = effective.co_buyer;
+  const interestVehicle = closed
+    ? o?.vehicle_details
+    : (ws.inventory.find((v) => v.id === o?.inventory_id) ??
+      o?.vehicle_details);
   function choose(id: string | null) {
     setSelected(id);
     setNote("");
@@ -377,20 +384,67 @@ export function CustomerProfile({
         </div>
         {o && (
           <div className="profile-vehicles">
-            <div>
-              <small>VEHICLE OF INTEREST</small>
-              <strong>
-                <Car size={16} />
-                {o.vehicle_interest || "Not selected yet"}
-              </strong>
-            </div>
-            <div>
-              <small>TRADE-IN</small>
-              <strong>
-                <ArrowLeftRight size={16} />
-                {o.trade_vehicle || "No trade-in"}
-              </strong>
-            </div>
+            <button
+              type="button"
+              className="profile-vehicle-card interest-card"
+              aria-label="Edit vehicle of interest"
+              disabled={busy || closed}
+              onClick={() => setModal("edit-vehicle")}
+            >
+              <span className="vehicle-card-heading">
+                <small>VEHICLE OF INTEREST</small>
+                <Car size={19} aria-hidden="true" />
+              </span>
+              <strong>{o.vehicle_interest || "Not selected yet"}</strong>
+              <span className="vehicle-card-detail">
+                {[
+                  interestVehicle?.stock_number &&
+                    `Stock #${interestVehicle.stock_number}`,
+                  interestVehicle?.mileage != null &&
+                    `${interestVehicle.mileage.toLocaleString()} miles`,
+                ]
+                  .filter(Boolean)
+                  .join(" · ") || "Choose inventory or enter a vehicle"}
+              </span>
+              <span className="vehicle-card-action">
+                {closed ? (
+                  "Closed opportunity · read only"
+                ) : (
+                  <>
+                    <Pencil size={13} aria-hidden="true" />
+                    {o.vehicle_interest ? "Change vehicle" : "Select a vehicle"}
+                  </>
+                )}
+              </span>
+            </button>
+            <button
+              type="button"
+              className="profile-vehicle-card trade-card"
+              aria-label="Edit trade-in"
+              disabled={busy || closed}
+              onClick={() => setModal("edit-trade")}
+            >
+              <span className="vehicle-card-heading">
+                <small>TRADE-IN</small>
+                <ArrowLeftRight size={19} aria-hidden="true" />
+              </span>
+              <strong>{o.trade_vehicle || "No trade-in"}</strong>
+              <span className="vehicle-card-detail">
+                {o.trade
+                  ? `${o.trade.vin} · ${o.trade.mileage.toLocaleString()} miles`
+                  : "Add the customer's trade vehicle"}
+              </span>
+              <span className="vehicle-card-action">
+                {closed ? (
+                  "Closed opportunity · read only"
+                ) : (
+                  <>
+                    <Pencil size={13} aria-hidden="true" />
+                    {o.trade_vehicle ? "Edit trade details" : "Add a trade-in"}
+                  </>
+                )}
+              </span>
+            </button>
           </div>
         )}
         {o && (
@@ -985,17 +1039,39 @@ export function CustomerProfile({
           />
         </Modal>
       )}
-      {(modal === "new-opportunity" || modal === "edit-opportunity") && (
+      {(modal === "new-opportunity" ||
+        modal === "edit-opportunity" ||
+        ((modal === "edit-vehicle" || modal === "edit-trade") &&
+          o &&
+          !closed)) && (
         <Modal
           title={
-            modal === "new-opportunity" ? "New opportunity" : "Edit opportunity"
+            modal === "new-opportunity"
+              ? "New opportunity"
+              : modal === "edit-vehicle"
+                ? "Vehicle of interest"
+                : modal === "edit-trade"
+                  ? "Trade-in details"
+                  : "Edit opportunity"
           }
-          subtitle="Vehicle, trade, and stage for this purchase."
-          wide
+          subtitle={
+            modal === "edit-vehicle" || modal === "edit-trade"
+              ? o?.title
+              : "Vehicle, trade, and stage for this purchase."
+          }
+          wide={modal === "new-opportunity" || modal === "edit-opportunity"}
           onClose={() => setModal(null)}
         >
           <OpportunityForm
-            existing={modal === "edit-opportunity" ? (o ?? null) : null}
+            key={`${modal}:${o?.id ?? "new"}`}
+            existing={modal !== "new-opportunity" ? (o ?? null) : null}
+            section={
+              modal === "edit-vehicle"
+                ? "vehicle"
+                : modal === "edit-trade"
+                  ? "trade"
+                  : "all"
+            }
             staff={ws.staff}
             manager={manager}
             defaultAssignee={
@@ -1007,18 +1083,23 @@ export function CustomerProfile({
             error={error}
             submit={async (data) => {
               const result = await run(
-                modal === "edit-opportunity" && o
+                modal !== "new-opportunity" && o
                   ? { type: "update_opportunity", id: o.id, opportunity: data }
                   : {
                       type: "create_opportunity",
                       customer_id: customer.id,
                       opportunity: data,
                     },
-                "Opportunity saved",
+                modal === "edit-vehicle"
+                  ? "Vehicle of interest updated"
+                  : modal === "edit-trade"
+                    ? "Trade-in updated"
+                    : "Opportunity saved",
               );
               if (result.ok) {
                 if (result.id) setSelected(result.id);
-                setTab("Desking");
+                if (modal === "new-opportunity" || modal === "edit-opportunity")
+                  setTab("Desking");
                 setModal(null);
               }
             }}

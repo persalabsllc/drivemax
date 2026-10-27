@@ -9,6 +9,7 @@ import { WorkflowSettings } from "./WorkflowSettings";
 import { BuyerMatches } from "./BuyerMatches";
 import { InventoryPreparation } from "./InventoryPreparation";
 import { SalesReports } from "./SalesReports";
+import { IntegrationSettings } from "./IntegrationSettings";
 import { PushSettings } from "./PushSettings";
 import {
   FolderLock,
@@ -164,7 +165,7 @@ export default function CRM({
     [selected, setSelected] = useState<string | null>(null),
     [selectedOpp, setSelectedOpp] = useState<string | null>(null),
     [profileTab, setProfileTab] = useState<
-      "Activity" | "Details" | "Desking" | "Texts" | "Emails"
+      "Activity" | "Details" | "Desking" | "Texts" | "Emails" | "Facebook"
     >("Activity"),
     [appointmentDialog, setAppointmentDialog] = useState<
       Appointment | "new" | null
@@ -350,7 +351,7 @@ export default function CRM({
             ? "Emails"
             : item.channel === "sms"
               ? "Texts"
-              : "Activity",
+              : item.channel === "facebook" ? "Facebook" : "Activity",
         );
       }
     } catch (e) {
@@ -1295,7 +1296,7 @@ export default function CRM({
                 query={search}
                 onOpen={(c, channel) => {
                   openCustomer(c);
-                  setProfileTab(channel === "sms" ? "Texts" : "Emails");
+                  setProfileTab(channel === "facebook" ? "Facebook" : channel === "sms" ? "Texts" : "Emails");
                 }}
               />
             )}
@@ -1303,6 +1304,7 @@ export default function CRM({
               <>
                 <UserProfileSettings ws={ws} run={run} busy={busy} />
                 <WorkflowSettings ws={ws} run={run} busy={busy} demo={demo} />
+                <IntegrationSettings ws={ws} demo={demo} />
                 <PushSettings demo={demo} />
                 <EmailSettingsPanel
                   ws={ws}

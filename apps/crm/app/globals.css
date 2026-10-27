@@ -814,3 +814,5 @@
  .topbar .global-search { flex: 1; min-width: 0; width: auto; }
  .topbar .global-search input { width: 100%; min-width: 0; }
 }
+
+.integration-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.integration-cards article{padding:20px;border:1px solid var(--border,#263348);border-radius:14px;background:rgba(59,130,246,.04)}.integration-cards h3{margin:10px 0}.integration-cards strong{color:#7fb5ff}.integration-cards p{line-height:1.6}.facebook-thread{display:grid;gap:14px}.facebook-message{padding:18px;border-radius:12px;border:1px solid var(--border,#263348);background:rgba(59,130,246,.05)}.facebook-message-body{white-space:pre-wrap;overflow-wrap:anywhere}.integration-cards small{overflow-wrap:anywhere}@media(max-width:900px){.integration-cards{grid-template-columns:1fr}}

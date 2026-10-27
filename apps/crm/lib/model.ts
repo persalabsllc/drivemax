@@ -1,3 +1,4 @@
+import type { FacebookMessage } from "./facebook";
 import { attentionCommand } from "./attention-schema";
 import { appraisalCommands, type Appraisal } from "./appraisals";
 import { demoAppraisal } from "./appraisals-demo";
@@ -216,6 +217,7 @@ export type Workspace = {
   email_signature?: EmailSignature | null;
   email_connection?: EmailConnection;
   website_inventory?: WebsiteInventoryLink[];
+  facebook_messages?: FacebookMessage[];
   attention?: AttentionFeed;
   /** Demo-only per-user acknowledgements. */
   attention_reviewed?: string[];

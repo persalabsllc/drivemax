@@ -1,4 +1,5 @@
 "use client";
+import { FacebookThread } from "./FacebookThread";
 import { customerActivity } from "../lib/activity";
 import { CustomerWorkflows } from "./WorkflowSettings";
 import { BuyerPreferences } from "./BuyerMatches";
@@ -61,6 +62,7 @@ type Tab =
   | "Insurance"
   | "Texts"
   | "Emails"
+  | "Facebook"
   | "Follow-up"
   | "Wish list"
   | "Delivery";
@@ -491,6 +493,7 @@ export function CustomerProfile({
               "Insurance",
               "Texts",
               "Emails",
+              "Facebook",
               "Follow-up",
               "Wish list",
               "Delivery",
@@ -540,6 +543,7 @@ export function CustomerProfile({
             onRefresh={onRefresh}
           />
         )}
+        {tab === "Facebook" && <FacebookThread ws={ws} customerId={customer.id} busy={busy} onRefresh={onRefresh}/>}
         {(tab === "Texts" || tab === "Emails") && (
           <Communications
             run={run}

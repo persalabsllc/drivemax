@@ -29,6 +29,7 @@ export const workspaceTables = [
   "sales_events",
   "deal_files",
   "appraisals",
+  "facebook_messages",
 ] as const;
 export type WorkspaceRecords = Pick<
   Workspace,
@@ -46,7 +47,9 @@ export async function readWorkspaceRecords(
       let query = d
         .from("dmcrm_" + table)
         .select(
-          table === "sales" && !canManage(s.role)
+          table === "facebook_messages"
+            ? "id,org_id,customer_id,opportunity_id,body,referral,received_at"
+            : table === "sales" && !canManage(s.role)
             ? "id,org_id,opportunity_id,customer_id,sold_on,status,unwound_at,unwind_reason"
             : table === "staff" && !canManage(s.role)
               ? "id,org_id,user_id,name,email,role,active,created_at"

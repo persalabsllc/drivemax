@@ -1,5 +1,5 @@
 "use client";
-import { Mail, MessageSquare } from "lucide-react";
+import { Facebook, Mail, MessageSquare } from "lucide-react";
 import type { Customer, Workspace } from "../lib/model";
 export function ConversationsInbox({
   ws,
@@ -8,7 +8,7 @@ export function ConversationsInbox({
 }: {
   ws: Workspace;
   query: string;
-  onOpen: (c: Customer, channel: "sms" | "email") => void;
+  onOpen: (c: Customer, channel: "sms" | "email" | "facebook") => void;
 }) {
   const rows = ws.customers
     .filter((c) =>
@@ -31,6 +31,7 @@ export function ConversationsInbox({
         c,
         drafts: messages.filter((m) => m.status === "draft").length,
         last: [
+          ...(ws.facebook_messages ?? []).filter(m=>m.customer_id===c.id).map(m=>({at:m.received_at,text:m.body,label:"Facebook · received"})),
           ...messages.map((m) => ({
             at: m.created_at,
             text: m.body,
@@ -51,7 +52,7 @@ export function ConversationsInbox({
         <div>
           <h2>Customer conversations</h2>
           <p>
-            Text and email threads stay with the customer across every
+            Text, email and Facebook threads stay with the customer across every
             opportunity.
           </p>
         </div>
@@ -120,6 +121,7 @@ export function ConversationsInbox({
                       <Mail size={14} />
                       Emails
                     </button>
+                  {(ws.facebook_messages ?? []).some(m=>m.customer_id===c.id) && <button className="btn small" onClick={()=>onOpen(c,"facebook")}><Facebook size={14}/> Facebook</button>}
                   </div>
                 </td>
               </tr>

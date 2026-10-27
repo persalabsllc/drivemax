@@ -164,3 +164,60 @@ Migration `019_appraisals.sql` stores valuation revisions and actor attribution.
 KBB and J.D. Power buttons open public research pages. Their figures are recorded manually until licensed provider access is configured. No subscriptions are created by this release. An optional server-only `MARKETCHECK_API_KEY` enables a manager-initiated `/api/appraisals/market` search; it is never requested automatically. It uses the official US used inventory endpoint, exact year/make/model/trim, ZIP/radius, ten deduplicated retail asking listings, and strips credential-bearing links. Configure a licensed plan and provider usage limits before enabling the key. Retail listings are not sold prices or appraised trade values.
 
 `tests/appraisals.test.ts` covers math, data provenance, SQL permissions/concurrency/closed deals and financial isolation. The production migration also runs `verify-appraisals.mjs` in a rolled-back savepoint before committing. Workspace REST verification includes the new table to prevent a schema/API mismatch from breaking sign-in.
+
+
+## Facebook Page lead intake (October 27, 2026)
+
+Migration `021_facebook_intake.sql` adds signed Page Messenger intake at
+`https://crm.drivemaxusedcars.com/api/webhooks/facebook`. The first incoming
+message from a Page-scoped sender creates a customer, Facebook opportunity and
+follow-up task. Message IDs deduplicate webhook retries; later messages stay
+with the same customer and opportunity. Exact VINs and `vehicle:<CRM inventory
+UUID>` referral values can identify available stock. A different identified
+vehicle gets a separate opportunity; existing closed deals are preserved.
+Generic messages and ad IDs do not guess a vehicle. Facebook identity never
+merges with a customer merely because the name matches.
+
+Customer profiles have a Facebook tab, Activity includes incoming messages,
+Conversations includes Facebook threads, and Needs attention follows the
+opportunity's current salesperson assignment. Owners/managers see all such
+alerts. Existing enabled browser push subscriptions receive Facebook alerts.
+Replying still opens Meta Business Suite. No Facebook message or SMS is sent
+by this integration, and a Facebook inquiry does not confer SMS consent.
+Attachments are described in the thread and remain viewable in Meta; they are
+not downloaded. Facebook does not necessarily provide a telephone number or
+email. The initial identity label is updated with a name only if the optional
+Meta profile lookup succeeds, and never overwrites a staff-edited name.
+
+Production activation requires these server-only Vercel variables in the
+**drive-max-crm** project: `FACEBOOK_PAGE_ID`, `FACEBOOK_APP_SECRET`, and a random
+`FACEBOOK_VERIFY_TOKEN`. Optional `FACEBOOK_PAGE_ACCESS_TOKEN` allows profile
+name lookup through Graph API v25.0, subject to Meta's approved profile access.
+Use the same app secret as the Meta app receiving these webhook subscriptions.
+Subscribe the actual Drive Max business Page to `messages`, complete the webhook
+verification, and satisfy Meta's production access requirements. Personal
+Marketplace Messenger conversations are outside this Page subscription.
+Credentials are never returned by `/api/integrations` or exported to browsers.
+
+Webhook POSTs verify HMAC-SHA256 over the original request bytes, filter Page
+and recipient IDs, ignore message echoes/receipts, and acknowledge only after
+all CRM writes commit. A transient database error returns non-2xx for Meta's
+retry. The intake transaction creates the profile, opportunity, task, message
+and alert jobs atomically. Preview/demo environments reject live intake.
+`verify-facebook.mjs` runs production fixtures inside a rollback-only savepoint;
+`tests/facebook.test.ts` exercises signatures, parsing, database writes,
+permissions, deduplication, assignments and vehicle/deal preservation.
+
+**Connection status at developer handoff:** the callback and CRM UI are
+implemented; no Meta credentials were present in Vercel and the Meta browser
+session was signed out. Do not describe the Page as connected until an actual
+message arrives and appears in the CRM. Settings -> Lead sources & texting
+shows whether configuration exists and the last received message time.
+
+**Next communications priority:** Kyle confirmed **Telnyx** on October 27,
+2026, and confirmed the Telnyx account has **not been set up yet**. Do not use
+Twilio. Telnyx customer SMS and employee SMS alerts still need provider
+account/number/campaign setup and transport implementation. Keep
+customer consent and STOP handling separate from employee alert preferences.
+Existing customer texts remain drafts. Do not change or port the public
+252-541-0040 number without discussing the intended number arrangement first.

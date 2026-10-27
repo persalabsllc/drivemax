@@ -88,6 +88,9 @@ if (process.env.VERCEL_ENV === "production") {
     console.log("Verified workflows with rolled-back fixtures: appointment changes, reminder cancellation, customer responses and no persistent test emails.");
     await setupWorkflowScheduler(client);
     console.log("Configured existing database scheduler: five-minute CRM email and device-notification checks.");
+    // PostgREST refreshes its table/function cache asynchronously after DDL.
+    // Deliver the notification at commit; the REST release check waits for it.
+    await client.query("notify pgrst, 'reload schema'");
     await client.query("commit");
   } catch (e) {
     await client.query("rollback").catch(() => {});

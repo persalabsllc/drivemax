@@ -42,11 +42,24 @@ async function main() {
       "Verified production owner name agrees across staff and membership.",
     );
     for (const role of ["owner", "sales"] as const) {
-      const records = await readWorkspaceRecords(d, {
-        org_id: staff.org_id,
-        staff_id: staff.id,
-        role,
-      });
+      let records: Awaited<ReturnType<typeof readWorkspaceRecords>> | undefined;
+      for (let attempt = 0; attempt < 11; attempt++) {
+        try {
+          records = await readWorkspaceRecords(d, {
+            org_id: staff.org_id,
+            staff_id: staff.id,
+            role,
+          });
+          break;
+        } catch (error) {
+          // Only a missing table in the API schema cache is transient after a
+          // migration. Column/permission/query errors must still fail release.
+          if (!(error instanceof Error) || !error.message.includes("PGRST205") || attempt === 10) throw error;
+          console.log("Waiting for database API schema refresh.");
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+      if (!records) throw new Error("Workspace read result incomplete");
       if (workspaceTables.some((table) => !Array.isArray(records[table])))
         throw new Error("Workspace read result incomplete");
     }

@@ -838,7 +838,10 @@ export default function CRM({
                     sub="Open opportunities in your book"
                     icon={<Users />}
                     color="blue"
-                    onClick={() => navigate("Customers")}
+                    onClick={() => {
+                      navigate("Customers");
+                      setStage("active");
+                    }}
                   />
                   <Stat
                     title="Sold this month"

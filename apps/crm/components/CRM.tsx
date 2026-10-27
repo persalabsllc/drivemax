@@ -1,6 +1,7 @@
 "use client";
 import { useState, useMemo, useEffect } from "react";
 import { WorkToday } from "./WorkToday";
+import { Appraisals } from "./Appraisals";
 import { OverviewFunnel } from "./OverviewFunnel";
 import { UserProfileSettings } from "./UserProfileSettings";
 import { WorkflowSettings } from "./WorkflowSettings";
@@ -1249,80 +1250,13 @@ export default function CRM({
               </section>
             )}
             {view === "Appraisals" && (
-              <>
-                <section className="info-banner">
-                  <Car size={23} />
-                  <div>
-                    <strong>Your working trade desk</strong>
-                    <p>
-                      Record trade VIN, mileage, allowance, ACV, and payoff in
-                      the customer profile. VIN decoding is ready; live book
-                      values are not connected.
-                    </p>
-                  </div>
-                </section>
-                <div className="visit-grid full">
-                  {ws.opportunities
-                    .filter((o) => o.trade_vehicle)
-                    .map((o) => {
-                      const original = ws.customers.find(
-                        (c) => c.id === o.customer_id,
-                      );
-                      if (!original) return null;
-                      const c = opportunityCustomer(original, o);
-                      const q = ws.quotes
-                        .filter((q) => q.opportunity_id === o.id)
-                        .sort((a, b) =>
-                          b.created_at.localeCompare(a.created_at),
-                        )[0];
-                      return (
-                        <section className="panel trade-card" key={o.id}>
-                          <div className="trade-icon">
-                            <Car size={26} />
-                          </div>
-                          <h3>{c.trade_vehicle}</h3>
-                          <p>
-                            {c.name} · {o.title} <Badge value={o.status} />
-                          </p>
-                          <div className="trade-values">
-                            <div>
-                              <small>Working ACV</small>
-                              <strong>
-                                {c.trade
-                                  ? money(c.trade.acv)
-                                  : q
-                                    ? money(q.values.acv)
-                                    : "—"}
-                              </strong>
-                            </div>
-                            <div>
-                              <small>Est. reconditioning</small>
-                              <strong>{q ? money(q.values.recon) : "—"}</strong>
-                            </div>
-                          </div>
-                          <button
-                            className="btn"
-                            onClick={() => {
-                              openCustomer(original, o.id);
-                              setProfileTab("Desking");
-                            }}
-                          >
-                            Open trade worksheet
-                            <ArrowUpRight size={14} />
-                          </button>
-                        </section>
-                      );
-                    })}
-                </div>
-                {!ws.opportunities.some((o) => o.trade_vehicle) && (
-                  <section className="panel">
-                    <Empty
-                      title="Room for the next trade."
-                      body="Add a trade-in to a customer profile to start a working appraisal."
-                    />
-                  </section>
-                )}
-              </>
+              <Appraisals
+                ws={ws}
+                run={run}
+                busy={busy}
+                demo={demo}
+                onCustomer={openCustomer}
+              />
             )}
             {view === "Conversations" && (
               <ConversationsInbox

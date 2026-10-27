@@ -22,6 +22,7 @@ import {
   fieldKey,
   formValues,
   soldPackForms,
+  selectedPrintForms,
   type SoldPackVariant,
   mvr2Form,
   sharedPrintFields,
@@ -33,6 +34,7 @@ import {
 import { uploadDocument } from "../lib/document-upload";
 import { dayKey } from "../lib/model";
 import { buildSoldPack, buildMvr2 } from "../lib/pdf-output";
+import { titleFormCatalog } from "../lib/title-form-catalog";
 const cache = new Map<string, Promise<Uint8Array>>();
 function template(f: FormTemplate) {
   let p = cache.get(f.id);
@@ -55,16 +57,18 @@ function PdfPage({
   values,
   onField,
   section,
+  pageIndex,
 }: {
   form: FormTemplate;
   values: PaperValues;
   onField: (f: FormField, v: string | boolean) => void;
   section: number;
+  pageIndex: number;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null),
     [error, setError] = useState(""),
     [ready, setReady] = useState(false),
-    page = form.pages[0];
+    page = form.pages[pageIndex];
   useEffect(() => {
     let canceled = false;
     let cleanup: (() => void) | undefined;
@@ -82,7 +86,7 @@ function PdfPage({
       };
       const pdf = await task.promise;
       if (canceled) return;
-      const p = await pdf.getPage(1),
+      const p = await pdf.getPage(pageIndex + 1),
         viewport = p.getViewport({ scale: 1.75 }),
         el = canvas.current;
       if (!el || canceled) return;
@@ -104,7 +108,7 @@ function PdfPage({
       canceled = true;
       cleanup?.();
     };
-  }, [form]);
+  }, [form, pageIndex]);
   return (
     <div className="pdf-preview-wrap">
       {error && (
@@ -197,6 +201,7 @@ export function SoldPack({
 }) {
   const dialog = useRef<HTMLDialogElement>(null),
     [index, setIndex] = useState(0),
+    [pageIndex, setPageIndex] = useState(0),
     [paperwork, setPaperwork] = useState<Paperwork>(() =>
       structuredClone(o.paperwork ?? {}),
     ),
@@ -213,9 +218,12 @@ export function SoldPack({
     [workspace, customer, o],
   );
   const forms = useMemo(() => {
-    const all = soldPackForms(variant);
-    return formIds?.length ? all.filter((f) => formIds.includes(f.id)) : all;
-  }, [variant, formIds]);
+    return mode === "mvr2"
+      ? [mvr2Form]
+      : formIds?.length
+        ? selectedPrintForms(formIds)
+        : soldPackForms(variant);
+  }, [variant, formIds, mode]);
   const form = mode === "mvr2" ? mvr2Form : forms[index],
     section = Number(paperwork.$mvr2?.section) || 1,
     values = formValues(form, context, paperwork, section);
@@ -520,12 +528,15 @@ export function SoldPack({
               <span className="eyebrow">
                 {forms.length} FORMS · IN PRINT ORDER
               </span>
-              <nav aria-label="Sold pack forms">
+              <nav aria-label={titleCaseId ? "DMV forms" : "Sold pack forms"}>
                 {forms.map((f, i) => (
                   <button
                     key={f.id}
                     className={i === index ? "selected" : ""}
-                    onClick={() => setIndex(i)}
+                    onClick={() => {
+                      setIndex(i);
+                      setPageIndex(0);
+                    }}
                     aria-current={i === index ? "page" : undefined}
                   >
                     <span>{String(i + 1).padStart(2, "0")}</span>
@@ -537,11 +548,20 @@ export function SoldPack({
                 Click the highlighted fields to edit. Signatures and notarial
                 sections stay blank for execution.
               </p>
-              <p>
-                MVR-6TT is Title in Transit and applies when the original title
-                is unavailable. Review certifications and omit any inapplicable
-                pages in the print dialog.
-              </p>
+              {forms.some((f) => f.id === "MVR-6TT") && (
+                <p>
+                  MVR-6TT is Title in Transit and applies when the original
+                  title is unavailable. Review certifications and omit any
+                  inapplicable pages in the print dialog.
+                </p>
+              )}
+              {form.source?.url && (
+                <p>
+                  <a href={form.source.url} target="_blank" rel="noreferrer">
+                    Official blank PDF
+                  </a>
+                </p>
+              )}
             </>
           ) : (
             <>
@@ -622,13 +642,40 @@ export function SoldPack({
               owner and attorney before signing.
             </p>
           )}
+          {titleCaseId && (
+            <p className="paperwork-hint">
+              {titleFormCatalog.find((f) => f.id === form.id)?.help}
+            </p>
+          )}
           <PdfPage
-            key={form.id}
+            key={form.id + ":" + pageIndex}
             form={form}
             values={values}
             onField={fieldChange}
             section={section}
+            pageIndex={pageIndex}
           />
+          {form.pages.length > 1 && (
+            <nav className="paperwork-paging" aria-label="PDF pages">
+              <button
+                className="btn small"
+                disabled={pageIndex === 0}
+                onClick={() => setPageIndex((p) => p - 1)}
+              >
+                <ChevronLeft size={14} /> Previous page
+              </button>
+              <span>
+                Page {pageIndex + 1} of {form.pages.length} · All pages print
+              </span>
+              <button
+                className="btn small"
+                disabled={pageIndex === form.pages.length - 1}
+                onClick={() => setPageIndex((p) => p + 1)}
+              >
+                Next page <ChevronRight size={14} />
+              </button>
+            </nav>
+          )}
           <p className="paperwork-hint">
             Review every completed field before signing. Preview edits stay with
             this opportunity and do not change the original customer or Desking
@@ -639,7 +686,10 @@ export function SoldPack({
               <button
                 className="btn small"
                 disabled={index === 0}
-                onClick={() => setIndex((i) => i - 1)}
+                onClick={() => {
+                  setIndex((i) => i - 1);
+                  setPageIndex(0);
+                }}
               >
                 <ChevronLeft size={14} />
                 Previous form
@@ -647,7 +697,10 @@ export function SoldPack({
               <button
                 className="btn small"
                 disabled={index === forms.length - 1}
-                onClick={() => setIndex((i) => i + 1)}
+                onClick={() => {
+                  setIndex((i) => i + 1);
+                  setPageIndex(0);
+                }}
               >
                 Next form
                 <ChevronRight size={14} />

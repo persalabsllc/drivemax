@@ -1,4 +1,5 @@
 import manifest from "../assets/forms/manifest.json";
+import titleManifest from "../assets/forms/title-forms.json";
 import { fiBillOfSale } from "./fi-menu";
 import {
   dayKey,
@@ -32,6 +33,7 @@ export type FormField = {
   exclusiveGroup?: string;
   section?: number;
   defaultValue?: string | boolean;
+  textCheckbox?: boolean;
 };
 export const fieldKey = (f: FormField) =>
   f.radioGroup ? f.name + "::" + f.exportValue : f.name;
@@ -39,6 +41,7 @@ export type FormTemplate = {
   id: string;
   title: string;
   file: string;
+  source?: { url?: string; revision?: string };
   pages: { width: number; height: number; fields: FormField[] }[];
 };
 export const soldForms = manifest.forms as FormTemplate[];
@@ -84,7 +87,20 @@ export const soldPackForms = (variant: SoldPackVariant) =>
     ? [...soldForms, ...tradeForms]
     : soldForms.filter((f) => f.id !== "payoff");
 export const mvr2Form = manifest.mvr2 as FormTemplate;
-export const allForms = [...soldForms, ...tradeForms, mvr2Form];
+export const titleFormTemplates = titleManifest.forms as FormTemplate[];
+export const allForms = [
+  ...soldForms,
+  ...tradeForms,
+  mvr2Form,
+  ...titleFormTemplates,
+];
+/** MVR-2 has a separate text-only output path for preprinted stock. */
+export const selectedPrintForms = (ids: readonly string[]) =>
+  ids.map((id) => {
+    const form = allForms.find((f) => f.id === id && f.id !== "MVR-2");
+    if (!form) throw new Error("Unknown printable form: " + id);
+    return form;
+  });
 const join = (...parts: unknown[]) =>
   parts.filter((v) => v !== null && v !== undefined && v !== "").join(" ");
 const date = (v: string | null | undefined) =>
@@ -134,6 +150,8 @@ export function documentContext(
       [prefix + ".phone"]: p.phone,
       [prefix + ".email"]: p.email,
       [prefix + ".license_number"]: join(p.license_number, p.license_state),
+      [prefix + ".license_id"]: p.license_number,
+      [prefix + ".license_state"]: p.license_state,
       [prefix + ".residence_address"]: address,
       [prefix + ".residence_city"]: p.city,
       [prefix + ".residence_state"]: p.state,
@@ -141,6 +159,7 @@ export function documentContext(
       [prefix + ".residence_city_state"]: join(p.city, p.state),
       [prefix + ".mailing_address"]: mail,
       [prefix + ".mailing_city"]: m.city,
+      [prefix + ".mailing_city_state"]: join(m.city, m.state),
       [prefix + ".mailing_state"]: m.state,
       [prefix + ".mailing_zip"]: m.zip,
       [prefix + ".full_mailing_address"]: join(mail, m.city, m.state, m.zip),

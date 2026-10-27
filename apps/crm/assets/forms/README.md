@@ -27,3 +27,13 @@ Apply printer calibration to the text-only coordinates, and print at Actual size
 - The original MVR-181 PDF uses one shared native field for two different damaged-parts lines. The recovered-theft line is now an independent field named `Recovered theft damaged parts`, preserving both printed labels and positions.
 
 Regenerate assets from the original source PDFs with `scripts/forms/prepare_assets.py --dealer-forms <directory> --dmv-forms <directory> --mvr2 <scan.pdf>`. Source originals are required; do not use already-prepared assets as the input. The script does not download files or modify application code.
+
+## Additional title-clerk forms
+
+`title-forms.json` contains 11 additional official forms: MVR-614, MVR-330, MVR-1A, MVR-4, MVR-5, MVR-6, MVR-8, MVR-28, MVR-46D, MVR-613 and MVR-620. These were downloaded from NCDMV on October 27, 2026; source URLs, revisions and SHA-256 hashes are recorded per form. MVR-5 is the currently published 08/2018 two-page form; the others are 04/2026. Both pages of MVR-5 remain editable and print together. These special-purpose forms are individually selected and do not expand the standard sold packet.
+
+Regenerate with `python scripts/forms/prepare_title_assets.py --source <official-originals-directory>`. The script verifies pinned original hashes before applying reviewed widget mappings. It deliberately reconstructs the canonical AcroForm tree with one independently named field per widget (`F001`, etc.), preserving original field names in metadata, page contents, widget positions and appearance resources. This repairs shared names and the incomplete MVR-613 field tree. Signatures, initials, execution dates and notarial fields are excluded. Original radio pairs use independent checkboxes with explicit UI exclusive groups. Do not deduplicate appearance streams.
+
+Two source widget types need explicit correction: MVR-28's title-number box is incorrectly a signature field and is prepared as text; MVR-6's disclosure box is a text field and uses `textCheckbox` to print an X for an explicit checkbox choice. Checkboxes start unchecked. The form editor never infers an exemption, disclosure, non-resident status or ownership election.
+
+MVR-330 prefills only the vehicle because the lessor/lessee cannot be inferred from a retail buyer. Existing-title corrections and lien forms also leave the titled owner and lienholder manual. MVR-28 leaves both vehicles manual to distinguish the incorrect assignment from the actual delivery. MVR-614 keeps NC garaging and out-of-state home addresses separate and manual. Reprinting any exemption form does not alter saved deal tax amounts.

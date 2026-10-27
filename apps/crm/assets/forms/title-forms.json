@@ -1,0 +1,4437 @@
+{
+  "forms": [
+    {
+      "id": "MVR-614",
+      "title": "MVR-614 \u00b7 Non-resident title affidavit",
+      "file": "MVR-614.pdf",
+      "pages": [
+        {
+          "width": 612.0,
+          "height": 792.0,
+          "fields": [
+            {
+              "name": "F001",
+              "originalName": "Year",
+              "label": "Year",
+              "type": "text",
+              "x": 36.24,
+              "y": 156.84,
+              "width": 56.52,
+              "height": 18.36,
+              "fontSize": 10,
+              "key": "vehicle.year"
+            },
+            {
+              "name": "F002",
+              "originalName": "Make",
+              "label": "Make",
+              "type": "text",
+              "x": 103.44,
+              "y": 156.84,
+              "width": 120.72,
+              "height": 18.36,
+              "fontSize": 10,
+              "key": "vehicle.make"
+            },
+            {
+              "name": "F003",
+              "originalName": "Model",
+              "label": "Model",
+              "type": "text",
+              "x": 234.24,
+              "y": 156.84,
+              "width": 120.72,
+              "height": 18.36,
+              "fontSize": 10,
+              "key": "vehicle.model_trim"
+            },
+            {
+              "name": "F004",
+              "originalName": "Vehicle Identification Number VIN",
+              "label": "Vehicle Identification Number (VIN",
+              "type": "text",
+              "x": 365.52,
+              "y": 156.84,
+              "width": 187.32,
+              "height": 18.36,
+              "fontSize": 10,
+              "key": "vehicle.vin"
+            },
+            {
+              "name": "F005",
+              "originalName": "Street address",
+              "label": "Street address",
+              "type": "text",
+              "x": 37.08,
+              "y": 213.12,
+              "width": 263.4,
+              "height": 18.36,
+              "fontSize": 10
+            },
+            {
+              "name": "F006",
+              "originalName": "City",
+              "label": "City",
+              "type": "text",
+              "x": 310.08,
+              "y": 213.12,
+              "width": 123.6,
+              "height": 18.36,
+              "fontSize": 10
+            },
+            {
+              "name": "F007",
+              "originalName": "State",
+              "label": "State",
+              "type": "text",
+              "x": 443.52,
+              "y": 213.12,
+              "width": 27.72,
+              "height": 18.36,
+              "fontSize": 10
+            },
+            {
+              "name": "F008",
+              "originalName": "ZIP",
+              "label": "ZIP",
+              "type": "text",
+              "x": 481.68,
+              "y": 213.12,
+              "width": 70.56,
+              "height": 18.36,
+              "fontSize": 10
+            },
+            {
+              "name": "F009",
+              "originalName": "Full legal name of vehicle owner First middle last suffix",
+              "label": "Full legal name of vehicle owner (First, middle, last, suffix",
+              "type": "text",
+              "x": 36.48,
+              "y": 263.04,
+              "width": 263.88,
+              "height": 18.0,
+              "fontSize": 10,
+              "key": "buyer.name"
+            },
+            {
+              "name": "F010",
+              "originalName": "Vehicle owners driver license number",
+              "label": "Vehicle owner\u2019s driver license number",
+              "type": "text",
+              "x": 309.6,
+              "y": 262.44,
+              "width": 173.64,
+              "height": 18.36,
+              "fontSize": 10,
+              "key": "buyer.license_id"
+            },
+            {
+              "name": "F011",
+              "originalName": "State of issuance",
+              "label": "State of issuance",
+              "type": "text",
+              "x": 490.68,
+              "y": 262.8,
+              "width": 27.96,
+              "height": 18.36,
+              "fontSize": 10,
+              "key": "buyer.license_state"
+            },
+            {
+              "name": "F012",
+              "originalName": "Military ID Number",
+              "label": "Military ID number",
+              "type": "text",
+              "x": 124.32,
+              "y": 309.24,
+              "width": 171.0,
+              "height": 11.88,
+              "fontSize": 8.553599999999996
+            },
+            {
+              "name": "F013",
+              "originalName": "Vehicle Owner's permanent out of state Street address_2",
+              "label": "Street address",
+              "type": "text",
+              "x": 36.72,
+              "y": 394.92,
+              "width": 263.4,
+              "height": 18.36,
+              "fontSize": 10
+            },
+            {
+              "name": "F014",
+              "originalName": "vehicle owner's permanent out of state city",
+              "label": "City",
+              "type": "text",
+              "x": 310.8,
+              "y": 394.92,
+              "width": 123.48,
+              "height": 18.36,
+              "fontSize": 10
+            },
+            {
+              "name": "F015",
+              "originalName": "vehicle owner's permanent out of state state",
+              "label": "State",
+              "type": "text",
+              "x": 444.12,
+              "y": 394.92,
+              "width": 27.72,
+              "height": 18.36,
+              "fontSize": 10
+            },
+            {
+              "name": "F016",
+              "originalName": "vehicle owner's permanent out of state  zip",
+              "label": "ZIP",
+              "type": "text",
+              "x": 482.28,
+              "y": 394.92,
+              "width": 70.56,
+              "height": 18.36,
+              "fontSize": 10
+            },
+            {
+              "name": "F026",
+              "originalName": "Check Box active duty service membered stationed in North Carolina",
+              "label": "Check Box active duty service membered stationed in North Carolina",
+              "type": "checkbox",
+              "x": 37.059,
+              "y": 326.892,
+              "width": 8.251,
+              "height": 7.216,
+              "fontSize": 5.1955200000000055
+            },
+            {
+              "name": "F027",
+              "originalName": "Student at a north carolina college or university must provide student id or proof of enrollment",
+              "label": "Student at a north carolina college or university must provide student id or proof of enrollment",
+              "type": "checkbox",
+              "x": 314.744,
+              "y": 326.955,
+              "width": 8.251,
+              "height": 7.217,
+              "fontSize": 5.19624000000003
+            },
+            {
+              "name": "F028",
+              "originalName": "Checkbox resident of another state who garages the vehicle in north carolina at least 6 months of the year must proivde home state id or driver license",
+              "label": "Checkbox resident of another state who garages the vehicle in north carolina at least 6 months of the year must proivde home state id or driver license",
+              "type": "checkbox",
+              "x": 314.744,
+              "y": 351.955,
+              "width": 8.251,
+              "height": 7.217,
+              "fontSize": 5.19624000000003
+            },
+            {
+              "name": "F029",
+              "originalName": "Check Box spouse of active duty service member stationed in north carolina",
+              "label": "Check Box spouse of active duty service member stationed in north carolina",
+              "type": "checkbox",
+              "x": 36.744,
+              "y": 338.955,
+              "width": 8.251,
+              "height": 6.691,
+              "fontSize": 5
+            },
+            {
+              "name": "F030",
+              "originalName": "Check Box dependent child of active duty service member stationed in North carolina",
+              "label": "Check Box dependent child of active duty service member stationed in North carolina",
+              "type": "checkbox",
+              "x": 36.744,
+              "y": 352.955,
+              "width": 8.251,
+              "height": 7.217,
+              "fontSize": 5.19624000000003
+            }
+          ]
+        }
+      ],
+      "excludedFields": [
+        {
+          "name": "F017",
+          "originalName": "Owner signature"
+        },
+        {
+          "name": "F018",
+          "originalName": "Date"
+        },
+        {
+          "name": "F019",
+          "originalName": "Names of principals"
+        },
+        {
+          "name": "F020",
+          "originalName": "Notary signature"
+        },
+        {
+          "name": "F021",
+          "originalName": "Date notary notarized form"
+        },
+        {
+          "name": "F022",
+          "originalName": "County where affidavit is being notartized"
+        },
+        {
+          "name": "F023",
+          "originalName": "State where affidavit is being notartized"
+        },
+        {
+          "name": "F024",
+          "originalName": "Notary printed name"
+        },
+        {
+          "name": "F025",
+          "originalName": "Date Notary's commisison expires"
+        }
+      ],
+      "source": {
+        "kind": "NCDMV",
+        "url": "https://www.ncdot.gov/dmv/downloads/Documents/MVR-614.pdf",
+        "retrievedOn": "2026-10-27",
+        "revision": "04/2026",
+        "sha256": "eae3f464136b330b151230f7e81fd3f28c0e4c1355c6bfa2d65300783ef99e67"
+      }
+    },
+    {
+      "id": "MVR-330",
+      "title": "MVR-330 \u00b7 Registration / plate transfer for leased vehicles",
+      "file": "MVR-330.pdf",
+      "pages": [
+        {
+          "width": 612.0,
+          "height": 792.0,
+          "fields": [
+            {
+              "name": "F001",
+              "originalName": "YEAR",
+              "label": "YEAR",
+              "type": "text",
+              "x": 41.76,
+              "y": 221.4,
+              "width": 52.2,
+              "height": 18.12,
+              "fontSize": 10,
+              "key": "vehicle.year"
+            },
+            {
+              "name": "F002",
+              "originalName": "MAKE",
+              "label": "MAKE",
+              "type": "text",
+              "x": 95.76,
+              "y": 221.4,
+              "width": 79.2,
+              "height": 18.12,
+              "fontSize": 10,
+              "key": "vehicle.make"
+            },
+            {
+              "name": "F003",
+              "originalName": "BODY STYLE",
+              "label": "BODY STYLE",
+              "type": "text",
+              "x": 176.76,
+              "y": 221.4,
+              "width": 160.2,
+              "height": 18.12,
+              "fontSize": 10,
+              "key": "vehicle.body"
+            },
+            {
+              "name": "F004",
+              "originalName": "SERIES MODEL",
+              "label": "SERIES MODEL",
+              "type": "text",
+              "x": 338.76,
+              "y": 221.4,
+              "width": 241.2,
+              "height": 18.12,
+              "fontSize": 10,
+              "key": "vehicle.model_trim"
+            },
+            {
+              "name": "F005",
+              "originalName": "VEHICLE IDENTIFICATION NUMBER",
+              "label": "VEHICLE IDENTIFICATION NUMBER",
+              "type": "text",
+              "x": 41.76,
+              "y": 248.04,
+              "width": 214.2,
+              "height": 18.48,
+              "fontSize": 10,
+              "key": "vehicle.vin"
+            },
+            {
+              "name": "F006",
+              "originalName": "TYPE OF FUEL",
+              "label": "TYPE OF FUEL",
+              "type": "text",
+              "x": 257.76,
+              "y": 248.04,
+              "width": 79.2,
+              "height": 18.48,
+              "fontSize": 10,
+              "key": "vehicle.fuel"
+            },
+            {
+              "name": "F007",
+              "originalName": "ODOMETER READING",
+              "label": "ODOMETER READING",
+              "type": "text",
+              "x": 338.76,
+              "y": 248.04,
+              "width": 124.2,
+              "height": 18.48,
+              "fontSize": 10,
+              "key": "vehicle.mileage"
+            },
+            {
+              "name": "F008",
+              "originalName": "ODOMETER BRAND",
+              "label": "ODOMETER BRAND",
+              "type": "text",
+              "x": 464.76,
+              "y": 248.04,
+              "width": 115.2,
+              "height": 18.48,
+              "fontSize": 10
+            },
+            {
+              "name": "F009",
+              "originalName": "NAME OF OWNER Lessor",
+              "label": "NAME OF OWNER (Lessor)",
+              "type": "text",
+              "x": 41.76,
+              "y": 275.4,
+              "width": 250.2,
+              "height": 17.76,
+              "fontSize": 10
+            },
+            {
+              "name": "F010",
+              "originalName": "STATE IN WHICH VEHICLE REGISTERED",
+              "label": "STATE IN WHICH VEHICLE REGISTERED",
+              "type": "text",
+              "x": 293.76,
+              "y": 275.4,
+              "width": 187.2,
+              "height": 17.76,
+              "fontSize": 10
+            },
+            {
+              "name": "F011",
+              "originalName": "TERM OF LEASE",
+              "label": "TERM OF LEASE",
+              "type": "text",
+              "x": 482.76,
+              "y": 275.4,
+              "width": 97.2,
+              "height": 17.76,
+              "fontSize": 10
+            },
+            {
+              "name": "F012",
+              "originalName": "Lessee 1 ID",
+              "label": "Lessee 1 ID",
+              "type": "text",
+              "x": 100.68,
+              "y": 366.48,
+              "width": 112.56,
+              "height": 14.76,
+              "fontSize": 10
+            },
+            {
+              "name": "F013",
+              "originalName": "Full Legal Name of Lessee 1 First Middle Last Suffix or Company Name",
+              "label": "Full Legal Name of Lessee 1 (First, Middle, Last, Suffix) or Company Name",
+              "type": "text",
+              "x": 219.36,
+              "y": 366.48,
+              "width": 351.96,
+              "height": 14.76,
+              "fontSize": 10
+            },
+            {
+              "name": "F014",
+              "originalName": "Lessee 2 ID",
+              "label": "Lessee 2 ID",
+              "type": "text",
+              "x": 100.68,
+              "y": 396.48,
+              "width": 112.56,
+              "height": 14.76,
+              "fontSize": 10
+            },
+            {
+              "name": "F015",
+              "originalName": "Full Legal Name of Lessee 2 First Middle Last Suffix or Company Name",
+              "label": "Full Legal Name of Lessee 2 (First, Middle, Last, Suffix) or Company Name",
+              "type": "text",
+              "x": 219.36,
+              "y": 396.48,
+              "width": 352.08,
+              "height": 14.76,
+              "fontSize": 10
+            },
+            {
+              "name": "F016",
+              "originalName": "Residence Address Individual Business Address Firm City and State Zip Code",
+              "label": "Residence Address (Individual) Business Address (Firm) City and State Zip Code",
+              "type": "text",
+              "x": 41.76,
+              "y": 435.84,
+              "width": 538.2,
+              "height": 17.4,
+              "fontSize": 10
+            },
+            {
+              "name": "F017",
+              "originalName": "Mail Address if different from above City and State Zip Code",
+              "label": "Mail Address (if different from above) City and State Zip Code",
+              "type": "text",
+              "x": 41.76,
+              "y": 462.12,
+              "width": 538.2,
+              "height": 18.12,
+              "fontSize": 10
+            },
+            {
+              "name": "F018",
+              "originalName": "Vehicle Location Address if different from residence address above City and State Zip Code",
+              "label": "Vehicle Location Address (if different from residence address above) City and State Zip Code",
+              "type": "text",
+              "x": 41.76,
+              "y": 489.48,
+              "width": 447.96,
+              "height": 17.76,
+              "fontSize": 10
+            },
+            {
+              "name": "F019",
+              "originalName": "Tax County",
+              "label": "Tax County",
+              "type": "text",
+              "x": 491.52,
+              "y": 489.48,
+              "width": 88.44,
+              "height": 17.76,
+              "fontSize": 10
+            },
+            {
+              "name": "F020",
+              "originalName": "Insurance Company Authorized in NC",
+              "label": "Insurance Company Authorized in N.C",
+              "type": "text",
+              "x": 49.44,
+              "y": 544.56,
+              "width": 238.56,
+              "height": 13.44,
+              "fontSize": 9.676799999999998
+            },
+            {
+              "name": "F021",
+              "originalName": "Policy Number",
+              "label": "Policy Number",
+              "type": "text",
+              "x": 319.32,
+              "y": 543.24,
+              "width": 239.16,
+              "height": 14.76,
+              "fontSize": 10
+            },
+            {
+              "name": "F024",
+              "originalName": "Enter Truck Weight",
+              "label": "Enter Truck Weight",
+              "type": "text",
+              "x": 376.8,
+              "y": 114.96,
+              "width": 128.88,
+              "height": 14.76,
+              "fontSize": 10
+            },
+            {
+              "name": "F025",
+              "originalName": "Yes or",
+              "label": "Limited registration plate: Yes",
+              "type": "checkbox",
+              "x": 78.84,
+              "y": 132.6,
+              "width": 7.2,
+              "height": 5.64,
+              "fontSize": 5,
+              "exclusiveGroup": "choice-0"
+            },
+            {
+              "name": "F026",
+              "originalName": "No",
+              "label": "Limited registration plate: No",
+              "type": "checkbox",
+              "x": 114.72,
+              "y": 132.6,
+              "width": 7.2,
+              "height": 5.64,
+              "fontSize": 5,
+              "exclusiveGroup": "choice-0"
+            },
+            {
+              "name": "F027",
+              "originalName": "Check Truck Weight Desired",
+              "label": "Check Truck Weight Desired",
+              "type": "checkbox",
+              "x": 290.88,
+              "y": 123.24,
+              "width": 7.2,
+              "height": 5.64,
+              "fontSize": 5
+            },
+            {
+              "name": "F028",
+              "originalName": "Check Plate No Transferred",
+              "label": "Check Plate No. Transferred",
+              "type": "checkbox",
+              "x": 290.88,
+              "y": 150.96,
+              "width": 7.2,
+              "height": 5.64,
+              "fontSize": 5
+            },
+            {
+              "name": "F029",
+              "originalName": "Yes or_2",
+              "label": "For hire: Yes",
+              "type": "checkbox",
+              "x": 79.44,
+              "y": 160.2,
+              "width": 7.2,
+              "height": 5.64,
+              "fontSize": 5,
+              "exclusiveGroup": "choice-1"
+            },
+            {
+              "name": "F030",
+              "originalName": "No_2",
+              "label": "For hire: No",
+              "type": "checkbox",
+              "x": 113.52,
+              "y": 160.2,
+              "width": 7.2,
+              "height": 5.64,
+              "fontSize": 5,
+              "exclusiveGroup": "choice-1"
+            },
+            {
+              "name": "F031",
+              "originalName": "List Plate Number and Expiration",
+              "label": "List Plate Number and Expiration",
+              "type": "text",
+              "x": 374.76,
+              "y": 142.68,
+              "width": 132.36,
+              "height": 14.76,
+              "fontSize": 10
+            },
+            {
+              "name": "F033",
+              "originalName": "I We would like the personal information contained in this application to be available for disclosure",
+              "label": "I (We) would like the personal information contained in this application to be available for disclosure",
+              "type": "checkbox",
+              "x": 48.72,
+              "y": 338.16,
+              "width": 8.04,
+              "height": 6.24,
+              "fontSize": 5
+            }
+          ]
+        }
+      ],
+      "excludedFields": [
+        {
+          "name": "F022",
+          "originalName": "Signature of lessee"
+        },
+        {
+          "name": "F023",
+          "originalName": "Signature of lessor"
+        },
+        {
+          "name": "F032",
+          "originalName": "Customer Initials"
+        }
+      ],
+      "source": {
+        "kind": "NCDMV",
+        "url": "https://www.ncdot.gov/dmv/downloads/Documents/MVR-330.pdf",
+        "retrievedOn": "2026-10-27",
+        "revision": "04/2026",
+        "sha256": "60efe2b21c5b318b6a183ed3bde305da7e7cfe9657f1199366143eabf537f84c"
+      }
+    },
+    {
+      "id": "MVR-1A",
+      "title": "MVR-1A \u00b7 Plate and address certification",
+      "file": "MVR-1A.pdf",
+      "pages": [
+        {
+          "width": 612.0,
+          "height": 792.0,
+          "fields": [
+            {
+              "name": "F001",
+              "originalName": "Title Only  Vehicle Not in Operation",
+              "label": "Title Only \u2013 Vehicle Not in Operation",
+              "type": "checkbox",
+              "x": 26.4,
+              "y": 112.8,
+              "width": 7.2,
+              "height": 5.64,
+              "fontSize": 5
+            },
+            {
+              "name": "F002",
+              "originalName": "Truck Weight Desired",
+              "label": "Truck Weight Desired",
+              "type": "checkbox",
+              "x": 260.4,
+              "y": 112.8,
+              "width": 7.2,
+              "height": 5.64,
+              "fontSize": 5
+            },
+            {
+              "name": "F003",
+              "originalName": "Truck weight desired to include truck trailer and load",
+              "label": "Truck weight desired to include truck trailer and load",
+              "type": "text",
+              "x": 346.56,
+              "y": 106.16,
+              "width": 96.72,
+              "height": 12.12,
+              "fontSize": 8.726400000000003
+            },
+            {
+              "name": "F004",
+              "originalName": "Title and License Plate",
+              "label": "Title and License Plate",
+              "type": "checkbox",
+              "x": 24.84,
+              "y": 134.16,
+              "width": 7.2,
+              "height": 5.64,
+              "fontSize": 5
+            },
+            {
+              "name": "F005",
+              "originalName": "Class of License",
+              "label": "Class of License",
+              "type": "text",
+              "x": 93.72,
+              "y": 141.36,
+              "width": 72.12,
+              "height": 8.4,
+              "fontSize": 6.047999999999983
+            },
+            {
+              "name": "F006",
+              "originalName": "Plate No Transferred",
+              "label": "Plate No. Transferred",
+              "type": "checkbox",
+              "x": 258.84,
+              "y": 134.16,
+              "width": 7.2,
+              "height": 5.64,
+              "fontSize": 5
+            },
+            {
+              "name": "F007",
+              "originalName": "Plate number transferred",
+              "label": "Plate number transferred",
+              "type": "text",
+              "x": 359.51,
+              "y": 126.898,
+              "width": 128.778,
+              "height": 13.696,
+              "fontSize": 9.86112000000002
+            },
+            {
+              "name": "F008",
+              "originalName": "Inoperable Vehicle  Vehicle substantially disassembled",
+              "label": "Inoperable Vehicle \u2013 Vehicle substantially disassembled",
+              "type": "checkbox",
+              "x": 24.84,
+              "y": 155.4,
+              "width": 7.2,
+              "height": 5.64,
+              "fontSize": 5
+            },
+            {
+              "name": "F009",
+              "originalName": "Limited Registration Plate",
+              "label": "Limited Registration Plate",
+              "type": "checkbox",
+              "x": 258.84,
+              "y": 155.4,
+              "width": 7.2,
+              "height": 5.64,
+              "fontSize": 5
+            },
+            {
+              "name": "F010",
+              "originalName": "Moped Registration Plate Only",
+              "label": "Moped Registration Plate Only",
+              "type": "checkbox",
+              "x": 450.84,
+              "y": 164.52,
+              "width": 7.2,
+              "height": 5.64,
+              "fontSize": 5
+            },
+            {
+              "name": "F011",
+              "originalName": "Yes",
+              "label": "Yes",
+              "type": "checkbox",
+              "x": 505.92,
+              "y": 122.04,
+              "width": 7.2,
+              "height": 5.64,
+              "fontSize": 5,
+              "exclusiveGroup": "choice-0"
+            },
+            {
+              "name": "F012",
+              "originalName": "No",
+              "label": "No",
+              "type": "checkbox",
+              "x": 543.96,
+              "y": 122.04,
+              "width": 7.2,
+              "height": 5.64,
+              "fontSize": 5,
+              "exclusiveGroup": "choice-0"
+            },
+            {
+              "name": "F014",
+              "originalName": "YEAR",
+              "label": "YEAR",
+              "type": "text",
+              "x": 18.0,
+              "y": 240.12,
+              "width": 41.52,
+              "height": 21.12,
+              "fontSize": 10,
+              "key": "vehicle.year"
+            },
+            {
+              "name": "F015",
+              "originalName": "MAKE",
+              "label": "MAKE",
+              "type": "text",
+              "x": 61.68,
+              "y": 240.12,
+              "width": 62.28,
+              "height": 21.12,
+              "fontSize": 10,
+              "key": "vehicle.make"
+            },
+            {
+              "name": "F016",
+              "originalName": "BODY STYLE",
+              "label": "BODY STYLE",
+              "type": "text",
+              "x": 126.12,
+              "y": 240.12,
+              "width": 60.84,
+              "height": 21.12,
+              "fontSize": 10,
+              "key": "vehicle.body"
+            },
+            {
+              "name": "F017",
+              "originalName": "SERIES MODEL",
+              "label": "SERIES MODEL",
+              "type": "text",
+              "x": 189.12,
+              "y": 240.12,
+              "width": 69.84,
+              "height": 21.12,
+              "fontSize": 10,
+              "key": "vehicle.model_trim"
+            },
+            {
+              "name": "F018",
+              "originalName": "VEHICLE IDENTIFICATION NUMBER",
+              "label": "VEHICLE IDENTIFICATION NUMBER",
+              "type": "text",
+              "x": 261.12,
+              "y": 240.12,
+              "width": 177.84,
+              "height": 21.12,
+              "fontSize": 10,
+              "key": "vehicle.vin"
+            },
+            {
+              "name": "F019",
+              "originalName": "FUEL TYPE",
+              "label": "FUEL TYPE",
+              "type": "text",
+              "x": 441.12,
+              "y": 240.12,
+              "width": 50.4,
+              "height": 21.12,
+              "fontSize": 10,
+              "key": "vehicle.fuel"
+            },
+            {
+              "name": "F020",
+              "originalName": "ODOMETER READING",
+              "label": "ODOMETER READING",
+              "type": "text",
+              "x": 493.68,
+              "y": 240.12,
+              "width": 98.28,
+              "height": 21.12,
+              "fontSize": 10,
+              "key": "vehicle.mileage"
+            },
+            {
+              "name": "F021",
+              "originalName": "Owner 1 ID",
+              "label": "Owner 1 ID",
+              "type": "text",
+              "x": 70.56,
+              "y": 285.48,
+              "width": 84.72,
+              "height": 12.12,
+              "fontSize": 8.726400000000003,
+              "key": "buyer.license_number"
+            },
+            {
+              "name": "F022",
+              "originalName": "Full Legal Name of Owner 1 First Middle Last Suffix or Company Name",
+              "label": "Full Legal Name of Owner 1 (First, Middle, Last, Suffix) or Company Name",
+              "type": "text",
+              "x": 165.0,
+              "y": 285.48,
+              "width": 420.36,
+              "height": 12.12,
+              "fontSize": 8.726400000000003,
+              "key": "buyer.name"
+            },
+            {
+              "name": "F023",
+              "originalName": "Owner 2 ID",
+              "label": "Owner 2 ID",
+              "type": "text",
+              "x": 70.56,
+              "y": 313.8,
+              "width": 84.6,
+              "height": 12.12,
+              "fontSize": 8.726400000000003,
+              "key": "co_buyer.license_number"
+            },
+            {
+              "name": "F024",
+              "originalName": "Full Legal Name of Owner 2 First Middle Last Suffix or Company Name",
+              "label": "Full Legal Name of Owner 2 (First, Middle, Last, Suffix) or Company Name",
+              "type": "text",
+              "x": 162.96,
+              "y": 313.8,
+              "width": 420.36,
+              "height": 12.12,
+              "fontSize": 8.726400000000003,
+              "key": "co_buyer.name"
+            },
+            {
+              "name": "F025",
+              "originalName": "Residence Address Individual Business Address to include apartment or suite number",
+              "label": "Residence Address Individual Business Address to include apartment or suite number",
+              "type": "text",
+              "x": 17.474,
+              "y": 345.166,
+              "width": 252.323,
+              "height": 18.434,
+              "fontSize": 10,
+              "key": "buyer.address"
+            },
+            {
+              "name": "F026",
+              "originalName": "City",
+              "label": "City",
+              "type": "text",
+              "x": 272.708,
+              "y": 345.346,
+              "width": 144.586,
+              "height": 18.435,
+              "fontSize": 10,
+              "key": "buyer.city"
+            },
+            {
+              "name": "F027",
+              "originalName": "State",
+              "label": "state",
+              "type": "text",
+              "x": 420.577,
+              "y": 345.346,
+              "width": 62.075,
+              "height": 18.435,
+              "fontSize": 10,
+              "key": "buyer.state"
+            },
+            {
+              "name": "F028",
+              "originalName": "Zip Code",
+              "label": "Zip Code",
+              "type": "text",
+              "x": 484.832,
+              "y": 345.748,
+              "width": 105.17,
+              "height": 17.909,
+              "fontSize": 10,
+              "key": "buyer.zip"
+            },
+            {
+              "name": "F029",
+              "originalName": "Mailing address if different from above",
+              "label": "Mailing address if different from above",
+              "type": "text",
+              "x": 19.606,
+              "y": 372.132,
+              "width": 252.324,
+              "height": 18.435,
+              "fontSize": 10,
+              "key": "buyer.mailing_address"
+            },
+            {
+              "name": "F030",
+              "originalName": "mailing City",
+              "label": "mailing City",
+              "type": "text",
+              "x": 274.839,
+              "y": 372.313,
+              "width": 144.586,
+              "height": 18.434,
+              "fontSize": 10,
+              "key": "buyer.mailing_city"
+            },
+            {
+              "name": "F031",
+              "originalName": "mailing State",
+              "label": "mailing state",
+              "type": "text",
+              "x": 422.708,
+              "y": 372.313,
+              "width": 62.075,
+              "height": 18.434,
+              "fontSize": 10,
+              "key": "buyer.mailing_state"
+            },
+            {
+              "name": "F032",
+              "originalName": "mailing Zip Code",
+              "label": "mailing Zip Code",
+              "type": "text",
+              "x": 486.964,
+              "y": 372.715,
+              "width": 105.17,
+              "height": 17.908,
+              "fontSize": 10,
+              "key": "buyer.mailing_zip"
+            },
+            {
+              "name": "F033",
+              "originalName": "Vehicle Location address if different from residence address above",
+              "label": "Vehicle Location address if different from residence address above",
+              "type": "text",
+              "x": 19.281,
+              "y": 401.132,
+              "width": 252.324,
+              "height": 18.435,
+              "fontSize": 10
+            },
+            {
+              "name": "F034",
+              "originalName": "city for vehicle location address",
+              "label": "mailing City",
+              "type": "text",
+              "x": 273.514,
+              "y": 400.313,
+              "width": 99.915,
+              "height": 18.434,
+              "fontSize": 10
+            },
+            {
+              "name": "F035",
+              "originalName": "state for vehicle location address",
+              "label": "state for vehicle location address",
+              "type": "text",
+              "x": 376.383,
+              "y": 400.313,
+              "width": 38.426,
+              "height": 18.434,
+              "fontSize": 10
+            },
+            {
+              "name": "F036",
+              "originalName": "zip code for vehicle location address",
+              "label": "zip code for vehicle location address",
+              "type": "text",
+              "x": 417.657,
+              "y": 400.346,
+              "width": 53.666,
+              "height": 18.435,
+              "fontSize": 10
+            },
+            {
+              "name": "F037",
+              "originalName": "Tax County",
+              "label": "Tax County",
+              "type": "text",
+              "x": 476.88,
+              "y": 399.6,
+              "width": 115.2,
+              "height": 18.6,
+              "fontSize": 10,
+              "key": "buyer.county"
+            }
+          ]
+        }
+      ],
+      "excludedFields": [
+        {
+          "name": "F013",
+          "originalName": "Customer initials certifying all the above information is correct"
+        },
+        {
+          "name": "F038",
+          "originalName": "owners initials"
+        },
+        {
+          "name": "F039",
+          "originalName": "owners initials"
+        },
+        {
+          "name": "F040",
+          "originalName": "OWNERS SIGNATURE"
+        }
+      ],
+      "source": {
+        "kind": "NCDMV",
+        "url": "https://www.ncdot.gov/dmv/downloads/Documents/MVR-1A.pdf",
+        "retrievedOn": "2026-10-27",
+        "revision": "04/2026",
+        "sha256": "d6525492ddbe3f5a58fa69fea6bfe4c7663166262da46392c84f00482737d4ac"
+      }
+    },
+    {
+      "id": "MVR-4",
+      "title": "MVR-4 \u00b7 Duplicate title application",
+      "file": "MVR-4.pdf",
+      "pages": [
+        {
+          "width": 612.0,
+          "height": 792.0,
+          "fields": [
+            {
+              "name": "F001",
+              "originalName": "Title Number",
+              "label": "Title No",
+              "type": "text",
+              "x": 397.8,
+              "y": 74.88,
+              "width": 168.96,
+              "height": 11.4,
+              "fontSize": 8.207999999999984
+            },
+            {
+              "name": "F002",
+              "originalName": "Year",
+              "label": "Year",
+              "type": "text",
+              "x": 61.8,
+              "y": 95.4,
+              "width": 72.24,
+              "height": 11.4,
+              "fontSize": 8.207999999999984,
+              "key": "vehicle.year"
+            },
+            {
+              "name": "F003",
+              "originalName": "Make",
+              "label": "Make",
+              "type": "text",
+              "x": 158.88,
+              "y": 95.4,
+              "width": 99.24,
+              "height": 11.4,
+              "fontSize": 8.207999999999984,
+              "key": "vehicle.make"
+            },
+            {
+              "name": "F004",
+              "originalName": "Body Style",
+              "label": "Body Style",
+              "type": "text",
+              "x": 300.6,
+              "y": 95.4,
+              "width": 85.56,
+              "height": 11.4,
+              "fontSize": 8.207999999999984,
+              "key": "vehicle.body"
+            },
+            {
+              "name": "F005",
+              "originalName": "Series Model",
+              "label": "Series Model",
+              "type": "text",
+              "x": 438.24,
+              "y": 95.4,
+              "width": 117.12,
+              "height": 11.4,
+              "fontSize": 8.207999999999984,
+              "key": "vehicle.model_trim"
+            },
+            {
+              "name": "F006",
+              "originalName": "Vehicle Identification Number",
+              "label": "Vehicle Identification Number",
+              "type": "text",
+              "x": 154.68,
+              "y": 111.96,
+              "width": 270.48,
+              "height": 11.4,
+              "fontSize": 8.207999999999984,
+              "key": "vehicle.vin"
+            },
+            {
+              "name": "F007",
+              "originalName": "Fuel Type",
+              "label": "Fuel Type",
+              "type": "text",
+              "x": 466.32,
+              "y": 111.96,
+              "width": 90.12,
+              "height": 11.4,
+              "fontSize": 8.207999999999984,
+              "key": "vehicle.fuel"
+            },
+            {
+              "name": "F008",
+              "originalName": "Name of Registered Owners",
+              "label": "Name of Registered Owner(s",
+              "type": "text",
+              "x": 140.28,
+              "y": 130.342,
+              "width": 421.572,
+              "height": 10.875,
+              "fontSize": 7.83
+            },
+            {
+              "name": "F009",
+              "originalName": "Residential Address",
+              "label": "Residential Address",
+              "type": "text",
+              "x": 42.12,
+              "y": 154.32,
+              "width": 162.6,
+              "height": 11.4,
+              "fontSize": 8.207999999999984
+            },
+            {
+              "name": "F010",
+              "originalName": "City",
+              "label": "City",
+              "type": "text",
+              "x": 208.44,
+              "y": 154.32,
+              "width": 122.16,
+              "height": 11.4,
+              "fontSize": 8.207999999999984
+            },
+            {
+              "name": "F011",
+              "originalName": "State",
+              "label": "State",
+              "type": "text",
+              "x": 334.32,
+              "y": 154.32,
+              "width": 90.36,
+              "height": 11.4,
+              "fontSize": 8.207999999999984
+            },
+            {
+              "name": "F012",
+              "originalName": "Zip Code",
+              "label": "Zip Code",
+              "type": "text",
+              "x": 428.4,
+              "y": 154.32,
+              "width": 80.28,
+              "height": 11.4,
+              "fontSize": 8.207999999999984
+            },
+            {
+              "name": "F013",
+              "originalName": "County",
+              "label": "County",
+              "type": "text",
+              "x": 512.4,
+              "y": 154.32,
+              "width": 54.6,
+              "height": 11.4,
+              "fontSize": 8.207999999999984
+            },
+            {
+              "name": "F014",
+              "originalName": "Mailing Address to include street address, apartment or suite numbers, city, state, and zip code if different from above",
+              "label": "Mailing Address",
+              "type": "text",
+              "x": 97.08,
+              "y": 181.08,
+              "width": 468.84,
+              "height": 11.4,
+              "fontSize": 8.207999999999984
+            },
+            {
+              "name": "F015",
+              "originalName": "Vehicle Location Address to include street address, apartment or suite numbers, city, state, and zip code if different from above",
+              "label": "Vehicle Location Address",
+              "type": "text",
+              "x": 126.96,
+              "y": 206.4,
+              "width": 436.92,
+              "height": 11.4,
+              "fontSize": 8.207999999999984
+            },
+            {
+              "name": "F016",
+              "originalName": "Enter Date of First Lien (2-digit Month, 2 digit-Day, 4-digit Year",
+              "label": "First Lien",
+              "type": "text",
+              "x": 75.48,
+              "y": 244.978,
+              "width": 64.447,
+              "height": 13.502,
+              "fontSize": 9.721440000000047
+            },
+            {
+              "name": "F017",
+              "originalName": "Enter Name of First Lienholder",
+              "label": "First Lien",
+              "type": "text",
+              "x": 143.018,
+              "y": 244.761,
+              "width": 124.886,
+              "height": 14.028,
+              "fontSize": 10
+            },
+            {
+              "name": "F018",
+              "originalName": "Enter Address of First Lienholder to include street address, apartment or suite numbers, city, state, and zip code",
+              "label": "First Lien",
+              "type": "text",
+              "x": 271.004,
+              "y": 245.024,
+              "width": 292.01,
+              "height": 13.502,
+              "fontSize": 9.721439999999966
+            },
+            {
+              "name": "F019",
+              "originalName": "Enter Date of Second Lien (2-digit Month, 2 digit-Day, 4-digit Year",
+              "label": "First Lien",
+              "type": "text",
+              "x": 83.986,
+              "y": 272.766,
+              "width": 56.564,
+              "height": 13.502,
+              "fontSize": 9.721440000000007
+            },
+            {
+              "name": "F020",
+              "originalName": "Enter Name of Second Lienholder",
+              "label": "First Lien",
+              "type": "text",
+              "x": 143.641,
+              "y": 272.549,
+              "width": 124.886,
+              "height": 14.028,
+              "fontSize": 10
+            },
+            {
+              "name": "F021",
+              "originalName": "Enter Address of Second Lienholder to include street address, apartment or suite numbers, city, state, and zip code",
+              "label": "First Lien",
+              "type": "text",
+              "x": 271.101,
+              "y": 272.812,
+              "width": 292.01,
+              "height": 13.502,
+              "fontSize": 9.721440000000007
+            },
+            {
+              "name": "F022",
+              "originalName": "Enter Date of Third Lien (2-digit Month, 2 digit-Day, 4-digit Year",
+              "label": "First Lien",
+              "type": "text",
+              "x": 78.103,
+              "y": 300.766,
+              "width": 64.447,
+              "height": 13.502,
+              "fontSize": 9.721439999999966
+            },
+            {
+              "name": "F023",
+              "originalName": "Enter Name of Third Lienholder",
+              "label": "First Lien",
+              "type": "text",
+              "x": 145.641,
+              "y": 300.549,
+              "width": 124.886,
+              "height": 14.028,
+              "fontSize": 10
+            },
+            {
+              "name": "F024",
+              "originalName": "Enter Address of Third Lienholder to include street address, apartment or suite numbers, city, state, and zip code",
+              "label": "First Lien",
+              "type": "text",
+              "x": 273.626,
+              "y": 300.812,
+              "width": 292.011,
+              "height": 13.502,
+              "fontSize": 9.721440000000007
+            },
+            {
+              "name": "F025",
+              "originalName": "Check Box Choosing for personal information on application to be available for disclosure for marketing and solicitation",
+              "label": "I (We) would like the personal information contained in this application to be available for disclosure",
+              "type": "checkbox",
+              "x": 78.307,
+              "y": 370.512,
+              "width": 7.2,
+              "height": 5.64,
+              "fontSize": 5
+            },
+            {
+              "name": "F026",
+              "originalName": "Check Box Application for Duplicate Certificate of Title and Assignment by Registered Owner",
+              "label": "Check Box Application for Duplicate Certificate of Title and Assignment by Registered Owner",
+              "type": "checkbox",
+              "x": 62.015,
+              "y": 399.943,
+              "width": 7.2,
+              "height": 5.64,
+              "fontSize": 5,
+              "exclusiveGroup": "choice-0"
+            },
+            {
+              "name": "F027",
+              "originalName": "Check Box Application for Duplicate Certificate of Title as Recorded",
+              "label": "Application for Duplicate Certificate of Title as Recorded",
+              "type": "checkbox",
+              "x": 62.015,
+              "y": 408.877,
+              "width": 7.2,
+              "height": 5.64,
+              "fontSize": 5,
+              "exclusiveGroup": "choice-0"
+            },
+            {
+              "name": "F028",
+              "originalName": "Check Box Application for Duplicate Certificate of Title and Removal of Lien",
+              "label": "Application for Duplicate Certificate of Title and Removal of Lien",
+              "type": "checkbox",
+              "x": 61.489,
+              "y": 419.388,
+              "width": 7.2,
+              "height": 5.64,
+              "fontSize": 5,
+              "exclusiveGroup": "choice-0"
+            },
+            {
+              "name": "F029",
+              "originalName": "Check Box Lost original certificate of title",
+              "label": "Lost",
+              "type": "checkbox",
+              "x": 128.88,
+              "y": 447.84,
+              "width": 7.08,
+              "height": 5.64,
+              "fontSize": 5
+            },
+            {
+              "name": "F030",
+              "originalName": "CheckBox Never Received original certificate of title",
+              "label": "Never Received",
+              "type": "checkbox",
+              "x": 174.84,
+              "y": 447.84,
+              "width": 7.08,
+              "height": 5.64,
+              "fontSize": 5
+            },
+            {
+              "name": "F031",
+              "originalName": "Enter Current Odometer Reading",
+              "label": "immediately should it be found",
+              "type": "text",
+              "x": 134.04,
+              "y": 477.72,
+              "width": 124.8,
+              "height": 8.04,
+              "fontSize": 5.7887999999999735,
+              "key": "vehicle.mileage"
+            },
+            {
+              "name": "F040",
+              "originalName": "Checkbox Title lost while in my possession, lien has been satisfied",
+              "label": "Title lost while in my possession; lien has been satisfied",
+              "type": "checkbox",
+              "x": 186.12,
+              "y": 609.36,
+              "width": 7.2,
+              "height": 5.64,
+              "fontSize": 5
+            },
+            {
+              "name": "F041",
+              "originalName": "Checkbox Lost while in my possession",
+              "label": "Lost while in my possession",
+              "type": "checkbox",
+              "x": 421.08,
+              "y": 609.36,
+              "width": 7.2,
+              "height": 5.64,
+              "fontSize": 5
+            },
+            {
+              "name": "F042",
+              "originalName": "CheckBox Never Received",
+              "label": "Never Received",
+              "type": "checkbox",
+              "x": 42.12,
+              "y": 620.52,
+              "width": 7.2,
+              "height": 5.64,
+              "fontSize": 5
+            },
+            {
+              "name": "F043",
+              "originalName": "Enter Name to whom title was surrendered to upon payment of lien in full",
+              "label": "Surrendered to",
+              "type": "text",
+              "x": 208.56,
+              "y": 616.56,
+              "width": 195.96,
+              "height": 10.44,
+              "fontSize": 7.516799999999998
+            },
+            {
+              "name": "F044",
+              "originalName": "Checkbox Surrendered to",
+              "label": "CHECK APPLICABLE BLOCK",
+              "type": "checkbox",
+              "x": 150.12,
+              "y": 620.52,
+              "width": 7.2,
+              "height": 5.64,
+              "fontSize": 5
+            }
+          ]
+        }
+      ],
+      "excludedFields": [
+        {
+          "name": "F032",
+          "originalName": "Signatures of registered owners"
+        },
+        {
+          "name": "F033",
+          "originalName": "Date"
+        },
+        {
+          "name": "F034",
+          "originalName": "Enter County Document is being notarized"
+        },
+        {
+          "name": "F035",
+          "originalName": "Enter State Document is being notarized"
+        },
+        {
+          "name": "F036",
+          "originalName": "Enter Name(s) of Principal Owner(s)"
+        },
+        {
+          "name": "F037",
+          "originalName": "Notary's Signature"
+        },
+        {
+          "name": "F038",
+          "originalName": "Notary's Printed or Typed Name"
+        },
+        {
+          "name": "F039",
+          "originalName": "Enter Date Notary's Commission Expires"
+        },
+        {
+          "name": "F045",
+          "originalName": "Lien holders signature by authorized agent or representative"
+        },
+        {
+          "name": "F046",
+          "originalName": "Date Affidavit of first lienholder notarized"
+        },
+        {
+          "name": "F047",
+          "originalName": "Enter County Document is being notarized"
+        },
+        {
+          "name": "F048",
+          "originalName": "Enter State Document is being notarized"
+        },
+        {
+          "name": "F049",
+          "originalName": "Enter name(s) of principal owner(s)"
+        },
+        {
+          "name": "F050",
+          "originalName": "Notary's signature"
+        },
+        {
+          "name": "F051",
+          "originalName": "Enter Notary's Printed or Typed Name"
+        },
+        {
+          "name": "F052",
+          "originalName": "Enter Date Notary's Commission Expires"
+        }
+      ],
+      "source": {
+        "kind": "NCDMV",
+        "url": "https://www.ncdot.gov/dmv/downloads/Documents/MVR-4.pdf",
+        "retrievedOn": "2026-10-27",
+        "revision": "04/2026",
+        "sha256": "3d20c2694c0f9f083ed1e2b17010a28eeed69d723a3ab6f5d36be99ab5791d72"
+      }
+    },
+    {
+      "id": "MVR-5",
+      "title": "MVR-5 \u00b7 Corrected / substitute title application",
+      "file": "MVR-5.pdf",
+      "pages": [
+        {
+          "width": 612.0,
+          "height": 792.0,
+          "fields": [
+            {
+              "name": "F001",
+              "originalName": "YEAR",
+              "label": "YEAR",
+              "type": "text",
+              "x": 20.04,
+              "y": 99.578,
+              "width": 65.4,
+              "height": 16.08,
+              "fontSize": 10,
+              "key": "vehicle.year"
+            },
+            {
+              "name": "F002",
+              "originalName": "MAKE",
+              "label": "MAKE",
+              "type": "text",
+              "x": 87.48,
+              "y": 99.578,
+              "width": 90.96,
+              "height": 16.08,
+              "fontSize": 10,
+              "key": "vehicle.make"
+            },
+            {
+              "name": "F003",
+              "originalName": "BODY STYLE",
+              "label": "BODY STYLE",
+              "type": "text",
+              "x": 180.48,
+              "y": 99.578,
+              "width": 109.8,
+              "height": 16.08,
+              "fontSize": 10,
+              "key": "vehicle.body"
+            },
+            {
+              "name": "F004",
+              "originalName": "SERIES MODEL",
+              "label": "SERIES MODEL",
+              "type": "text",
+              "x": 291.665,
+              "y": 100.233,
+              "width": 65.88,
+              "height": 16.08,
+              "fontSize": 10,
+              "key": "vehicle.model_trim"
+            },
+            {
+              "name": "F005",
+              "originalName": "TITLE NUMBER",
+              "label": "TITLE NUMBER",
+              "type": "text",
+              "x": 360.24,
+              "y": 100.233,
+              "width": 222.0,
+              "height": 16.08,
+              "fontSize": 10
+            },
+            {
+              "name": "F006",
+              "originalName": "OWNER SECTION",
+              "label": "Vehicle identification number",
+              "type": "text",
+              "x": 20.04,
+              "y": 125.498,
+              "width": 270.24,
+              "height": 15.6,
+              "fontSize": 10,
+              "key": "vehicle.vin"
+            },
+            {
+              "name": "F007",
+              "originalName": "TYPE OF FUEL",
+              "label": "TYPE OF FUEL",
+              "type": "text",
+              "x": 291.665,
+              "y": 125.367,
+              "width": 65.88,
+              "height": 17.04,
+              "fontSize": 10,
+              "key": "vehicle.fuel"
+            },
+            {
+              "name": "F008",
+              "originalName": "ODOMETER READING",
+              "label": "ODOMETER READING",
+              "type": "text",
+              "x": 360.24,
+              "y": 126.022,
+              "width": 113.04,
+              "height": 17.04,
+              "fontSize": 10,
+              "key": "vehicle.mileage"
+            },
+            {
+              "name": "F009",
+              "originalName": "ODOMETER BRAND",
+              "label": "ODOMETER BRAND",
+              "type": "text",
+              "x": 475.32,
+              "y": 125.498,
+              "width": 106.92,
+              "height": 15.6,
+              "fontSize": 10
+            },
+            {
+              "name": "F010",
+              "originalName": "Owner 1 ID Number",
+              "label": "Owner 1 ID",
+              "type": "text",
+              "x": 76.099,
+              "y": 158.084,
+              "width": 150.0,
+              "height": 15.273,
+              "fontSize": 10
+            },
+            {
+              "name": "F011",
+              "originalName": "Full Legal Name of Owner 1 First Middle Last Suffix or Company Name",
+              "label": "Full Legal Name of Owner 1 (First, Middle, Last, Suffix) or Company Name",
+              "type": "text",
+              "x": 230.147,
+              "y": 157.561,
+              "width": 351.57,
+              "height": 16.08,
+              "fontSize": 10
+            },
+            {
+              "name": "F012",
+              "originalName": "Owner 2 ID Number",
+              "label": "Owner 2 ID",
+              "type": "text",
+              "x": 76.94,
+              "y": 183.31,
+              "width": 150.0,
+              "height": 18.216,
+              "fontSize": 10
+            },
+            {
+              "name": "F013",
+              "originalName": "Full Legal Name of Owner 2 First Middle Last Suffix or Company Name",
+              "label": "Full legal name of Owner 2",
+              "type": "text",
+              "x": 231.51,
+              "y": 185.716,
+              "width": 350.73,
+              "height": 16.08,
+              "fontSize": 10
+            },
+            {
+              "name": "F014",
+              "originalName": "YES",
+              "label": "Joint tenants with right of survivorship: Yes",
+              "type": "checkbox",
+              "x": 481.093,
+              "y": 217.31,
+              "width": 13.091,
+              "height": 11.782,
+              "fontSize": 8.483040000000027,
+              "exclusiveGroup": "choice-0"
+            },
+            {
+              "name": "F015",
+              "originalName": "NO",
+              "label": "Joint tenants with right of survivorship: No",
+              "type": "checkbox",
+              "x": 527.892,
+              "y": 217.31,
+              "width": 13.091,
+              "height": 11.782,
+              "fontSize": 8.483040000000027,
+              "exclusiveGroup": "choice-0"
+            },
+            {
+              "name": "F016",
+              "originalName": "Address",
+              "label": "Residence Address (Individual) Business Address (Firm",
+              "type": "text",
+              "x": 227.783,
+              "y": 229.964,
+              "width": 355.092,
+              "height": 15.455,
+              "fontSize": 10
+            },
+            {
+              "name": "F017",
+              "originalName": "City/State",
+              "label": "City and State",
+              "type": "text",
+              "x": 74.182,
+              "y": 245.456,
+              "width": 286.146,
+              "height": 17.418,
+              "fontSize": 10
+            },
+            {
+              "name": "F018",
+              "originalName": "Zip Code",
+              "label": "Zip Code",
+              "type": "text",
+              "x": 393.602,
+              "y": 245.892,
+              "width": 79.308,
+              "height": 16.109,
+              "fontSize": 10
+            },
+            {
+              "name": "F019",
+              "originalName": "Tax County",
+              "label": "Tax County",
+              "type": "text",
+              "x": 517.855,
+              "y": 245.456,
+              "width": 66.875,
+              "height": 17.418,
+              "fontSize": 10
+            },
+            {
+              "name": "F020",
+              "originalName": "Mailing Address (If different from above)",
+              "label": "Mailing address",
+              "type": "text",
+              "x": 179.749,
+              "y": 261.48,
+              "width": 402.611,
+              "height": 12.96,
+              "fontSize": 9.331200000000026
+            },
+            {
+              "name": "F021",
+              "originalName": "Plate Number",
+              "label": "Plate Number",
+              "type": "text",
+              "x": 478.582,
+              "y": 274.135,
+              "width": 103.778,
+              "height": 14.138,
+              "fontSize": 10
+            },
+            {
+              "name": "F022",
+              "originalName": "Insurance Company",
+              "label": "Insurance company",
+              "type": "text",
+              "x": 19.2,
+              "y": 286.474,
+              "width": 386.51,
+              "height": 17.418,
+              "fontSize": 10
+            },
+            {
+              "name": "F023",
+              "originalName": "Policy Number",
+              "label": "Enter Policy Number",
+              "type": "text",
+              "x": 409.311,
+              "y": 287.347,
+              "width": 173.564,
+              "height": 16.545,
+              "fontSize": 10
+            },
+            {
+              "name": "F024",
+              "originalName": "Date of Lien",
+              "label": "Date of Lien",
+              "type": "text",
+              "x": 61.211,
+              "y": 349.32,
+              "width": 117.349,
+              "height": 12.24,
+              "fontSize": 8.812800000000006
+            },
+            {
+              "name": "F025",
+              "originalName": "Maturity Date",
+              "label": "Maturity Date",
+              "type": "text",
+              "x": 67.418,
+              "y": 363.0,
+              "width": 111.142,
+              "height": 12.24,
+              "fontSize": 8.812800000000006
+            },
+            {
+              "name": "F026",
+              "originalName": "Account",
+              "label": "Account #",
+              "type": "text",
+              "x": 180.6,
+              "y": 357.709,
+              "width": 109.56,
+              "height": 17.531,
+              "fontSize": 10
+            },
+            {
+              "name": "F027",
+              "originalName": "Lienholder ID Number",
+              "label": "First lienholder ID number",
+              "type": "text",
+              "x": 19.445,
+              "y": 381.023,
+              "width": 104.803,
+              "height": 22.0,
+              "fontSize": 10
+            },
+            {
+              "name": "F028",
+              "originalName": "Lienholder Name",
+              "label": "First Lienholder Name",
+              "type": "text",
+              "x": 145.052,
+              "y": 380.498,
+              "width": 143.693,
+              "height": 22.0,
+              "fontSize": 10
+            },
+            {
+              "name": "F029",
+              "originalName": "Address 1st Lien",
+              "label": "First lienholder address",
+              "type": "text",
+              "x": 45.24,
+              "y": 402.6,
+              "width": 245.16,
+              "height": 12.96,
+              "fontSize": 9.331199999999985
+            },
+            {
+              "name": "F030",
+              "originalName": "City/1st Lien",
+              "label": "City",
+              "type": "text",
+              "x": 33.6,
+              "y": 415.42,
+              "width": 104.182,
+              "height": 15.891,
+              "fontSize": 10
+            },
+            {
+              "name": "F031",
+              "originalName": "State 1st Lien",
+              "label": "State",
+              "type": "text",
+              "x": 155.783,
+              "y": 416.73,
+              "width": 29.126,
+              "height": 15.454,
+              "fontSize": 10
+            },
+            {
+              "name": "F032",
+              "originalName": "Zip Code 1st Lien",
+              "label": "Zip Code",
+              "type": "text",
+              "x": 209.892,
+              "y": 416.293,
+              "width": 80.618,
+              "height": 13.272,
+              "fontSize": 9.555839999999993
+            },
+            {
+              "name": "F033",
+              "originalName": "Date of Lien_2",
+              "label": "Date of Lien",
+              "type": "text",
+              "x": 334.407,
+              "y": 349.32,
+              "width": 138.993,
+              "height": 12.24,
+              "fontSize": 8.812800000000006
+            },
+            {
+              "name": "F034",
+              "originalName": "Maturity Date_2",
+              "label": "Maturity Date",
+              "type": "text",
+              "x": 340.178,
+              "y": 363.0,
+              "width": 133.222,
+              "height": 12.24,
+              "fontSize": 8.812800000000006
+            },
+            {
+              "name": "F035",
+              "originalName": "Account_2",
+              "label": "Account #",
+              "type": "text",
+              "x": 475.44,
+              "y": 356.4,
+              "width": 106.68,
+              "height": 18.84,
+              "fontSize": 10
+            },
+            {
+              "name": "F036",
+              "originalName": "Lienholder ID Number 2",
+              "label": "Second lienholder ID number",
+              "type": "text",
+              "x": 297.986,
+              "y": 381.023,
+              "width": 110.584,
+              "height": 22.0,
+              "fontSize": 10
+            },
+            {
+              "name": "F037",
+              "originalName": "Lienholder Name 2",
+              "label": "Second Lienholder Name",
+              "type": "text",
+              "x": 426.22,
+              "y": 380.498,
+              "width": 153.679,
+              "height": 22.0,
+              "fontSize": 10
+            },
+            {
+              "name": "F038",
+              "originalName": "Address 2nd Lien",
+              "label": "Second lienholder address",
+              "type": "text",
+              "x": 321.491,
+              "y": 402.6,
+              "width": 260.869,
+              "height": 12.96,
+              "fontSize": 9.331199999999985
+            },
+            {
+              "name": "F039",
+              "originalName": "City/2nd Lien",
+              "label": "City",
+              "type": "text",
+              "x": 310.311,
+              "y": 414.893,
+              "width": 114.218,
+              "height": 17.636,
+              "fontSize": 10
+            },
+            {
+              "name": "F040",
+              "originalName": "State 2nd Lien",
+              "label": "State",
+              "type": "text",
+              "x": 443.839,
+              "y": 413.711,
+              "width": 31.308,
+              "height": 18.509,
+              "fontSize": 10
+            },
+            {
+              "name": "F041",
+              "originalName": "Zip Code 2nd Lien",
+              "label": "Zip Code",
+              "type": "text",
+              "x": 504.494,
+              "y": 414.02,
+              "width": 82.799,
+              "height": 15.891,
+              "fontSize": 10
+            },
+            {
+              "name": "F042",
+              "originalName": "I would like the",
+              "label": "I (We) would like the personal information contained in this application to be available for disclosure",
+              "type": "checkbox",
+              "x": 124.381,
+              "y": 458.54,
+              "width": 12.52,
+              "height": 10.693,
+              "fontSize": 7.698959999999988
+            },
+            {
+              "name": "F043",
+              "originalName": "ODOMETER READING_2",
+              "label": "ODOMETER READING",
+              "type": "text",
+              "x": 424.8,
+              "y": 479.88,
+              "width": 157.44,
+              "height": 16.32,
+              "fontSize": 10
+            },
+            {
+              "name": "F044",
+              "originalName": "Spelling of name incorrect",
+              "label": "Spelling of name incorrect",
+              "type": "checkbox",
+              "x": 71.905,
+              "y": 496.739,
+              "width": 12.519,
+              "height": 10.693,
+              "fontSize": 7.698960000000029
+            },
+            {
+              "name": "F045",
+              "originalName": "Year model in error",
+              "label": "Year model in error",
+              "type": "checkbox",
+              "x": 277.111,
+              "y": 495.303,
+              "width": 12.52,
+              "height": 10.693,
+              "fontSize": 7.698959999999988
+            },
+            {
+              "name": "F046",
+              "originalName": "Change of name",
+              "label": "Change of name (See notes A & B",
+              "type": "checkbox",
+              "x": 71.905,
+              "y": 510.136,
+              "width": 12.519,
+              "height": 10.693,
+              "fontSize": 7.698959999999988
+            },
+            {
+              "name": "F047",
+              "originalName": "Wrong lienholder",
+              "label": "Wrong lienholder",
+              "type": "checkbox",
+              "x": 276.91,
+              "y": 509.675,
+              "width": 12.519,
+              "height": 10.692,
+              "fontSize": 7.698240000000005
+            },
+            {
+              "name": "F048",
+              "originalName": "Identification number",
+              "label": "Identification number (See note C",
+              "type": "checkbox",
+              "x": 72.296,
+              "y": 523.142,
+              "width": 12.519,
+              "height": 10.693,
+              "fontSize": 7.698959999999988
+            },
+            {
+              "name": "F049",
+              "originalName": "Change of motor or body",
+              "label": "Change of motor or body (See note E",
+              "type": "checkbox",
+              "x": 276.906,
+              "y": 523.533,
+              "width": 12.519,
+              "height": 10.693,
+              "fontSize": 7.698959999999988
+            },
+            {
+              "name": "F050",
+              "originalName": "Body Style",
+              "label": "Body style",
+              "type": "checkbox",
+              "x": 72.296,
+              "y": 535.93,
+              "width": 12.519,
+              "height": 10.693,
+              "fontSize": 7.698959999999988
+            },
+            {
+              "name": "F051",
+              "originalName": "Title incorrectly assigned",
+              "label": "Title incorrectly assigned (See note F",
+              "type": "checkbox",
+              "x": 277.297,
+              "y": 536.93,
+              "width": 12.519,
+              "height": 10.693,
+              "fontSize": 7.698959999999988
+            },
+            {
+              "name": "F052",
+              "originalName": "Join applicants",
+              "label": "Joint applicants request this title to be issued with Joint Tenants with Rights of Survivorship",
+              "type": "checkbox",
+              "x": 72.296,
+              "y": 548.501,
+              "width": 12.519,
+              "height": 10.692,
+              "fontSize": 7.698240000000005
+            },
+            {
+              "name": "F053",
+              "originalName": "Give detailed 3rd field",
+              "label": "Detailed explanation, line 3",
+              "type": "text",
+              "x": 20.073,
+              "y": 586.475,
+              "width": 563.674,
+              "height": 15.891,
+              "fontSize": 10
+            },
+            {
+              "name": "F054",
+              "originalName": "Give detailed 2nd field",
+              "label": "Detailed explanation, line 2",
+              "type": "text",
+              "x": 19.2,
+              "y": 567.275,
+              "width": 563.675,
+              "height": 22.0,
+              "fontSize": 10
+            },
+            {
+              "name": "F055",
+              "originalName": "Give detailed explanation",
+              "label": "Detailed explanation, line 1",
+              "type": "text",
+              "x": 228.656,
+              "y": 558.547,
+              "width": 355.964,
+              "height": 16.764,
+              "fontSize": 10
+            }
+          ]
+        },
+        {
+          "width": 612.0,
+          "height": 792.0,
+          "fields": [
+            {
+              "name": "F065",
+              "originalName": "Lienor Address",
+              "label": "Address",
+              "type": "text",
+              "x": 109.314,
+              "y": 176.059,
+              "width": 188.365,
+              "height": 17.796,
+              "fontSize": 10
+            },
+            {
+              "name": "F066",
+              "originalName": "Lienor City",
+              "label": "City",
+              "type": "text",
+              "x": 336.877,
+              "y": 172.906,
+              "width": 76.423,
+              "height": 22.0,
+              "fontSize": 10
+            },
+            {
+              "name": "F067",
+              "originalName": "State",
+              "label": "State",
+              "type": "text",
+              "x": 423.067,
+              "y": 173.431,
+              "width": 32.803,
+              "height": 22.0,
+              "fontSize": 10
+            },
+            {
+              "name": "F068",
+              "originalName": "Zip Code",
+              "label": "Zip Code",
+              "type": "text",
+              "x": 473.52,
+              "y": 173.431,
+              "width": 41.211,
+              "height": 22.0,
+              "fontSize": 10
+            }
+          ]
+        }
+      ],
+      "excludedFields": [
+        {
+          "name": "F056",
+          "originalName": "Signature9"
+        },
+        {
+          "name": "F057",
+          "originalName": "Date"
+        },
+        {
+          "name": "F058",
+          "originalName": "County"
+        },
+        {
+          "name": "F059",
+          "originalName": "State 2"
+        },
+        {
+          "name": "F060",
+          "originalName": "names of principalS"
+        },
+        {
+          "name": "F061",
+          "originalName": "Signature10"
+        },
+        {
+          "name": "F062",
+          "originalName": "Notary Printed or Typed Name"
+        },
+        {
+          "name": "F063",
+          "originalName": "My Commission Expires"
+        },
+        {
+          "name": "F064",
+          "originalName": "Signature of Lienor"
+        },
+        {
+          "name": "F069",
+          "originalName": "Date30_af_date"
+        },
+        {
+          "name": "F070",
+          "originalName": "County"
+        },
+        {
+          "name": "F071",
+          "originalName": "Notary State"
+        },
+        {
+          "name": "F072",
+          "originalName": "Name(s) of principal(s)"
+        },
+        {
+          "name": "F073",
+          "originalName": "Signature28"
+        },
+        {
+          "name": "F074",
+          "originalName": "Date29_af_date"
+        },
+        {
+          "name": "F075",
+          "originalName": "Notary Printed Name"
+        }
+      ],
+      "source": {
+        "kind": "NCDMV",
+        "url": "https://www.ncdot.gov/dmv/downloads/Documents/MVR-5.pdf",
+        "retrievedOn": "2026-10-27",
+        "revision": "08/2018",
+        "sha256": "1d5c44b93ebace686591f29a1ed31146cfe62c19b3f8a8c6fb80cf1b84ba6377"
+      }
+    },
+    {
+      "id": "MVR-6",
+      "title": "MVR-6 \u00b7 Lien recording application",
+      "file": "MVR-6.pdf",
+      "pages": [
+        {
+          "width": 612.0,
+          "height": 792.0,
+          "fields": [
+            {
+              "name": "F001",
+              "originalName": "Enter Title Number",
+              "label": "Title #",
+              "type": "text",
+              "x": 469.388,
+              "y": 169.44,
+              "width": 109.132,
+              "height": 15.84,
+              "fontSize": 10
+            },
+            {
+              "name": "F002",
+              "originalName": "Enter YEAR",
+              "label": "YEAR",
+              "type": "text",
+              "x": 34.92,
+              "y": 193.08,
+              "width": 41.16,
+              "height": 16.92,
+              "fontSize": 10,
+              "key": "vehicle.year"
+            },
+            {
+              "name": "F003",
+              "originalName": "Enter MAKE",
+              "label": "MAKE",
+              "type": "text",
+              "x": 78.12,
+              "y": 193.08,
+              "width": 34.92,
+              "height": 16.92,
+              "fontSize": 10,
+              "key": "vehicle.make"
+            },
+            {
+              "name": "F004",
+              "originalName": "Enter BODY STYLE",
+              "label": "BODY STYLE",
+              "type": "text",
+              "x": 115.08,
+              "y": 193.08,
+              "width": 58.92,
+              "height": 16.92,
+              "fontSize": 10,
+              "key": "vehicle.body"
+            },
+            {
+              "name": "F005",
+              "originalName": "Enter SERIES MODEL",
+              "label": "SERIES MODEL",
+              "type": "text",
+              "x": 176.04,
+              "y": 193.08,
+              "width": 103.92,
+              "height": 16.92,
+              "fontSize": 10,
+              "key": "vehicle.model_trim"
+            },
+            {
+              "name": "F006",
+              "originalName": "Enter VEHICLE IDENTIFICATION NUMBER",
+              "label": "VEHICLE IDENTIFICATION NUMBER",
+              "type": "text",
+              "x": 282.0,
+              "y": 193.08,
+              "width": 296.52,
+              "height": 16.92,
+              "fontSize": 10,
+              "key": "vehicle.vin"
+            },
+            {
+              "name": "F007",
+              "originalName": "Enter Pwmer 1 ID Number",
+              "label": "Owner 1 ID number",
+              "type": "text",
+              "x": 73.32,
+              "y": 228.72,
+              "width": 66.84,
+              "height": 14.28,
+              "fontSize": 10
+            },
+            {
+              "name": "F008",
+              "originalName": "Enter Full Legal Name of Owner 1 to include First Middle Last Suffix or Company Name",
+              "label": "Full Legal Name of Owner 1 (First, Middle, Last, Suffix) or Company Name",
+              "type": "text",
+              "x": 149.4,
+              "y": 228.72,
+              "width": 389.52,
+              "height": 14.28,
+              "fontSize": 10
+            },
+            {
+              "name": "F009",
+              "originalName": "Enter Owner 2 ID Number",
+              "label": "Owner 2 ID",
+              "type": "text",
+              "x": 71.76,
+              "y": 263.76,
+              "width": 66.84,
+              "height": 14.28,
+              "fontSize": 10
+            },
+            {
+              "name": "F010",
+              "originalName": "Enter Full Legal Name of Owner 2 to include First Middle Last Suffix or Company Name",
+              "label": "Full Legal Name of Owner 2 (First, Middle, Last, Suffix) or Company Name",
+              "type": "text",
+              "x": 147.84,
+              "y": 263.76,
+              "width": 389.52,
+              "height": 14.28,
+              "fontSize": 10
+            },
+            {
+              "name": "F011",
+              "originalName": "Enter Individual Residence Address or Business/Firm Address to include apartment or suite number",
+              "label": "Residence Address (Individual) Business Address(Firm)",
+              "type": "text",
+              "x": 34.8,
+              "y": 300.24,
+              "width": 543.84,
+              "height": 12.84,
+              "fontSize": 9.244799999999982
+            },
+            {
+              "name": "F012",
+              "originalName": "Enter City and State",
+              "label": "City and State",
+              "type": "text",
+              "x": 34.8,
+              "y": 320.76,
+              "width": 245.28,
+              "height": 12.84,
+              "fontSize": 9.244800000000023
+            },
+            {
+              "name": "F013",
+              "originalName": "Enter Zip Code",
+              "label": "Zip Code",
+              "type": "text",
+              "x": 281.88,
+              "y": 320.76,
+              "width": 146.28,
+              "height": 12.84,
+              "fontSize": 9.244800000000023
+            },
+            {
+              "name": "F014",
+              "originalName": "Enter Tax County",
+              "label": "Tax County",
+              "type": "text",
+              "x": 429.96,
+              "y": 320.76,
+              "width": 148.68,
+              "height": 12.84,
+              "fontSize": 9.244800000000023
+            },
+            {
+              "name": "F015",
+              "originalName": "Enter Mailing Address if different from above t include street adress, apartment or suite number city state and zip code",
+              "label": "Mailing Address (if different from above)",
+              "type": "text",
+              "x": 34.8,
+              "y": 340.634,
+              "width": 543.84,
+              "height": 12.96,
+              "fontSize": 9.331199999999985
+            },
+            {
+              "name": "F016",
+              "originalName": "Enter Date of First Lien",
+              "label": "Enter Date of First Lien",
+              "type": "text",
+              "x": 69.898,
+              "y": 383.651,
+              "width": 31.226,
+              "height": 13.591,
+              "fontSize": 9.785520000000005
+            },
+            {
+              "name": "F017",
+              "originalName": "Mobile Home Only - Enter Maturity Date of First Lien",
+              "label": "Mobile Home Only - Enter Maturity Date of First Lien",
+              "type": "text",
+              "x": 158.19,
+              "y": 384.702,
+              "width": 38.058,
+              "height": 13.066,
+              "fontSize": 9.40751999999998
+            },
+            {
+              "name": "F018",
+              "originalName": "Enter First Lien Account Number",
+              "label": "Enter First Lien Account Number",
+              "type": "text",
+              "x": 227.563,
+              "y": 382.074,
+              "width": 52.773,
+              "height": 15.694,
+              "fontSize": 10
+            },
+            {
+              "name": "F019",
+              "originalName": "Enter First Lienholder ID Number",
+              "label": "Lienholder ID #",
+              "type": "text",
+              "x": 34.68,
+              "y": 404.28,
+              "width": 78.6,
+              "height": 8.88,
+              "fontSize": 6.3936000000000375
+            },
+            {
+              "name": "F020",
+              "originalName": "Enter First Lienholder Name",
+              "label": "Lienholder Name",
+              "type": "text",
+              "x": 114.84,
+              "y": 404.28,
+              "width": 165.36,
+              "height": 8.88,
+              "fontSize": 6.3936000000000375
+            },
+            {
+              "name": "F021",
+              "originalName": "Enter First Lienholder Street Address to include suite number",
+              "label": "Address",
+              "type": "text",
+              "x": 59.76,
+              "y": 416.462,
+              "width": 205.32,
+              "height": 10.378,
+              "fontSize": 7.47215999999999
+            },
+            {
+              "name": "F022",
+              "originalName": "Enter First Lienholder City",
+              "label": "City",
+              "type": "text",
+              "x": 47.76,
+              "y": 431.102,
+              "width": 62.88,
+              "height": 12.178,
+              "fontSize": 8.768159999999998
+            },
+            {
+              "name": "F023",
+              "originalName": "Enter First Lienholder State",
+              "label": "State",
+              "type": "text",
+              "x": 137.4,
+              "y": 431.102,
+              "width": 24.72,
+              "height": 12.178,
+              "fontSize": 8.768159999999998
+            },
+            {
+              "name": "F024",
+              "originalName": "Enter First Lienholder Zip Code",
+              "label": "Zip Code",
+              "type": "text",
+              "x": 193.92,
+              "y": 431.102,
+              "width": 71.52,
+              "height": 12.178,
+              "fontSize": 8.768159999999998
+            },
+            {
+              "name": "F025",
+              "originalName": "Enter Second Lien Date",
+              "label": "Enter Second Lien Date",
+              "type": "text",
+              "x": 316.906,
+              "y": 383.651,
+              "width": 44.365,
+              "height": 13.591,
+              "fontSize": 9.785520000000005
+            },
+            {
+              "name": "F026",
+              "originalName": "Mobile Home only - Enter Maturity Date of Second Lien",
+              "label": "Mobile Home only - Enter Maturity Date of Second Lien",
+              "type": "text",
+              "x": 418.863,
+              "y": 385.753,
+              "width": 47.518,
+              "height": 10.963,
+              "fontSize": 7.8933600000000155
+            },
+            {
+              "name": "F027",
+              "originalName": "Enter Second Lien Account Number",
+              "label": "Enter Second Lien Account Number",
+              "type": "text",
+              "x": 495.11,
+              "y": 383.651,
+              "width": 82.469,
+              "height": 14.117,
+              "fontSize": 10
+            },
+            {
+              "name": "F028",
+              "originalName": "Enter Second Lienholder ID Number",
+              "label": "Lienholder ID #",
+              "type": "text",
+              "x": 281.76,
+              "y": 404.28,
+              "width": 96.24,
+              "height": 8.88,
+              "fontSize": 6.3936000000000375
+            },
+            {
+              "name": "F029",
+              "originalName": "Enter Second Lienholder Name",
+              "label": "Lienholder Name",
+              "type": "text",
+              "x": 379.56,
+              "y": 404.28,
+              "width": 199.2,
+              "height": 8.88,
+              "fontSize": 6.3936000000000375
+            },
+            {
+              "name": "F030",
+              "originalName": "Enter Second Lienholder Street Address to include suite number",
+              "label": "Address",
+              "type": "text",
+              "x": 306.72,
+              "y": 415.988,
+              "width": 233.28,
+              "height": 11.429,
+              "fontSize": 8.22887999999998
+            },
+            {
+              "name": "F031",
+              "originalName": "Enter Second Liehnholder City",
+              "label": "City",
+              "type": "text",
+              "x": 294.72,
+              "y": 429.0,
+              "width": 66.48,
+              "height": 14.28,
+              "fontSize": 10
+            },
+            {
+              "name": "F032",
+              "originalName": "Enter Second Lienholder State",
+              "label": "State",
+              "type": "text",
+              "x": 383.76,
+              "y": 429.0,
+              "width": 37.68,
+              "height": 14.28,
+              "fontSize": 10
+            },
+            {
+              "name": "F033",
+              "originalName": "Enter Second Lienholder Zip Code",
+              "label": "Zip Code",
+              "type": "text",
+              "x": 454.8,
+              "y": 429.0,
+              "width": 85.56,
+              "height": 14.28,
+              "fontSize": 10
+            },
+            {
+              "name": "F034",
+              "originalName": "Enter Date of Third Lien",
+              "label": "Enter Date of Third Lien",
+              "type": "text",
+              "x": 70.257,
+              "y": 460.768,
+              "width": 31.226,
+              "height": 13.591,
+              "fontSize": 9.785520000000005
+            },
+            {
+              "name": "F035",
+              "originalName": "Mobile Home Only - Enter Maturity Date of ThirdLien",
+              "label": "Mobile Home Only - Enter Maturity Date of ThirdLien",
+              "type": "text",
+              "x": 157.841,
+              "y": 462.03,
+              "width": 38.058,
+              "height": 13.066,
+              "fontSize": 9.407520000000021
+            },
+            {
+              "name": "F036",
+              "originalName": "Enter Third Lien Account Number",
+              "label": "Enter Third Lien Account Number",
+              "type": "text",
+              "x": 227.483,
+              "y": 459.716,
+              "width": 52.773,
+              "height": 15.694,
+              "fontSize": 10
+            },
+            {
+              "name": "F037",
+              "originalName": "Enter Third Lienholder ID Number",
+              "label": "Lienholder ID #_3",
+              "type": "text",
+              "x": 35.044,
+              "y": 483.123,
+              "width": 78.6,
+              "height": 9.406,
+              "fontSize": 6.772320000000004
+            },
+            {
+              "name": "F038",
+              "originalName": "Enter Third Lienholder Name",
+              "label": "Lienholder Name_3",
+              "type": "text",
+              "x": 115.19,
+              "y": 483.123,
+              "width": 165.36,
+              "height": 9.931,
+              "fontSize": 7.150319999999987
+            },
+            {
+              "name": "F039",
+              "originalName": "Enter Third Lienholder Street Address to include suite number",
+              "label": "Address",
+              "type": "text",
+              "x": 59.76,
+              "y": 493.713,
+              "width": 205.32,
+              "height": 11.127,
+              "fontSize": 8.011439999999965
+            },
+            {
+              "name": "F040",
+              "originalName": "Enter Third Lienholder City",
+              "label": "City",
+              "type": "text",
+              "x": 47.76,
+              "y": 510.033,
+              "width": 62.88,
+              "height": 11.127,
+              "fontSize": 8.011440000000007
+            },
+            {
+              "name": "F041",
+              "originalName": "Enter Third Lienholder State",
+              "label": "State",
+              "type": "text",
+              "x": 137.4,
+              "y": 508.457,
+              "width": 24.72,
+              "height": 12.703,
+              "fontSize": 9.146160000000021
+            },
+            {
+              "name": "F042",
+              "originalName": "Enter Third Lienholder Zip Code",
+              "label": "Zip Code",
+              "type": "text",
+              "x": 193.92,
+              "y": 508.457,
+              "width": 71.52,
+              "height": 12.703,
+              "fontSize": 9.146160000000021
+            },
+            {
+              "name": "F043",
+              "originalName": "Enter Date of Fourth Lien",
+              "label": "Enter Date of Fourth Lien",
+              "type": "text",
+              "x": 317.257,
+              "y": 463.921,
+              "width": 43.313,
+              "height": 10.438,
+              "fontSize": 7.515359999999991
+            },
+            {
+              "name": "F044",
+              "originalName": "Mobile Home Only - Enter Maturity Date of Fourth Lien",
+              "label": "Mobile Home Only - Enter Maturity Date of Fourth Lien",
+              "type": "text",
+              "x": 417.841,
+              "y": 462.556,
+              "width": 47.518,
+              "height": 12.54,
+              "fontSize": 9.028800000000015
+            },
+            {
+              "name": "F045",
+              "originalName": "Enter Fourth Lien Account Number",
+              "label": "Enter Fourth Lien Account Number",
+              "type": "text",
+              "x": 495.483,
+              "y": 461.344,
+              "width": 81.678,
+              "height": 13.592,
+              "fontSize": 9.786239999999989
+            },
+            {
+              "name": "F046",
+              "originalName": "Enter Fourth Lienholder ID Number",
+              "label": "Lienholder ID #",
+              "type": "text",
+              "x": 282.38,
+              "y": 483.123,
+              "width": 94.892,
+              "height": 9.406,
+              "fontSize": 6.772320000000004
+            },
+            {
+              "name": "F047",
+              "originalName": "Enter Fourth Lienholder Name",
+              "label": "Lienholder Name",
+              "type": "text",
+              "x": 379.343,
+              "y": 483.649,
+              "width": 148.017,
+              "height": 9.405,
+              "fontSize": 6.77159999999998
+            },
+            {
+              "name": "F048",
+              "originalName": "Enter Fourth Lienholder Street Address to include suite number",
+              "label": "Address",
+              "type": "text",
+              "x": 306.72,
+              "y": 493.713,
+              "width": 233.28,
+              "height": 11.127,
+              "fontSize": 8.011439999999965
+            },
+            {
+              "name": "F049",
+              "originalName": "Enter Fourth Lienholder City",
+              "label": "City",
+              "type": "text",
+              "x": 294.72,
+              "y": 510.033,
+              "width": 66.48,
+              "height": 11.127,
+              "fontSize": 8.011440000000007
+            },
+            {
+              "name": "F050",
+              "originalName": "Enter Fourth Lienholder State",
+              "label": "State",
+              "type": "text",
+              "x": 383.76,
+              "y": 509.982,
+              "width": 37.68,
+              "height": 12.178,
+              "fontSize": 8.768159999999998
+            },
+            {
+              "name": "F051",
+              "originalName": "Enter Fourth Lienholder Zip Code",
+              "label": "Zip Code",
+              "type": "text",
+              "x": 454.8,
+              "y": 509.457,
+              "width": 85.56,
+              "height": 12.703,
+              "fontSize": 9.146160000000021
+            },
+            {
+              "name": "F052",
+              "originalName": "CheckBox  I or we would like the personal information contained in this application to be available for disclosure",
+              "label": "Make personal information available for marketing and solicitation disclosure",
+              "type": "checkbox",
+              "x": 149.543,
+              "y": 558.041,
+              "width": 11.777,
+              "height": 14.417,
+              "fontSize": 10,
+              "textCheckbox": true
+            }
+          ]
+        }
+      ],
+      "excludedFields": [
+        {
+          "name": "F053",
+          "originalName": "OWNER(s) SIGNATURE(s)"
+        },
+        {
+          "name": "F054",
+          "originalName": "Date Application Signed and Notarized"
+        },
+        {
+          "name": "F055",
+          "originalName": "County where Application is being Notarized"
+        },
+        {
+          "name": "F056",
+          "originalName": "State where Application is being notarized"
+        },
+        {
+          "name": "F057",
+          "originalName": "Name(s) of principal(s)"
+        },
+        {
+          "name": "F058",
+          "originalName": "Notary's Signature"
+        },
+        {
+          "name": "F059",
+          "originalName": "Notary Printed or Typed Name"
+        },
+        {
+          "name": "F060",
+          "originalName": "Date Notary's Commission Expires"
+        }
+      ],
+      "source": {
+        "kind": "NCDMV",
+        "url": "https://www.ncdot.gov/dmv/downloads/Documents/MVR-6.pdf",
+        "retrievedOn": "2026-10-27",
+        "revision": "04/2026",
+        "sha256": "d46f4d6cb0fbf00ee97acbb3e7be50aa7da37200894ba45aef93b658ddee6600"
+      }
+    },
+    {
+      "id": "MVR-8",
+      "title": "MVR-8 \u00b7 Lien removal application",
+      "file": "MVR-8.pdf",
+      "pages": [
+        {
+          "width": 612.0,
+          "height": 792.0,
+          "fields": [
+            {
+              "name": "F001",
+              "originalName": "YEAR",
+              "label": "YEAR_Row_1",
+              "type": "text",
+              "x": 54.96,
+              "y": 160.92,
+              "width": 53.28,
+              "height": 12.24,
+              "fontSize": 8.812800000000006,
+              "key": "vehicle.year"
+            },
+            {
+              "name": "F002",
+              "originalName": "MAKE",
+              "label": "MAKE_Row_1",
+              "type": "text",
+              "x": 111.24,
+              "y": 160.92,
+              "width": 60.6,
+              "height": 12.24,
+              "fontSize": 8.812800000000006,
+              "key": "vehicle.make"
+            },
+            {
+              "name": "F003",
+              "originalName": "BODY STYLE",
+              "label": "BODY STYLE_Row_1",
+              "type": "text",
+              "x": 174.84,
+              "y": 160.92,
+              "width": 61.56,
+              "height": 12.24,
+              "fontSize": 8.812800000000006,
+              "key": "vehicle.body"
+            },
+            {
+              "name": "F004",
+              "originalName": "SERIES MODEL",
+              "label": "SERIES MODEL_Row_1",
+              "type": "text",
+              "x": 239.4,
+              "y": 160.92,
+              "width": 64.68,
+              "height": 12.24,
+              "fontSize": 8.812800000000006,
+              "key": "vehicle.model_trim"
+            },
+            {
+              "name": "F005",
+              "originalName": "VEHICLE IDENTIFICATION NUMBER",
+              "label": "VEHICLE IDENTIFICATION NUMBER_Row_1",
+              "type": "text",
+              "x": 307.08,
+              "y": 160.92,
+              "width": 263.88,
+              "height": 12.24,
+              "fontSize": 8.812800000000006,
+              "key": "vehicle.vin"
+            },
+            {
+              "name": "F006",
+              "originalName": "Owner 1 ID Number",
+              "label": "Owner 1 ID",
+              "type": "text",
+              "x": 111.36,
+              "y": 195.0,
+              "width": 128.28,
+              "height": 17.16,
+              "fontSize": 10
+            },
+            {
+              "name": "F007",
+              "originalName": "Owner 2 ID Number",
+              "label": "Owner 2 ID",
+              "type": "text",
+              "x": 111.36,
+              "y": 232.68,
+              "width": 128.28,
+              "height": 17.16,
+              "fontSize": 10
+            },
+            {
+              "name": "F008",
+              "originalName": "Full Legal Name of Owner 2 First Middle Last Suffix or Company Name",
+              "label": "Full Legal Name of Owner 2 (First, Middle, Last, Suffix) or Company Name",
+              "type": "text",
+              "x": 253.994,
+              "y": 232.403,
+              "width": 316.08,
+              "height": 18.157,
+              "fontSize": 10
+            },
+            {
+              "name": "F009",
+              "originalName": "Street Address to include apartment or suite number",
+              "label": "Full Legal Name of Owner 2 (First, Middle, Last, Suffix) or Company Name",
+              "type": "text",
+              "x": 110.4,
+              "y": 265.353,
+              "width": 170.097,
+              "height": 22.887,
+              "fontSize": 10
+            },
+            {
+              "name": "F010",
+              "originalName": "CheckBox First Lien",
+              "label": "First Lien",
+              "type": "checkbox",
+              "x": 220.2,
+              "y": 388.32,
+              "width": 17.16,
+              "height": 17.04,
+              "fontSize": 10
+            },
+            {
+              "name": "F011",
+              "originalName": "CheckBox Second Lien",
+              "label": "Second Lien",
+              "type": "checkbox",
+              "x": 288.96,
+              "y": 388.44,
+              "width": 17.16,
+              "height": 17.16,
+              "fontSize": 10
+            },
+            {
+              "name": "F012",
+              "originalName": "CheckBox Third Lien",
+              "label": "Third Lien",
+              "type": "checkbox",
+              "x": 368.16,
+              "y": 387.84,
+              "width": 17.16,
+              "height": 17.16,
+              "fontSize": 10
+            },
+            {
+              "name": "F013",
+              "originalName": "CheckBox authorizing NC DMV to disclose personal information contained in this application",
+              "label": "I (We) would like the personal information contained in this application to be available for disclosure",
+              "type": "checkbox",
+              "x": 134.28,
+              "y": 500.76,
+              "width": 17.16,
+              "height": 17.16,
+              "fontSize": 10
+            },
+            {
+              "name": "F017",
+              "originalName": "Title Number",
+              "label": "Title Number",
+              "type": "text",
+              "x": 306.395,
+              "y": 358.425,
+              "width": 262.993,
+              "height": 22.0,
+              "fontSize": 10
+            },
+            {
+              "name": "F022",
+              "originalName": "Zip Code",
+              "label": "Zip Code",
+              "type": "text",
+              "x": 438.549,
+              "y": 265.402,
+              "width": 48.569,
+              "height": 22.526,
+              "fontSize": 10
+            },
+            {
+              "name": "F023",
+              "originalName": "Mailing address if different than above to include street address suite or apartment number city state zip code",
+              "label": "Mailing address if different than above to include street address suite or apartment number city state zip code",
+              "type": "text",
+              "x": 55.104,
+              "y": 297.986,
+              "width": 514.731,
+              "height": 19.898,
+              "fontSize": 10
+            },
+            {
+              "name": "F024",
+              "originalName": "County",
+              "label": "County",
+              "type": "text",
+              "x": 488.279,
+              "y": 265.402,
+              "width": 83.256,
+              "height": 22.526,
+              "fontSize": 10
+            },
+            {
+              "name": "F025",
+              "originalName": "State",
+              "label": "State",
+              "type": "text",
+              "x": 391.746,
+              "y": 265.351,
+              "width": 45.941,
+              "height": 23.051,
+              "fontSize": 10
+            },
+            {
+              "name": "F026",
+              "originalName": "City",
+              "label": "City",
+              "type": "text",
+              "x": 280.994,
+              "y": 265.307,
+              "width": 110.058,
+              "height": 23.051,
+              "fontSize": 10
+            },
+            {
+              "name": "F027",
+              "originalName": "Full Legal Name of Owner 1 First Middle Last Suffix or Company Name",
+              "label": "Full Legal Name of Owner 1 (First, Middle, Last, Suffix) or Company Name",
+              "type": "text",
+              "x": 253.83,
+              "y": 195.303,
+              "width": 316.08,
+              "height": 18.157,
+              "fontSize": 10
+            }
+          ]
+        }
+      ],
+      "excludedFields": [
+        {
+          "name": "F014",
+          "originalName": "Date Application is being signed and notarized"
+        },
+        {
+          "name": "F015",
+          "originalName": "County where application is being notarized"
+        },
+        {
+          "name": "F016",
+          "originalName": "Notary's Signature"
+        },
+        {
+          "name": "F018",
+          "originalName": "State where application is being notarized"
+        },
+        {
+          "name": "F019",
+          "originalName": "Name(s) of Principal(s)"
+        },
+        {
+          "name": "F020",
+          "originalName": "Notary Printed or Typed Name"
+        },
+        {
+          "name": "F021",
+          "originalName": "Date Notary's commission Expires"
+        },
+        {
+          "name": "F028",
+          "originalName": "Signature(s) of Owner(s)"
+        }
+      ],
+      "source": {
+        "kind": "NCDMV",
+        "url": "https://www.ncdot.gov/dmv/downloads/Documents/MVR-8.pdf",
+        "retrievedOn": "2026-10-27",
+        "revision": "04/2026",
+        "sha256": "35b1a3eb83737ecc0778ddc21de0efd7b678af0b95a3d779f775e038ab780633"
+      }
+    },
+    {
+      "id": "MVR-28",
+      "title": "MVR-28 \u00b7 Incorrect title assignment affidavit",
+      "file": "MVR-28.pdf",
+      "pages": [
+        {
+          "width": 612.0,
+          "height": 792.0,
+          "fields": [
+            {
+              "name": "F001",
+              "originalName": "Full legal names of sellers First middle last suffix",
+              "label": "Full legal name(s) of seller(s): (First, middle, last, suffix",
+              "type": "text",
+              "x": 30.24,
+              "y": 88.2,
+              "width": 264.12,
+              "height": 11.64,
+              "fontSize": 8.38079999999999
+            },
+            {
+              "name": "F002",
+              "originalName": "Address of sellers Street address city state ZIP",
+              "label": "Address of seller(s): Street address, city, state, ZIP",
+              "type": "text",
+              "x": 304.8,
+              "y": 88.2,
+              "width": 283.08,
+              "height": 11.64,
+              "fontSize": 8.38079999999999
+            },
+            {
+              "name": "F003",
+              "originalName": "Full legal names of buyers First middle last suffix",
+              "label": "Full legal name(s) of buyer(s) (First, middle, last, suffix",
+              "type": "text",
+              "x": 29.64,
+              "y": 118.903,
+              "width": 264.12,
+              "height": 10.097,
+              "fontSize": 7.269839999999985
+            },
+            {
+              "name": "F004",
+              "originalName": "Address of buyers Street address city state ZIP",
+              "label": "Address of buyer(s): Street address, city, state, ZIP",
+              "type": "text",
+              "x": 304.8,
+              "y": 118.223,
+              "width": 283.08,
+              "height": 11.115,
+              "fontSize": 8.002800000000006
+            },
+            {
+              "name": "F005",
+              "originalName": "Year of incorrectly assigned vehicle",
+              "label": "Make",
+              "type": "text",
+              "x": 25.47,
+              "y": 168.269,
+              "width": 62.304,
+              "height": 11.114,
+              "fontSize": 8.002080000000023
+            },
+            {
+              "name": "F006",
+              "originalName": "Make of incorrectly assigned vehicle",
+              "label": "Make",
+              "type": "text",
+              "x": 96.0,
+              "y": 167.88,
+              "width": 82.8,
+              "height": 11.64,
+              "fontSize": 8.38079999999999
+            },
+            {
+              "name": "F007",
+              "originalName": "Model of incorrectly assigned vehicle",
+              "label": "Model",
+              "type": "text",
+              "x": 188.88,
+              "y": 167.88,
+              "width": 82.8,
+              "height": 11.64,
+              "fontSize": 8.38079999999999
+            },
+            {
+              "name": "F008",
+              "originalName": "Vehicle Identification Number VIN of incorrectly assigned vehicle",
+              "label": "Vehicle Identification Number (VIN",
+              "type": "text",
+              "x": 280.92,
+              "y": 167.88,
+              "width": 184.92,
+              "height": 11.64,
+              "fontSize": 8.38079999999999
+            },
+            {
+              "name": "F009",
+              "originalName": "Title number assigned of incorrectly assigned vehicle if known",
+              "label": "Title number assigned to purchaser, if known",
+              "type": "text",
+              "x": 475.8,
+              "y": 167.88,
+              "width": 112.08,
+              "height": 11.64,
+              "fontSize": 8.38079999999999
+            },
+            {
+              "name": "F010",
+              "originalName": "Year of vehicle delivered to buyer",
+              "label": "Make",
+              "type": "text",
+              "x": 26.718,
+              "y": 208.006,
+              "width": 62.304,
+              "height": 11.115,
+              "fontSize": 8.002800000000006
+            },
+            {
+              "name": "F011",
+              "originalName": "Make of vehicle delivered to buyer",
+              "label": "Make",
+              "type": "text",
+              "x": 94.47,
+              "y": 207.743,
+              "width": 82.8,
+              "height": 11.64,
+              "fontSize": 8.38079999999999
+            },
+            {
+              "name": "F012",
+              "originalName": "Model of vehicle delivered to buyer",
+              "label": "Model",
+              "type": "text",
+              "x": 187.47,
+              "y": 206.743,
+              "width": 82.8,
+              "height": 11.64,
+              "fontSize": 8.38079999999999
+            },
+            {
+              "name": "F013",
+              "originalName": "Iwe did not sell or deliver the incorrectly assigned vehicle listed in Part 3a to the buyers",
+              "label": "I/we did not sell or deliver the incorrectly assigned vehicle, listed in Part 3a, to the buyer(s",
+              "type": "checkbox",
+              "x": 34.92,
+              "y": 279.36,
+              "width": 7.08,
+              "height": 7.08,
+              "fontSize": 5.097599999999988
+            },
+            {
+              "name": "F014",
+              "originalName": "Iwe sold or delivered a different vehicle listed in Part 3b to the buyers Do not check this box if Part 3b is blank",
+              "label": "I/we sold or delivered a different vehicle, listed in Part 3b, to the buyer(s). (Do not check this box if Part 3b is blank",
+              "type": "checkbox",
+              "x": 34.92,
+              "y": 290.88,
+              "width": 7.08,
+              "height": 7.08,
+              "fontSize": 5.097599999999988
+            },
+            {
+              "name": "F024",
+              "originalName": "Iwe did not purchase or take delivery of the incorrectly assigned vehicle listed in Part 3a The title or certificate of origin was incorrectly assigned",
+              "label": "I/we did not purchase or take delivery of the incorrectly assigned vehicle listed in Part 3a. The title or certificate of origin was incorrectly assigned",
+              "type": "checkbox",
+              "x": 34.92,
+              "y": 426.48,
+              "width": 7.08,
+              "height": 7.08,
+              "fontSize": 5.097599999999988
+            },
+            {
+              "name": "F025",
+              "originalName": "Iwe did purchase or take delivery of a different vehicle listed in Part 3b from the sellers Do not check this box if Part 3b is blank",
+              "label": "I/we did purchase or take delivery of a different vehicle, listed in Part 3b, from the seller(s). (Do not check this box if Part 3b is blank",
+              "type": "checkbox",
+              "x": 34.92,
+              "y": 438.0,
+              "width": 7.08,
+              "height": 7.08,
+              "fontSize": 5.097599999999988
+            },
+            {
+              "name": "F035",
+              "originalName": "Print name of lien holder",
+              "label": "Print name of lien holder",
+              "type": "text",
+              "x": 28.92,
+              "y": 589.32,
+              "width": 264.12,
+              "height": 11.64,
+              "fontSize": 8.38080000000001
+            },
+            {
+              "name": "F036",
+              "originalName": "Address of lien holder Street address city state ZIP",
+              "label": "Address of lien holder: Street address, city, state, ZIP",
+              "type": "text",
+              "x": 303.96,
+              "y": 589.32,
+              "width": 283.08,
+              "height": 11.64,
+              "fontSize": 8.38080000000001
+            },
+            {
+              "name": "F037",
+              "originalName": "We hold no interest whatsoever in the incorrectly assigned vehicle listed in Part 3a The title or certificate of origin was incorrectly assigned",
+              "label": "We hold no interest whatsoever in the incorrectly assigned vehicle listed in Part 3a. The title or certificate of origin was incorrectly assigned",
+              "type": "checkbox",
+              "x": 37.32,
+              "y": 636.24,
+              "width": 7.08,
+              "height": 6.96,
+              "fontSize": 5.011199999999985
+            },
+            {
+              "name": "F038",
+              "originalName": "We do hold a security agreement on a different vehicle listed in Part 3b Do not check this box if Part 3b is blank",
+              "label": "We do hold a security agreement on a different vehicle, listed in Part 3b. (Do not check this box if Part 3b is blank",
+              "type": "checkbox",
+              "x": 37.32,
+              "y": 647.76,
+              "width": 7.08,
+              "height": 7.08,
+              "fontSize": 5.097600000000009
+            },
+            {
+              "name": "F049",
+              "originalName": "Vehicle Identification Number VIN of vehicle delivered to buyer",
+              "label": "Vehicle Identification Number (VIN",
+              "type": "text",
+              "x": 281.41,
+              "y": 207.167,
+              "width": 184.394,
+              "height": 11.64,
+              "fontSize": 8.38079999999999
+            }
+          ]
+        }
+      ],
+      "excludedFields": [
+        {
+          "name": "F015",
+          "originalName": "Signatures of sellers or authorized representative"
+        },
+        {
+          "name": "F016",
+          "originalName": "Date sellers or authorized representatives signed"
+        },
+        {
+          "name": "F017",
+          "originalName": "Seller N a m e s  o f p r i n c i p a l s"
+        },
+        {
+          "name": "F018",
+          "originalName": "Notary Signature for sellers affidavit"
+        },
+        {
+          "name": "F019",
+          "originalName": "Date notary signed notarizing sellers or authorized representative signature"
+        },
+        {
+          "name": "F020",
+          "originalName": "County where seller affidavit is being signed and notarized"
+        },
+        {
+          "name": "F021",
+          "originalName": "State where seller affidavit is being signed and notarized"
+        },
+        {
+          "name": "F022",
+          "originalName": "Notary printed name"
+        },
+        {
+          "name": "F023",
+          "originalName": "Date Notary commission expires"
+        },
+        {
+          "name": "F026",
+          "originalName": "Signatures of buyers"
+        },
+        {
+          "name": "F027",
+          "originalName": "Date of buyers signatures"
+        },
+        {
+          "name": "F028",
+          "originalName": "Buyers names of principals"
+        },
+        {
+          "name": "F029",
+          "originalName": "Notary Signature for buyers affidavit"
+        },
+        {
+          "name": "F030",
+          "originalName": "Date notary signed and notarized buyers signatures"
+        },
+        {
+          "name": "F031",
+          "originalName": "County where buyer affidavit is being signed and notarized"
+        },
+        {
+          "name": "F032",
+          "originalName": "State where buyer affidavit is being signed and notarized"
+        },
+        {
+          "name": "F033",
+          "originalName": "Notary printed name"
+        },
+        {
+          "name": "F034",
+          "originalName": "Date Notarys commission expires"
+        },
+        {
+          "name": "F039",
+          "originalName": "Print name of lien holder affidavit and notarization section"
+        },
+        {
+          "name": "F040",
+          "originalName": "Signature of lien holder or authorized representative"
+        },
+        {
+          "name": "F041",
+          "originalName": "Date lien holder or authorized representative signed affidavit"
+        },
+        {
+          "name": "F042",
+          "originalName": "Lienholder or authorized representative Names of principals"
+        },
+        {
+          "name": "F043",
+          "originalName": "Notary signature for lienholder affidavit"
+        },
+        {
+          "name": "F044",
+          "originalName": "Date notary signed notarizing lienholder or authorized representatives signature"
+        },
+        {
+          "name": "F045",
+          "originalName": "County where Affidavit of lienholder or authorized representative is being notarized"
+        },
+        {
+          "name": "F046",
+          "originalName": "State where Affidavit of lienholder or authorized representative is being notarized"
+        },
+        {
+          "name": "F047",
+          "originalName": "Notary printed name for lien holder affidavit section"
+        },
+        {
+          "name": "F048",
+          "originalName": "Date Notarys commisison expires"
+        }
+      ],
+      "source": {
+        "kind": "NCDMV",
+        "url": "https://www.ncdot.gov/dmv/downloads/Documents/MVR-28.pdf",
+        "retrievedOn": "2026-10-27",
+        "revision": "04/2026",
+        "sha256": "7af18cd4f1f187e4375ec4deb3b903fe96947e3b664e198a2c54914f7872a8d9"
+      }
+    },
+    {
+      "id": "MVR-46D",
+      "title": "MVR-46D \u00b7 North Carolina lienholder release",
+      "file": "MVR-46D.pdf",
+      "pages": [
+        {
+          "width": 612.0,
+          "height": 792.0,
+          "fields": [
+            {
+              "name": "F001",
+              "originalName": "north carolina certificate of title number",
+              "label": "covering a",
+              "type": "text",
+              "x": 72.0,
+              "y": 119.76,
+              "width": 90.0,
+              "height": 21.72,
+              "fontSize": 10
+            },
+            {
+              "name": "F002",
+              "originalName": "name(s) of principals",
+              "label": "Name on existing title",
+              "type": "text",
+              "x": 239.88,
+              "y": 119.76,
+              "width": 276.12,
+              "height": 21.72,
+              "fontSize": 10
+            },
+            {
+              "name": "F003",
+              "originalName": "YEAR",
+              "label": "YEAR",
+              "type": "text",
+              "x": 124.905,
+              "y": 149.64,
+              "width": 124.296,
+              "height": 21.96,
+              "fontSize": 10,
+              "key": "vehicle.year"
+            },
+            {
+              "name": "F004",
+              "originalName": "MAKE",
+              "label": "(MAKE)",
+              "type": "text",
+              "x": 250.635,
+              "y": 149.64,
+              "width": 178.165,
+              "height": 21.96,
+              "fontSize": 10,
+              "key": "vehicle.make"
+            },
+            {
+              "name": "F005",
+              "originalName": "BODY STYLE",
+              "label": "(BODY STYLE)",
+              "type": "text",
+              "x": 432.0,
+              "y": 149.64,
+              "width": 86.64,
+              "height": 21.96,
+              "fontSize": 10,
+              "key": "vehicle.body"
+            },
+            {
+              "name": "F006",
+              "originalName": "VEHICLE IDENTIFICATION NUMBER",
+              "label": "VEHICLE IDENTIFICATION NUMBER",
+              "type": "text",
+              "x": 72.0,
+              "y": 183.36,
+              "width": 447.72,
+              "height": 20.28,
+              "fontSize": 10,
+              "key": "vehicle.vin"
+            },
+            {
+              "name": "F007",
+              "originalName": "NAME OF PERSON OR FIRM TO WHOM CERTIFICATE OF TITLE WAS DELIVERED",
+              "label": "NAME OF PERSON OR FIRM TO WHOM CERTIFICATE OF TITLE WAS DELIVERED",
+              "type": "text",
+              "x": 72.0,
+              "y": 238.56,
+              "width": 448.68,
+              "height": 21.96,
+              "fontSize": 10
+            },
+            {
+              "name": "F008",
+              "originalName": "LIENHOLDER",
+              "label": "LIENHOLDER",
+              "type": "text",
+              "x": 72.0,
+              "y": 319.56,
+              "width": 450.0,
+              "height": 21.96,
+              "fontSize": 10
+            }
+          ]
+        }
+      ],
+      "excludedFields": [
+        {
+          "name": "F009",
+          "originalName": "AUTHORIZED REPRESENTATIVE"
+        },
+        {
+          "name": "F010",
+          "originalName": "date affidavit is being notarized"
+        },
+        {
+          "name": "F011",
+          "originalName": "County where affidavit is being notarized"
+        },
+        {
+          "name": "F012",
+          "originalName": "State where affidavit is being notarized"
+        },
+        {
+          "name": "F013",
+          "originalName": "NAMES OF PRINCIPALS"
+        },
+        {
+          "name": "F014",
+          "originalName": "Notary signature"
+        },
+        {
+          "name": "F015",
+          "originalName": "Printed or typed name"
+        },
+        {
+          "name": "F016",
+          "originalName": "date notary commission expires"
+        }
+      ],
+      "source": {
+        "kind": "NCDMV",
+        "url": "https://www.ncdot.gov/dmv/downloads/Documents/MVR-46D.pdf",
+        "retrievedOn": "2026-10-27",
+        "revision": "04/2026",
+        "sha256": "d90e522a0a76d81c6e518ba242a68fc939151433ee2fce8a5dbeeaa01bebf002"
+      }
+    },
+    {
+      "id": "MVR-613",
+      "title": "MVR-613 \u00b7 Highway-use tax exemption certification",
+      "file": "MVR-613.pdf",
+      "pages": [
+        {
+          "width": 612.0,
+          "height": 792.0,
+          "fields": [
+            {
+              "name": "F001",
+              "originalName": "Year",
+              "label": "As purchaser of a Year",
+              "type": "text",
+              "x": 128.76,
+              "y": 85.68,
+              "width": 28.32,
+              "height": 12.84,
+              "fontSize": 9.244800000000023,
+              "key": "vehicle.year"
+            },
+            {
+              "name": "F002",
+              "originalName": "Make",
+              "label": "Make",
+              "type": "text",
+              "x": 184.68,
+              "y": 85.68,
+              "width": 70.8,
+              "height": 12.84,
+              "fontSize": 9.244800000000023,
+              "key": "vehicle.make"
+            },
+            {
+              "name": "F003",
+              "originalName": "Body Style",
+              "label": "Body Style",
+              "type": "text",
+              "x": 300.96,
+              "y": 85.68,
+              "width": 23.52,
+              "height": 12.84,
+              "fontSize": 9.244800000000023,
+              "key": "vehicle.body"
+            },
+            {
+              "name": "F004",
+              "originalName": "VIN",
+              "label": "VIN",
+              "type": "text",
+              "x": 345.6,
+              "y": 85.68,
+              "width": 123.0,
+              "height": 12.84,
+              "fontSize": 9.244800000000023,
+              "key": "vehicle.vin"
+            },
+            {
+              "name": "F005",
+              "originalName": "Fuel",
+              "label": "Fuel",
+              "type": "text",
+              "x": 492.72,
+              "y": 85.68,
+              "width": 23.52,
+              "height": 12.84,
+              "fontSize": 9.244800000000023,
+              "key": "vehicle.fuel"
+            },
+            {
+              "name": "F006",
+              "originalName": "owners name",
+              "label": "I",
+              "type": "text",
+              "x": 45.72,
+              "y": 102.6,
+              "width": 179.76,
+              "height": 12.84,
+              "fontSize": 9.244800000000023,
+              "key": "buyers.names"
+            },
+            {
+              "name": "F007",
+              "originalName": "Check Box To a co-owner when there is no compensation for the transfer",
+              "label": "Check Box To a co-owner when there is no compensation for the transfer",
+              "type": "checkbox",
+              "x": 55.708,
+              "y": 139.847,
+              "width": 9.828,
+              "height": 10.37,
+              "fontSize": 7.466400000000003
+            },
+            {
+              "name": "F008",
+              "originalName": "Check Box Will or intestacy when no compensation has been paid to the estate",
+              "label": "Check Box Will or intestacy when no compensation has been paid to the estate",
+              "type": "checkbox",
+              "x": 55.956,
+              "y": 154.378,
+              "width": 9.173,
+              "height": 10.37,
+              "fontSize": 7.466400000000003
+            },
+            {
+              "name": "F009",
+              "originalName": "Check Box gift between spouse and spouse",
+              "label": "Check Box gift between spouse and spouse",
+              "type": "checkbox",
+              "x": 54.956,
+              "y": 169.378,
+              "width": 9.828,
+              "height": 10.37,
+              "fontSize": 7.466400000000003
+            },
+            {
+              "name": "F010",
+              "originalName": "Check Box gift between parent and child",
+              "label": "Check Box gift between parent and child",
+              "type": "checkbox",
+              "x": 54.956,
+              "y": 183.378,
+              "width": 9.828,
+              "height": 10.896,
+              "fontSize": 7.8451199999999695
+            },
+            {
+              "name": "F011",
+              "originalName": "Check Box gift between stepparent and stepchild",
+              "label": "Check Box gift between stepparent and stepchild",
+              "type": "checkbox",
+              "x": 54.956,
+              "y": 198.378,
+              "width": 9.828,
+              "height": 10.37,
+              "fontSize": 7.466400000000003
+            },
+            {
+              "name": "F012",
+              "originalName": "Check Box By disposition of marital property due to separation or divorce",
+              "label": "Check Box By disposition of marital property due to separation or divorce",
+              "type": "checkbox",
+              "x": 54.956,
+              "y": 211.378,
+              "width": 9.302,
+              "height": 10.37,
+              "fontSize": 7.466400000000003
+            },
+            {
+              "name": "F013",
+              "originalName": "Check Box To a local board of educatioon for use in the driver education program of a public school when the motor vehicle is transferred by either a retailer and is to be transferred back to the retailer within 300 days after the transfer to the local board or b by a local board of education",
+              "label": "Check Box To a local board of educatioon for use in the driver education program of a public school when the motor vehicle is transferred by either a retailer and is to be transferred back to the retailer within 300 days after the transfer to the local board or b by a local board of education",
+              "type": "checkbox",
+              "x": 55.219,
+              "y": 224.378,
+              "width": 9.302,
+              "height": 10.37,
+              "fontSize": 7.466400000000003
+            },
+            {
+              "name": "F014",
+              "originalName": "Check Box To a handicapped person from the Department of health and human services after the vehicle has been equipped by the department for use by the handicapped",
+              "label": "Check Box To a handicapped person from the Department of health and human services after the vehicle has been equipped by the department for use by the handicapped",
+              "type": "checkbox",
+              "x": 55.219,
+              "y": 281.378,
+              "width": 9.302,
+              "height": 10.37,
+              "fontSize": 7.466400000000003
+            },
+            {
+              "name": "F015",
+              "originalName": "Check Box Cherokee Indian living on the reservation (submit copy of Cherokee ID card)",
+              "label": "Check Box Cherokee Indian living on the reservation (submit copy of Cherokee ID card)",
+              "type": "checkbox",
+              "x": 55.219,
+              "y": 308.378,
+              "width": 9.302,
+              "height": 10.37,
+              "fontSize": 7.466400000000003
+            },
+            {
+              "name": "F016",
+              "originalName": " an emergency services vehicle",
+              "label": "Check Box To a volunteer fire department or volunteer rescue squad that is not part of a unit of local government, has no more than two paid employees, and is exempt from State income tax under GS 105-130.11, when the motor vehicle is one of the following A. A fire truck pump truck, tanker truck, or ladder truck used to suppress fire or B. A four wheel drive vehicle intended to be mounted with a water tank and hose and used for forest fire fighting or C. an emergency services vehicle",
+              "type": "checkbox",
+              "x": 55.219,
+              "y": 323.378,
+              "width": 9.302,
+              "height": 10.37,
+              "fontSize": 7.466400000000003
+            },
+            {
+              "name": "F017",
+              "originalName": "Check Box To a state agency from a unit of local government, volunteer fire department, or volunteer rescue squad to enable the state agency to transfer the vehicle to another unit of local government, volunteer fire department, or volunteer rescue squad",
+              "label": "Check Box To a state agency from a unit of local government, volunteer fire department, or volunteer rescue squad to enable the state agency to transfer the vehicle to another unit of local government, volunteer fire department, or volunteer rescue squad",
+              "type": "checkbox",
+              "x": 55.219,
+              "y": 407.378,
+              "width": 9.302,
+              "height": 10.37,
+              "fontSize": 7.466400000000003
+            },
+            {
+              "name": "F018",
+              "originalName": "Check Box To be used by state agency for research or demonstration project",
+              "label": "Check Box To be used by state agency for research or demonstration project",
+              "type": "checkbox",
+              "x": 55.219,
+              "y": 449.378,
+              "width": 9.302,
+              "height": 10.37,
+              "fontSize": 7.466400000000003
+            },
+            {
+              "name": "F019",
+              "originalName": "Check Box To a revocable trust from an owner who is the sole beneficiaary of the trust",
+              "label": "Check Box To a revocable trust from an owner who is the sole beneficiaary of the trust",
+              "type": "checkbox",
+              "x": 55.219,
+              "y": 463.378,
+              "width": 9.302,
+              "height": 10.37,
+              "fontSize": 7.466400000000003
+            },
+            {
+              "name": "F020",
+              "originalName": "Check Box Even Trades - computer schedule will be used to determine value of each vehicle for casual sales",
+              "label": "Check Box Even Trades - computer schedule will be used to determine value of each vehicle for casual sales",
+              "type": "checkbox",
+              "x": 55.219,
+              "y": 477.378,
+              "width": 9.302,
+              "height": 10.37,
+              "fontSize": 7.466400000000003
+            },
+            {
+              "name": "F021",
+              "originalName": "7",
+              "label": "Partial credits pursuant to G.S. 105-187.7",
+              "type": "checkbox",
+              "x": 55.219,
+              "y": 491.378,
+              "width": 9.302,
+              "height": 10.37,
+              "fontSize": 7.466400000000003
+            },
+            {
+              "name": "F022",
+              "originalName": "Check Box Repossesor or applying for title in their name when lien has been properly recorded",
+              "label": "Check Box Repossesor or applying for title in their name when lien has been properly recorded",
+              "type": "checkbox",
+              "x": 55.219,
+              "y": 539.378,
+              "width": 9.302,
+              "height": 10.37,
+              "fontSize": 7.466400000000003
+            },
+            {
+              "name": "F023",
+              "originalName": "Check Box Merger of corporations or name changes (consult title manual for variations)",
+              "label": "Check Box Merger of corporations or name changes (consult title manual for variations)",
+              "type": "checkbox",
+              "x": 55.219,
+              "y": 553.378,
+              "width": 9.302,
+              "height": 10.37,
+              "fontSize": 7.466400000000003
+            },
+            {
+              "name": "F024",
+              "originalName": "Check Box Transfer to separate entity where no gain or loss is recognized under US code section 351 or 721 of the US IRC",
+              "label": "Check Box Transfer to separate entity where no gain or loss is recognized under US code section 351 or 721 of the US IRC",
+              "type": "checkbox",
+              "x": 55.219,
+              "y": 568.378,
+              "width": 9.302,
+              "height": 10.37,
+              "fontSize": 7.466400000000003
+            },
+            {
+              "name": "F025",
+              "originalName": "Check Box Transfer to non-separate entity or entity whose existence is disregarded under US IRC",
+              "label": "Check Box Transfer to non-separate entity or entity whose existence is disregarded under US IRC",
+              "type": "checkbox",
+              "x": 55.219,
+              "y": 582.378,
+              "width": 9.302,
+              "height": 10.37,
+              "fontSize": 7.466400000000003
+            },
+            {
+              "name": "F027",
+              "originalName": "OWNERS ADDRESS",
+              "label": "OWNERS ADDRESS",
+              "type": "text",
+              "x": 146.88,
+              "y": 652.56,
+              "width": 354.84,
+              "height": 12.84,
+              "fontSize": 9.244800000000001,
+              "key": "buyer.full_address"
+            }
+          ]
+        }
+      ],
+      "excludedFields": [
+        {
+          "name": "F026",
+          "originalName": "OWNERS SIGNATURE"
+        },
+        {
+          "name": "F028",
+          "originalName": "Date form is being notarized"
+        },
+        {
+          "name": "F029",
+          "originalName": "County where form is being notarized"
+        },
+        {
+          "name": "F030",
+          "originalName": "State where form is being notarized"
+        },
+        {
+          "name": "F031",
+          "originalName": "names of principals"
+        },
+        {
+          "name": "F032",
+          "originalName": "Notary Signature"
+        },
+        {
+          "name": "F033",
+          "originalName": "Notary Printed or Typed Name"
+        },
+        {
+          "name": "F034",
+          "originalName": "Date notary Commission Expires"
+        }
+      ],
+      "source": {
+        "kind": "NCDMV",
+        "url": "https://www.ncdot.gov/dmv/downloads/Documents/MVR-613.pdf",
+        "retrievedOn": "2026-10-27",
+        "revision": "04/2026",
+        "sha256": "3fb7f912002ea25783751e338454a96a7ef81077235a7b409fac98890725e8b9"
+      }
+    },
+    {
+      "id": "MVR-620",
+      "title": "MVR-620 \u00b7 Joint tenancy with right of survivorship",
+      "file": "MVR-620.pdf",
+      "pages": [
+        {
+          "width": 612.0,
+          "height": 792.0,
+          "fields": [
+            {
+              "name": "F001",
+              "originalName": "YEAR",
+              "label": "YEAR",
+              "type": "text",
+              "x": 67.56,
+              "y": 164.04,
+              "width": 76.68,
+              "height": 21.0,
+              "fontSize": 10,
+              "key": "vehicle.year"
+            },
+            {
+              "name": "F002",
+              "originalName": "MAKE",
+              "label": "MAKE",
+              "type": "text",
+              "x": 146.28,
+              "y": 164.04,
+              "width": 76.68,
+              "height": 21.0,
+              "fontSize": 10,
+              "key": "vehicle.make"
+            },
+            {
+              "name": "F003",
+              "originalName": "BODY STYLE",
+              "label": "BODY STYLE",
+              "type": "text",
+              "x": 225.0,
+              "y": 164.04,
+              "width": 76.8,
+              "height": 21.0,
+              "fontSize": 10,
+              "key": "vehicle.body"
+            },
+            {
+              "name": "F004",
+              "originalName": "SERIES MODEL",
+              "label": "SERIES MODEL",
+              "type": "text",
+              "x": 303.84,
+              "y": 164.04,
+              "width": 76.92,
+              "height": 21.0,
+              "fontSize": 10,
+              "key": "vehicle.model_trim"
+            },
+            {
+              "name": "F005",
+              "originalName": "VEHICLE IDENTIFICATION NUMBER",
+              "label": "VEHICLE IDENTIFICATION NUMBER",
+              "type": "text",
+              "x": 382.8,
+              "y": 164.04,
+              "width": 161.16,
+              "height": 21.0,
+              "fontSize": 10,
+              "key": "vehicle.vin"
+            },
+            {
+              "name": "F006",
+              "originalName": "Owner 1 ID",
+              "label": "Owner 1 ID",
+              "type": "text",
+              "x": 118.44,
+              "y": 204.96,
+              "width": 91.68,
+              "height": 19.2,
+              "fontSize": 10,
+              "key": "buyer.license_number"
+            },
+            {
+              "name": "F007",
+              "originalName": "Full Legal Name of Owner 1",
+              "label": "Full Legal Name of Owner 1 (First, Middle, Last, Suffix) or Company Name",
+              "type": "text",
+              "x": 260.64,
+              "y": 204.96,
+              "width": 252.0,
+              "height": 19.2,
+              "fontSize": 10,
+              "key": "buyer.name"
+            },
+            {
+              "name": "F008",
+              "originalName": "Owner 2 ID",
+              "label": "Owner 2 ID",
+              "type": "text",
+              "x": 117.36,
+              "y": 228.0,
+              "width": 93.36,
+              "height": 19.2,
+              "fontSize": 10,
+              "key": "co_buyer.license_number"
+            },
+            {
+              "name": "F009",
+              "originalName": "Full Legal Name of Owner 2",
+              "label": "Full Legal Name of Owner 2 (First, Middle, Last, Suffix) or Company Name",
+              "type": "text",
+              "x": 261.0,
+              "y": 235.56,
+              "width": 252.12,
+              "height": 11.64,
+              "fontSize": 8.380800000000072,
+              "key": "co_buyer.name"
+            },
+            {
+              "name": "F010",
+              "originalName": "Yes",
+              "label": "Yes",
+              "type": "checkbox",
+              "x": 255.72,
+              "y": 294.36,
+              "width": 23.04,
+              "height": 21.84,
+              "fontSize": 10,
+              "exclusiveGroup": "choice-0"
+            },
+            {
+              "name": "F011",
+              "originalName": "No",
+              "label": "Joint applicants request this title to be issued with Joint Tenants with Rights of Survivorship",
+              "type": "checkbox",
+              "x": 413.52,
+              "y": 293.52,
+              "width": 23.04,
+              "height": 21.84,
+              "fontSize": 10,
+              "exclusiveGroup": "choice-0"
+            },
+            {
+              "name": "F012",
+              "originalName": "Residence Address",
+              "label": "Residence Address City and State Zip code",
+              "type": "text",
+              "x": 67.8,
+              "y": 342.158,
+              "width": 235.744,
+              "height": 21.442,
+              "fontSize": 10,
+              "key": "buyer.address"
+            },
+            {
+              "name": "F013",
+              "originalName": "City and State",
+              "label": "City and State",
+              "type": "text",
+              "x": 305.87,
+              "y": 342.133,
+              "width": 128.978,
+              "height": 22.0,
+              "fontSize": 10,
+              "key": "buyer.residence_city_state"
+            },
+            {
+              "name": "F014",
+              "originalName": "Zip Code",
+              "label": "Zip Code",
+              "type": "text",
+              "x": 453.549,
+              "y": 342.658,
+              "width": 83.255,
+              "height": 22.0,
+              "fontSize": 10,
+              "key": "buyer.zip"
+            },
+            {
+              "name": "F015",
+              "originalName": "Mail Address if different from above",
+              "label": "Mail Address (if different from above) City and State Zip code",
+              "type": "text",
+              "x": 68.326,
+              "y": 379.238,
+              "width": 235.744,
+              "height": 20.916,
+              "fontSize": 10,
+              "key": "buyer.mailing_address"
+            },
+            {
+              "name": "F016",
+              "originalName": "City and State_2",
+              "label": "City and State_2",
+              "type": "text",
+              "x": 307.446,
+              "y": 379.972,
+              "width": 126.351,
+              "height": 22.0,
+              "fontSize": 10,
+              "key": "buyer.mailing_city_state"
+            },
+            {
+              "name": "F017",
+              "originalName": "Zip Code_2",
+              "label": "Zip Code_2",
+              "type": "text",
+              "x": 452.498,
+              "y": 380.498,
+              "width": 84.832,
+              "height": 22.0,
+              "fontSize": 10,
+              "key": "buyer.mailing_zip"
+            },
+            {
+              "name": "F018",
+              "originalName": "Vehicle Location Address if different from above",
+              "label": "Vehicle Location Address (if different from above) City and State Zip code",
+              "type": "text",
+              "x": 67.8,
+              "y": 418.838,
+              "width": 235.744,
+              "height": 21.442,
+              "fontSize": 10
+            },
+            {
+              "name": "F028",
+              "originalName": "City and State_3",
+              "label": "City and State_3",
+              "type": "text",
+              "x": 306.921,
+              "y": 418.337,
+              "width": 126.35,
+              "height": 22.0,
+              "fontSize": 10
+            },
+            {
+              "name": "F029",
+              "originalName": "Zip Code_3",
+              "label": "Zip Code_3",
+              "type": "text",
+              "x": 453.023,
+              "y": 417.812,
+              "width": 84.832,
+              "height": 22.0,
+              "fontSize": 10
+            }
+          ]
+        }
+      ],
+      "excludedFields": [
+        {
+          "name": "F019",
+          "originalName": "Owner 1 Signature"
+        },
+        {
+          "name": "F020",
+          "originalName": "Owner 2 Signature"
+        },
+        {
+          "name": "F021",
+          "originalName": "Date"
+        },
+        {
+          "name": "F022",
+          "originalName": "County"
+        },
+        {
+          "name": "F023",
+          "originalName": "State"
+        },
+        {
+          "name": "F024",
+          "originalName": "Names of Principals"
+        },
+        {
+          "name": "F025",
+          "originalName": "Notary Signature"
+        },
+        {
+          "name": "F026",
+          "originalName": "Notary Printed or Typed Name"
+        },
+        {
+          "name": "F027",
+          "originalName": "My Commission Expires"
+        }
+      ],
+      "source": {
+        "kind": "NCDMV",
+        "url": "https://www.ncdot.gov/dmv/downloads/Documents/MVR-620.pdf",
+        "retrievedOn": "2026-10-27",
+        "revision": "04/2026",
+        "sha256": "626fb34d9468451e76885c20b4b5671508d3fef44b48f45aca9ec8e9b00a46c4"
+      }
+    }
+  ]
+}

@@ -2,6 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
+import { createClient } from "@supabase/supabase-js";
+import { readWorkspaceRecords, workspaceTables } from "../lib/workspace-records";
 import { demoWorkspace } from "../lib/demo";
 import {
   workToday,
@@ -632,6 +634,59 @@ test("sales workflows: real SQL scheduling, deduplication, appointment changes, 
         );
       },
     );
+    await t.test("signed-in workspace queries match the migrated schema for both roles", async () => {
+      // Run the actual Supabase query builder against the real migrated tables.
+      // Only transport is replaced: generated select/filter/order expressions
+      // are executed by PostgreSQL, including tables with composite keys.
+      const identifier = (value: string) => {
+        assert.match(value, /^[a-z_]+$/);
+        return `"${value}"`;
+      };
+      const d = createClient("https://workspace.test", "test-key", {
+        auth: { persistSession: false, autoRefreshToken: false },
+        global: { fetch: async (input) => {
+          const url = new URL(String(input));
+          const table = url.pathname.split("/").at(-1)!;
+          assert.ok(table.startsWith("dmcrm_"));
+          const columns = url.searchParams.get("select") || "*";
+          const selected = columns === "*" ? "*" : columns.split(",").map(identifier).join(",");
+          const args: string[] = [], filters: string[] = [];
+          for (const [key, value] of url.searchParams) {
+            if (["select", "order", "limit", "offset"].includes(key)) continue;
+            if (value === "is.null") filters.push(`${identifier(key)} is null`);
+            else {
+              assert.ok(value.startsWith("eq."));
+              args.push(value.slice(3));
+              filters.push(`${identifier(key)}=$${args.length}`);
+            }
+          }
+          const order = url.searchParams.get("order")?.split(".")[0];
+          const limit = Number(url.searchParams.get("limit") || 1000);
+          const offset = Number(url.searchParams.get("offset") || 0);
+          assert.ok(Number.isSafeInteger(limit) && Number.isSafeInteger(offset));
+          try {
+            const result = await pg.query(`select ${selected} from ${identifier(table)}${filters.length ? " where " + filters.join(" and ") : ""}${order ? " order by " + identifier(order) : ""} limit ${limit} offset ${offset}`, args);
+            return Response.json(result.rows);
+          } catch (error) {
+            const e = error as { message: string; code: string };
+            return Response.json({ message: e.message, code: e.code, details: null, hint: null }, { status: 400 });
+          }
+        } },
+      });
+      const broken = await d.from("dmcrm_workflow_pauses").select("*").order("id");
+      assert.equal(broken.error?.code, "42703", "reproduces the production failure");
+      for (const role of ["owner", "sales"] as const) {
+        const records = await readWorkspaceRecords(d, { org_id: org, staff_id: staff, role });
+        assert.ok(workspaceTables.every((table) => Array.isArray(records[table])));
+        assert.ok(records.customers.length > 0);
+        assert.ok(records.workflow_pauses!.length > 0);
+        if (role === "sales") {
+          assert.equal(records.trades!.length, 0);
+          assert.ok(records.tasks.every((task) => task.assigned_to === staff));
+          assert.ok(records.staff.every((member) => !("phone" in member)));
+        }
+      }
+    });
     await t.test(
       "release verification runs entirely inside a rollback",
       async () => {

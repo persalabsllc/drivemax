@@ -4,6 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { canManage, type Workspace } from "./model";
 import { emailConnection } from "./messaging";
+import {readWorkspaceRecords} from "./workspace-records";
 export const ready = () =>
   !!(
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
@@ -83,63 +84,6 @@ export async function workspace(
   s: NonNullable<Awaited<ReturnType<typeof session>>>,
 ): Promise<Workspace> {
   const d = db();
-  const tables = [
-    "customers",
-    "visits",
-    "activities",
-    "tasks",
-    "quotes",
-    "inventory",
-    "opportunities",
-    "staff",
-    "sales",
-    "trades",
-    "commissions",
-    "messages",
-    "appointments",
-    "email_templates",
-    "workflow_rules",
-    "workflow_jobs",
-    "workflow_pauses",
-    "deal_progress",
-    "buyer_preferences",
-    "inventory_prep",
-    "sales_events",
-    "deal_files",
-  ] as const;
-  // Pages are fetched fully in batches; never silently truncate the customer book.
-  async function all(table: string) {
-    if (table === "trades" && !canManage(s.role)) return [];
-    const rows: unknown[] = [];
-    for (let start = 0; ; start += 1000) {
-      let query = d
-        .from("dmcrm_" + table)
-        .select(
-          table === "sales" && !canManage(s.role)
-            ? "id,org_id,opportunity_id,customer_id,sold_on,status,unwound_at,unwind_reason"
-            : table === "staff" && !canManage(s.role)
-              ? "id,org_id,user_id,name,email,role,active,created_at"
-              : table === "deal_files"
-                ? "id,org_id,customer_id,opportunity_id,name,kind,size,created_at,created_by"
-                : table === "workflow_jobs"
-                  ? "id,org_id,rule_id,customer_id,opportunity_id,appointment_id,event,run_at,state,reason,message_id,task_id,created_at"
-                  : "*",
-        )
-        .eq("org_id", s.org_id);
-      if (table === "inventory" || table === "trades")
-        query = query.is("deleted_at", null);
-      // Never deliver another salesperson's tasks to the browser, exports, or planner.
-      if (table === "tasks" && !canManage(s.role))
-        query = query.eq("assigned_to", s.staff_id);
-      if (table === "commissions" && !canManage(s.role))
-        query = query.eq("staff_id", s.staff_id);
-      const { data, error } = await query.order("id").range(start, start + 999);
-      if (error) throw new Error("CRM records unavailable");
-      rows.push(...data);
-      if (data.length < 1000) break;
-    }
-    return rows;
-  }
   const { data: org, error } = await d
     .from("dmcrm_orgs")
     .select("id,name,slug")
@@ -154,9 +98,9 @@ export async function workspace(
     .select("last_background_at")
     .eq("org_id", s.org_id)
     .maybeSingle();
-  const [rows, websiteInventory, emailSettings, emailSignature, connection] =
+  const [records, websiteInventory, emailSettings, emailSignature, connection] =
     await Promise.all([
-      Promise.all(tables.map(all)),
+      readWorkspaceRecords(d, s),
       d.rpc("dmcrm_inventory_website_state", {
         p_org: s.org_id,
         p_actor: s.user_id,
@@ -178,9 +122,6 @@ export async function workspace(
     throw new Error("Website inventory status unavailable");
   if (emailSettings.error || emailSignature.error)
     throw new Error("Email settings unavailable");
-  const records = Object.fromEntries(
-    tables.map((t, i) => [t, rows[i]]),
-  ) as unknown as Pick<Workspace, (typeof tables)[number]>;
   if (!canManage(s.role)) {
     const assigned = new Set(
       records.opportunities

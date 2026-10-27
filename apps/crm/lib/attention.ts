@@ -10,12 +10,12 @@ import {
 
 export type AttentionItem = {
   key: string;
-  kind: "reply" | "failed" | "lead" | "website" | "task";
+  kind: "reply" | "failed" | "lead" | "website" | "facebook" | "task";
   id: string;
   customer_id: string | null;
   customer_name: string;
   opportunity_id: string | null;
-  channel: "sms" | "email" | null;
+  channel: "sms" | "email" | "facebook" | null;
   title: string;
   detail: string;
   created_at: string;
@@ -32,6 +32,7 @@ export const attentionLabel = {
   failed: "Message failed",
   lead: "New lead",
   website: "Website inquiry",
+  facebook: "Facebook message",
   task: "Task due",
 };
 

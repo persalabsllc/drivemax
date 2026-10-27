@@ -67,6 +67,12 @@ export function customerActivity(
             "Dealership",
     });
   }
+  for (const m of ws.facebook_messages ?? []) {
+    if (m.customer_id !== customerId) continue;
+    entries.push({id:`facebook:${m.id}`,org_id:m.org_id,customer_id:customerId,
+      opportunity_id:m.opportunity_id,kind:"system",label:"Facebook message received",
+      context:context(m.opportunity_id),body:m.body,created_at:m.received_at,created_by:"Facebook customer"});
+  }
   for (const q of ws.quotes.filter((q) => q.customer_id === customerId)) {
     entries.push({
       id: `quote:${q.id}`,

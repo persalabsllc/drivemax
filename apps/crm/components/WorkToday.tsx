@@ -57,7 +57,7 @@ export function WorkToday({
     else if (c) onCustomer(c, r.opportunity_id);
   }
   return (
-    <section className="work-today panel">
+    <section className={`work-today panel ${compact ? "work-compact" : ""}`}>
       <div className="work-hero">
         <div>
           <span className="eyebrow">YOUR NEXT CONVERSATION</span>
@@ -97,43 +97,49 @@ export function WorkToday({
           );
         })}
       </div>
-      <div className="work-toolbar">
-        <label>
-          Focus
-          <select value={filter} onChange={(e) => setFilter(e.target.value)}>
-            {Object.entries(categories).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
-            ))}
-          </select>
-        </label>
-        {canManage(ws.member.role) ? (
+      {!compact && (
+        <div className="work-toolbar">
           <label>
-            Assigned to
-            <select value={scope} onChange={(e) => setScope(e.target.value)}>
-              <option value="all">Entire team</option>
-              <option value="unassigned">Unassigned</option>
-              {ws.staff.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                  {s.id === myStaffId(ws) ? " (me)" : ""}
+            Focus
+            <select value={filter} onChange={(e) => setFilter(e.target.value)}>
+              {Object.entries(categories).map(([k, v]) => (
+                <option key={k} value={k}>
+                  {v}
                 </option>
               ))}
             </select>
           </label>
-        ) : (
-          <span>Your assigned opportunities and tasks</span>
-        )}
-      </div>
+          {canManage(ws.member.role) ? (
+            <label>
+              Assigned to
+              <select value={scope} onChange={(e) => setScope(e.target.value)}>
+                <option value="all">Entire team</option>
+                <option value="unassigned">Unassigned</option>
+                {ws.staff.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                    {s.id === myStaffId(ws) ? " (me)" : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <span>Your assigned opportunities and tasks</span>
+          )}
+        </div>
+      )}
       {!selected.length ? (
         <Empty
           title="You're caught up here"
-          body="Change the filter to review another part of your day."
+          body={
+            compact
+              ? "New replies, leads and follow-ups will appear here."
+              : "Change the filter to review another part of your day."
+          }
         />
       ) : (
         <div className="work-list">
-          {selected.slice(0, compact ? 6 : 150).map((r) => {
+          {selected.slice(0, compact ? 4 : 150).map((r) => {
             const c = ws.customers.find((c) => c.id === r.customer_id),
               o = ws.opportunities.find((o) => o.id === r.opportunity_id),
               p = ws.deal_progress?.find((p) => p.id === o?.id);
@@ -187,9 +193,9 @@ export function WorkToday({
           })}
         </div>
       )}
-      {selected.length > (compact ? 6 : 150) && (
+      {selected.length > (compact ? 4 : 150) && (
         <p className="work-footnote">
-          Showing {compact ? 6 : 150} of {selected.length} actions.{" "}
+          Showing {compact ? 4 : 150} of {selected.length} actions.{" "}
           {compact
             ? "Open Work Today for the full queue."
             : "Use the filters to narrow the list."}

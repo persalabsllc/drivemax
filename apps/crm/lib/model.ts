@@ -13,7 +13,7 @@ import {
 } from "./email";
 import { demoEmailCommand } from "./email-demo";
 import { z } from "zod";
-import { staffSchema, type StaffDetails } from "./team";
+import { staffSchema, profileNameSchema, type StaffDetails } from "./team";
 import {
   buyerSchema,
   coBuyerSchema,
@@ -390,6 +390,7 @@ export const opportunitySchema = z.object({
   trade: tradeSchema.nullable(),
 });
 export const commandSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("save_profile_name"), profile: profileNameSchema }),
   ...workflowCommands,
   ...salesWorkCommands,
   ...emailCommands,
@@ -573,6 +574,14 @@ function baseDemoCommand(
     org_id = s.org.id;
   const manager = canManage(s.member.role),
     me = myStaffId(s);
+  if (p.type === "save_profile_name") {
+    const staff = s.staff.find(m => m.id === me && m.active);
+    if (!staff) throw Error("Active team membership required");
+    const name = `${p.profile.first_name} ${p.profile.last_name}`;
+    Object.assign(staff, p.profile, { name });
+    s.member.name = name;
+    return s;
+  }
   const requireManager = () => {
     if (!manager) throw Error("Manager access required");
   };

@@ -1,5 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
-import { readWorkspaceRecords, workspaceTables } from "../lib/workspace-records";
+import {
+  readWorkspaceRecords,
+  workspaceTables,
+} from "../lib/workspace-records";
 
 // Exercise the same REST queries as the signed-in page after migrations. SQL-only
 // checks cannot catch query/schema mismatches in the application loader.
@@ -13,13 +16,31 @@ async function main() {
     );
     const { data: staff, error } = await d
       .from("dmcrm_staff")
-      .select("id,org_id")
+      .select("id,org_id,user_id,name,first_name,last_name")
       .eq("org_id", "d5a1c100-0000-4000-8000-000000000001")
       .eq("role", "owner")
       .eq("active", true)
       .limit(1)
       .single();
-    if (error || !staff) throw new Error("Workspace verification owner unavailable");
+    if (error || !staff)
+      throw new Error("Workspace verification owner unavailable");
+    const { data: member, error: memberError } = await d
+      .from("dmcrm_members")
+      .select("name")
+      .eq("org_id", staff.org_id)
+      .eq("user_id", staff.user_id)
+      .single();
+    if (
+      memberError ||
+      member?.name !== staff.name ||
+      (staff.first_name &&
+        staff.last_name &&
+        staff.name !== `${staff.first_name} ${staff.last_name}`)
+    )
+      throw new Error("Workspace owner name is inconsistent");
+    console.log(
+      "Verified production owner name agrees across staff and membership.",
+    );
     for (const role of ["owner", "sales"] as const) {
       const records = await readWorkspaceRecords(d, {
         org_id: staff.org_id,
@@ -33,7 +54,9 @@ async function main() {
       `Verified production workspace REST reads: ${workspaceTables.length} tables with owner and salesperson filters.`,
     );
   } catch (error) {
-    console.error(error instanceof Error ? error.message : "Workspace verification failed");
+    console.error(
+      error instanceof Error ? error.message : "Workspace verification failed",
+    );
     process.exitCode = 1;
   }
 }

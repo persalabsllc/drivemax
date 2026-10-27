@@ -10,10 +10,29 @@ export function normalizeStaffPhone(value: string) {
   return value.trim();
 }
 
+const staffNameFields = {
+  first_name: z
+    .string()
+    .trim()
+    .min(1, "First name is required.")
+    .max(60)
+    .transform((v) => v.replace(/\s+/g, " ")),
+  last_name: z
+    .string()
+    .trim()
+    .min(1, "Last name is required.")
+    .max(60)
+    .transform((v) => v.replace(/\s+/g, " ")),
+};
+export const profileNameSchema = z
+  .object(staffNameFields)
+  .refine(
+    (v) => `${v.first_name} ${v.last_name}`.length <= 120,
+    "Full name must be 120 characters or fewer.",
+  );
 export const staffSchema = z
   .object({
-    first_name: z.string().trim().min(1, "First name is required.").max(60),
-    last_name: z.string().trim().min(1, "Last name is required.").max(60),
+    ...staffNameFields,
     email: z.string().trim().toLowerCase().pipe(z.email().max(250)),
     phone: z
       .string()

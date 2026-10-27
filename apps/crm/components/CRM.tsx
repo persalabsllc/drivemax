@@ -1,6 +1,8 @@
 "use client";
 import { useState, useMemo, useEffect } from "react";
 import { WorkToday } from "./WorkToday";
+import { OverviewFunnel } from "./OverviewFunnel";
+import { UserProfileSettings } from "./UserProfileSettings";
 import { WorkflowSettings } from "./WorkflowSettings";
 import { BuyerMatches } from "./BuyerMatches";
 import { InventoryPreparation } from "./InventoryPreparation";
@@ -116,17 +118,17 @@ type View =
   | "Workspace";
 const nav = [
   { name: "Overview", icon: LayoutDashboard },
+  { name: "Showroom", icon: DoorOpen },
   { name: "Work Today", icon: CheckCircle2 },
   { name: "Customers", icon: Users },
+  { name: "Desking", icon: FileText },
+  { name: "Conversations", icon: MessageSquare },
+  { name: "Planner", icon: CalendarDays },
   { name: "Inventory", icon: Car },
   { name: "Trade-ins", icon: RefreshCw },
+  { name: "Appraisals", icon: Car },
   { name: "Accounting", icon: TrendingUp },
   { name: "Sales reports", icon: Target },
-  { name: "Showroom", icon: DoorOpen },
-  { name: "Planner", icon: CalendarDays },
-  { name: "Desking", icon: FileText },
-  { name: "Appraisals", icon: Car },
-  { name: "Conversations", icon: MessageSquare },
 ] as const;
 const time = (d: string) =>
   new Date(d).toLocaleTimeString("en-US", {
@@ -229,6 +231,7 @@ export default function CRM({
       .filter(isOpenTask)
       .filter(
         (t) =>
+          view !== "Planner" ||
           !canManage(ws.member.role) ||
           taskScope === "all" ||
           (taskScope === "unassigned"
@@ -675,7 +678,7 @@ export default function CRM({
                 </div>
                 <h1>
                   {view === "Overview"
-                    ? `Good to see you, ${ws.member.name.split(" ")[0]}.`
+                    ? `Good to see you, ${ws.member.name}.`
                     : view === "Workspace"
                       ? "Settings"
                       : view}
@@ -745,7 +748,7 @@ export default function CRM({
                 )}
               </div>
             </div>
-            {(view === "Overview" || view === "Planner") && (
+            {view === "Planner" && (
               <div className="task-scope">
                 <span>
                   {canManage(ws.member.role)
@@ -774,11 +777,10 @@ export default function CRM({
                 )}
               </div>
             )}
-            {(view === "Work Today" || view === "Overview") && (
+            {view === "Work Today" && (
               <>
                 <WorkToday
                   ws={ws}
-                  compact={view === "Overview"}
                   onCustomer={openCustomer}
                   onTask={setAttentionTask}
                   onAppointment={setAppointmentDialog}
@@ -789,22 +791,12 @@ export default function CRM({
                     })
                   }
                 />
-                {view === "Overview" && (
-                  <button
-                    className="text-btn work-open"
-                    onClick={() => navigate("Work Today")}
-                  >
-                    Open all of Work Today <ArrowRight size={14} />
-                  </button>
-                )}
-                {view === "Work Today" && (
-                  <BuyerMatches
-                    ws={ws}
-                    run={run}
-                    busy={busy}
-                    onCustomer={openCustomer}
-                  />
-                )}
+                <BuyerMatches
+                  ws={ws}
+                  run={run}
+                  busy={busy}
+                  onCustomer={openCustomer}
+                />
               </>
             )}
             {view === "Sales reports" && <SalesReports ws={ws} />}
@@ -812,7 +804,7 @@ export default function CRM({
               <InventoryPreparation ws={ws} run={run} busy={busy} />
             )}
             {view === "Overview" && (
-              <>
+              <div className="overview-dashboard">
                 <div className="stat-grid">
                   <Stat
                     title="In the showroom"
@@ -860,222 +852,139 @@ export default function CRM({
                     }}
                   />
                 </div>
-                <AttentionCenter
-                  feed={alerts.feed}
-                  error={alerts.error}
-                  busy={busy}
-                  onOpen={openAttention}
-                  onRefresh={alerts.reload}
-                  onReview={(item) => {
-                    if (item.kind !== "task")
-                      void run(
-                        {
-                          type: "review_attention",
-                          kind: item.kind,
-                          id: item.id,
-                        },
-                        "Alert marked reviewed for you",
-                      );
-                  }}
-                />
-                <AppointmentOverview
-                  ws={ws}
-                  onSchedule={() => {
-                    setError("");
-                    setAppointmentDialog("new");
-                  }}
-                  onOpen={(a) => {
-                    setError("");
-                    setAppointmentDialog(a);
-                  }}
-                />
-                <div className="dashboard-grid">
-                  <section className="panel">
-                    <SectionTitle
-                      title="Your next moves"
-                      subtitle="The conversations that deserve your attention."
-                      action={
-                        <Go onClick={() => navigate("Planner")}>
-                          View planner
-                        </Go>
-                      }
+                <div className="overview-columns">
+                  <div className="overview-column">
+                    <AttentionCenter
+                      feed={alerts.feed}
+                      error={alerts.error}
+                      busy={busy}
+                      onOpen={openAttention}
+                      onRefresh={alerts.reload}
+                      onReview={(item) => {
+                        if (item.kind !== "task")
+                          void run(
+                            {
+                              type: "review_attention",
+                              kind: item.kind,
+                              id: item.id,
+                            },
+                            "Alert marked reviewed for you",
+                          );
+                      }}
                     />
-                    <div className="panel-tabs">
-                      <span className="selected">
-                        Due & overdue{" "}
-                        <b>
-                          {openTasks.filter((t) => t.due_date <= today).length}
-                        </b>
-                      </span>
-                      <span>Keep the momentum going</span>
+                    <AppointmentOverview
+                      ws={ws}
+                      onSchedule={() => {
+                        setError("");
+                        setAppointmentDialog("new");
+                      }}
+                      onOpen={(a) => {
+                        setError("");
+                        setAppointmentDialog(a);
+                      }}
+                    />
+                    <div className="overview-work">
+                      <WorkToday
+                        ws={ws}
+                        compact
+                        onCustomer={openCustomer}
+                        onTask={setAttentionTask}
+                        onAppointment={setAppointmentDialog}
+                        onEmail={(customer, opportunity_id) =>
+                          setAttentionCompose({
+                            customer,
+                            compose: { channel: "email", opportunity_id },
+                          })
+                        }
+                      />
+                      <button
+                        className="text-btn work-open"
+                        onClick={() => navigate("Work Today")}
+                      >
+                        Open all of Work Today <ArrowRight size={14} />
+                      </button>
                     </div>
-                    <div className="task-list">
-                      {openTasks
-                        .filter((t) => t.due_date <= today)
-                        .sort((a, b) => a.due_date.localeCompare(b.due_date))
-                        .slice(0, 5)
-                        .map(taskRow)}
-                      {!openTasks.some((t) => t.due_date <= today) && (
+                  </div>
+                  <div className="overview-column">
+                    <section className="panel showroom-preview overview-floor">
+                      <SectionTitle
+                        title="On the floor"
+                        subtitle="A live view of the people in your showroom."
+                        action={
+                          <Go onClick={() => navigate("Showroom")}>
+                            Open showroom
+                          </Go>
+                        }
+                      />
+                      {active.length ? (
+                        <div className="visit-grid">
+                          {active.slice(0, 4).map(visitCard)}
+                        </div>
+                      ) : (
                         <Empty
-                          title="A clear runway."
-                          body="You’re caught up. Add a task or plan your next conversation."
+                          title="Ready for your next visitor."
+                          body="Check a customer in from their profile when they arrive."
                           action={
                             <button
                               className="btn small"
-                              onClick={() => setModal("task")}
+                              onClick={() => navigate("Customers")}
                             >
-                              Plan a follow-up
+                              Open customers
                             </button>
                           }
                         />
                       )}
-                    </div>
-                  </section>
-                  <section className="momentum-card">
-                    <div className="eyebrow">
-                      RELATIONSHIPS, NOT JUST RECORDS
-                    </div>
-                    <h2>
-                      Every customer.
-                      <br />A next step.
-                    </h2>
-                    <p>
-                      A great experience carries on long after the keys change
-                      hands.
-                    </p>
-                    <div className="momentum-number">
-                      {
-                        openTasks.filter((t) =>
-                          ["birthday", "anniversary", "sold_followup"].includes(
-                            t.kind,
-                          ),
-                        ).length
-                      }
-                      <span>
-                        relationship reminders
-                        <br />
-                        on your calendar
-                      </span>
-                    </div>
-                    <button onClick={() => navigate("Planner")}>
-                      See what’s coming up
-                      <ArrowUpRight size={18} />
-                    </button>
-                    <div className="decor-rings" />
-                  </section>
-                </div>
-                <section className="panel showroom-preview">
-                  <SectionTitle
-                    title="On the floor"
-                    subtitle="A live view of the people in your showroom."
-                    action={
-                      <Go onClick={() => navigate("Showroom")}>
-                        Open showroom
-                      </Go>
-                    }
-                  />
-                  {active.length ? (
-                    <div className="visit-grid">
-                      {active.slice(0, 3).map(visitCard)}
-                    </div>
-                  ) : (
-                    <Empty
-                      title="Ready for your next visitor."
-                      body="Check a customer in from their profile when they arrive."
-                      action={
-                        <button
-                          className="btn small"
-                          onClick={() => navigate("Customers")}
-                        >
-                          Open customers
-                        </button>
-                      }
-                    />
-                  )}
-                </section>
-                <div className="dashboard-bottom">
-                  <section className="panel">
-                    <SectionTitle
-                      title="Opportunity snapshot"
-                      subtitle="A little clarity on where conversations stand."
-                    />
-                    {(["new", "working", "appointment", "sold"] as const).map(
-                      (s) => (
-                        <button
-                          className="pipeline-row"
-                          key={s}
-                          onClick={() => {
-                            navigate("Customers");
-                            setStage(s);
-                          }}
-                        >
-                          <Badge value={s} />
-                          <span className="pipeline-track">
-                            <span
-                              className={s}
-                              style={{
-                                width: `${ws.opportunities.length ? Math.max(3, (ws.opportunities.filter((o) => o.status === s).length / ws.opportunities.length) * 100) : 0}%`,
+                    </section>
+                    <OverviewFunnel ws={ws} onCustomer={openCustomer} />
+                    <section className="panel overview-recent">
+                      <SectionTitle
+                        title="Recent activity"
+                        subtitle="The latest moments across your customer book."
+                      />
+                      <div className="recent-list">
+                        {ws.activities
+                          .slice()
+                          .sort((a, b) =>
+                            b.created_at.localeCompare(a.created_at),
+                          )
+                          .slice(0, 4)
+                          .map((a) => (
+                            <button
+                              key={a.id}
+                              onClick={() => {
+                                const c = findCustomer(a.customer_id);
+                                if (c) openCustomer(c);
                               }}
-                            />
-                          </span>
-                          <strong>
-                            {
-                              ws.opportunities.filter((o) => o.status === s)
-                                .length
-                            }
-                          </strong>
-                        </button>
-                      ),
-                    )}
-                  </section>
-                  <section className="panel">
-                    <SectionTitle
-                      title="Recent activity"
-                      subtitle="The latest moments across your customer book."
-                    />
-                    <div className="recent-list">
-                      {ws.activities
-                        .slice()
-                        .sort((a, b) =>
-                          b.created_at.localeCompare(a.created_at),
-                        )
-                        .slice(0, 3)
-                        .map((a) => (
-                          <button
-                            key={a.id}
-                            onClick={() => {
-                              const c = findCustomer(a.customer_id);
-                              if (c) openCustomer(c);
-                            }}
-                          >
-                            <span className="activity-icon">
-                              {a.kind === "call" ? (
-                                <Phone size={15} />
-                              ) : (
-                                <StickyNote size={15} />
-                              )}
-                            </span>
-                            <div>
-                              <strong>
-                                {findCustomer(a.customer_id)?.name}
-                              </strong>
-                              <p>{a.body}</p>
-                              <small>
-                                {dateLabel(dayKey(a.created_at))} ·{" "}
-                                {time(a.created_at)}
-                              </small>
-                            </div>
-                          </button>
-                        ))}
-                      {!ws.activities.length && (
-                        <p className="muted-copy">
-                          Your team’s activity will appear here as you work.
-                        </p>
-                      )}
-                    </div>
-                  </section>
+                            >
+                              <span className="activity-icon">
+                                {a.kind === "call" ? (
+                                  <Phone size={15} />
+                                ) : (
+                                  <StickyNote size={15} />
+                                )}
+                              </span>
+                              <div>
+                                <strong>
+                                  {findCustomer(a.customer_id)?.name}
+                                </strong>
+                                <p>{a.body}</p>
+                                <small>
+                                  {dateLabel(dayKey(a.created_at))} ·{" "}
+                                  {time(a.created_at)}
+                                </small>
+                              </div>
+                            </button>
+                          ))}
+                        {!ws.activities.length && (
+                          <p className="muted-copy">
+                            Your team’s activity will appear here as you work.
+                          </p>
+                        )}
+                      </div>
+                    </section>
+                  </div>
                 </div>
-              </>
+              </div>
             )}
             {view === "Customers" && (
               <CustomerSearch
@@ -1424,6 +1333,7 @@ export default function CRM({
             )}
             {view === "Workspace" && (
               <>
+                <UserProfileSettings ws={ws} run={run} busy={busy} />
                 <WorkflowSettings ws={ws} run={run} busy={busy} demo={demo} />
                 <PushSettings demo={demo} />
                 <EmailSettingsPanel

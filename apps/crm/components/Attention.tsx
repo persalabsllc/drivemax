@@ -94,9 +94,7 @@ export function AttentionCenter({
             <Bell size={19} /> Needs attention{" "}
             <span className="attention-count">{feed.total}</span>
           </h2>
-          <p>
-            Customer replies, new leads, failed messages, and tasks due now.
-          </p>
+          <p>Replies, new leads, failed messages and due tasks.</p>
         </div>
         <button className="btn small" onClick={onRefresh} disabled={busy}>
           <RefreshCw size={14} /> Refresh alerts
@@ -118,7 +116,7 @@ export function AttentionCenter({
         >
           {feed.websiteIntake.pending
             ? `${feed.websiteIntake.pending} website ${feed.websiteIntake.pending === 1 ? "inquiry is" : "inquiries are"} waiting to import. Requests are saved on the website; automatic retries are running. If this persists, check the website’s lead inbox.`
-            : "Website connected · Test drives, sell-your-car requests, contact and financing inquiries arrive here automatically."}
+            : "Website connected · New inquiries appear here automatically."}
         </p>
       )}
       {!!feed.websiteInventory?.pending && (
@@ -187,10 +185,7 @@ export function AttentionCenter({
         )}
       </div>
       <div className="attention-footer">
-        <span>
-          Updates every 30 seconds while this workspace is open. Replies appear
-          here when email/SMS receiving is connected.
-        </span>
+        <span>New replies and leads refresh automatically.</span>
         {feed.items.length > 6 && (
           <button className="text-btn" onClick={() => setExpanded(!expanded)}>
             {expanded ? "Show less" : `Show all ${feed.items.length}`}

@@ -421,6 +421,9 @@ export function searchDeals(
   const center = points[f.zip];
   return ws.customers
     .flatMap((c) => {
+      const aliases = (ws.customer_aliases ?? []).filter(
+        (a) => a.customer_id === c.id,
+      );
       const ops = ws.opportunities.filter((o) => o.customer_id === c.id);
       return (ops.length ? ops : [null]).flatMap((o) => {
         const snapshot = o?.sale_snapshot?.customer ?? c;
@@ -466,6 +469,7 @@ export function searchDeals(
           c.name,
           c.email,
           c.phone,
+          ...aliases.flatMap((a) => [a.name, a.phone, a.email]),
           snapshot.name,
           o?.title,
           zip,
@@ -479,7 +483,9 @@ export function searchDeals(
               all.includes(t) ||
               (/^[+()\d.\-]+$/.test(t) &&
                 t.replace(/\D/g, "").length >= 3 &&
-                c.phone.replace(/\D/g, "").includes(t.replace(/\D/g, ""))),
+                [c.phone, ...aliases.map((a) => a.phone)].some((phone) =>
+                  phone.replace(/\D/g, "").includes(t.replace(/\D/g, "")),
+                )),
           ) ||
           !vehicleTerms.every((t) => vehicleText.includes(t))
         )

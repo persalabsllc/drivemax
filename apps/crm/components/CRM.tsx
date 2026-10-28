@@ -290,6 +290,8 @@ export default function CRM({
         const next = demoCommand(ws, command);
         setWs(next);
         if (command.type === "create_customer") id = next.customers[0].id;
+        if (command.type === "merge_customers") id = command.target_id;
+        if (command.type === "set_co_buyer") id = command.opportunity_id;
         if (command.type === "convert_quick_quote")
           id = next.quick_quote_conversions?.[command.id]?.customer_id;
         if (command.type === "create_opportunity")
@@ -1453,6 +1455,7 @@ export default function CRM({
           run={run}
           onClose={() => setSelected(null)}
           onRefresh={refresh}
+          onOpenCustomer={openCustomer}
           onPrintQuote={(c, q) => print(c, q)}
           initialTab={profileTab}
           initialOpportunityId={selectedOpp}

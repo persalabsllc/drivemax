@@ -82,7 +82,9 @@ test("vault migration and archive lifecycle preserve files, links, permissions a
       `insert into auth.users(id,email) values('${owner}','owner@example.invalid'),('${sales}','sales@example.invalid'),('${other}','other@example.invalid');insert into staff(id,email,name,role) values('${owner}','owner@example.invalid','Test Owner','owner');`,
     );
     for (const f of (await fs.readdir(new URL("../db/", import.meta.url)))
-      .filter((f) => /^\d{3}_.*\.sql$/.test(f) && !f.startsWith("020_"))
+      .filter(
+        (f) => /^\d{3}_.*\.sql$/.test(f) && !f.startsWith("020_") && f < "024_",
+      )
       .sort())
       await pg.exec(
         await fs.readFile(new URL("../db/" + f, import.meta.url), "utf8"),

@@ -1,0 +1,206 @@
+.co-buyer-picker,
+.customer-merge-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.co-buyer-picker legend {
+  font-size: 15px;
+  font-weight: 650;
+  padding: 0 0 12px;
+  color: #334965;
+}
+.customer-link-options,
+.merge-profile-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 8px 0 18px;
+}
+.customer-link-options label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 9px;
+  border: 1px solid #dce4ed;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.customer-link-options input,
+.merge-profile-options input,
+.merge-confirm input {
+  width: auto;
+  flex-shrink: 0;
+  accent-color: var(--red);
+}
+.customer-link-options .selected,
+.merge-profile-options .selected {
+  border-color: #d39aa4;
+  background: #fff7f8;
+}
+.customer-link-search > span {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.customer-link-results {
+  display: flex;
+  flex-direction: column;
+  max-height: 220px;
+  overflow: auto;
+  margin: 10px 0 16px;
+  border: 1px solid #e1e7ef;
+  border-radius: 9px;
+}
+.customer-link-results button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-height: 54px;
+  text-align: left;
+  padding: 10px 14px;
+  border: 0;
+  border-bottom: 1px solid #e9edf3;
+  background: #fff;
+  color: #405674;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.customer-link-results button:last-child {
+  border-bottom: 0;
+}
+.customer-link-results button:hover {
+  background: #f3f6fa;
+}
+.customer-link-results button.selected {
+  background: #fff0f2;
+  color: #97364a;
+}
+.customer-link-results span {
+  font-size: 12px;
+  color: #71829a;
+}
+.customer-link-results p {
+  padding: 8px 14px;
+  font-size: 13px;
+}
+.customer-link-selected,
+.merge-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  background: #f0f6f5;
+  border: 1px solid #d7e6e1;
+  color: #395f57;
+  padding: 15px;
+  border-radius: 9px;
+  margin: 12px 0;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.merge-summary p {
+  margin: 2px 0;
+}
+.merge-profile-options {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.merge-profile-options label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid #dce4ed;
+  border-radius: 9px;
+  padding: 15px;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.merge-profile-options label > span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 24px;
+}
+.merge-profile-options label > span:not(:first-child) {
+  font-size: 12px;
+  color: #74849a;
+}
+.merge-confirm {
+  min-height: 44px;
+  line-height: 1.6;
+}
+.deal-co-buyer {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  margin: 14px 0;
+  background: #f5f7fb;
+  border: 1px solid #e1e7ef;
+  border-radius: 11px;
+}
+.deal-co-buyer > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+  min-width: 180px;
+}
+.deal-co-buyer strong {
+  font-size: 12px;
+  color: #7b8ca2;
+}
+.deal-co-buyer span {
+  font-size: 14px;
+  color: #334965;
+}
+.deal-co-buyer small {
+  color: #8492a7;
+}
+.customer-aliases {
+  margin: 12px 0;
+  color: #71829a;
+  font-size: 12px;
+}
+.customer-aliases summary {
+  cursor: pointer;
+  padding: 8px 0;
+}
+.customer-aliases p {
+  overflow-wrap: anywhere;
+}
+.co-buyer-relationships {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin: 18px 0;
+}
+.co-buyer-relationships h3 {
+  width: 100%;
+  font-size: 14px;
+}
+@media (max-width: 620px) {
+  .customer-link-options,
+  .merge-profile-options {
+    grid-template-columns: 1fr;
+  }
+  .customer-link-options label {
+    justify-content: flex-start;
+  }
+  .customer-link-search input,
+  .customer-merge input:not([type="radio"]):not([type="checkbox"]) {
+    font-size: 16px;
+  }
+  .deal-co-buyer .btn,
+  .co-buyer-relationships .btn {
+    min-height: 44px;
+    white-space: normal;
+    text-align: left;
+  }
+}

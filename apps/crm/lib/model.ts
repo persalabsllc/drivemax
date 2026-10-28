@@ -6,6 +6,17 @@ import {
   type TitleEvent,
 } from "./title-clerk";
 import { demoTitleClerk, seedTitleClerk } from "./title-clerk-demo";
+import {
+  coBuyerLinkSchema,
+  customerLinkCommands,
+  type CustomerAlias,
+} from "./customer-links";
+import {
+  demoCustomerMerge,
+  resolveDemoCoBuyer,
+  refreshDemoCoBuyer,
+} from "./customer-links-demo";
+import { clearCoBuyerPaperwork } from "./co-buyer-paperwork";
 import type { FacebookMessage } from "./facebook";
 import { attentionCommand } from "./attention-schema";
 import { appraisalCommands, type Appraisal } from "./appraisals";
@@ -92,6 +103,8 @@ export type Customer = {
   trade?: Trade | null;
   person?: Person | null;
   co_buyer?: Person | null;
+  co_buyer_id?: string | null;
+  merged_into?: string | null;
   insurance?: Insurance | null;
   birthday: string | null;
   sold_on: string | null;
@@ -99,6 +112,8 @@ export type Customer = {
   updated_at: string;
 };
 export type Opportunity = {
+  co_buyer_id?: string | null;
+  co_buyer?: Person | null;
   assigned_to?: string | null;
   id: string;
   org_id: string;
@@ -135,6 +150,9 @@ export function opportunityCustomer(
   const base = o.sale_snapshot?.customer ?? c;
   return {
     ...base,
+    ...(!o.sale_snapshot && Object.hasOwn(o, "co_buyer")
+      ? { co_buyer: o.co_buyer, co_buyer_id: o.co_buyer_id }
+      : {}),
     id: c.id,
     org_id: c.org_id,
     status: o.status,
@@ -223,6 +241,7 @@ export type Staff = Partial<Omit<StaffDetails, "role" | "name" | "email">> & {
 export const canManage = (role: string) =>
   role === "owner" || role === "manager";
 export type Workspace = {
+  customer_aliases?: CustomerAlias[];
   title_cases?: TitleCase[];
   temp_tags?: TempTag[];
   title_documents?: TitleDocument[];
@@ -352,6 +371,7 @@ const customer = {
   birthday,
   person: buyerSchema.nullable().optional(),
   co_buyer: coBuyerSchema.nullable().optional(),
+  co_buyer_link: coBuyerLinkSchema.optional(),
   initial_opportunity: z.boolean().optional(),
   inventory_id: z.uuid().nullable().optional(),
   vehicle_details: vehicleDetailsSchema.nullable().optional(),
@@ -420,6 +440,7 @@ export const opportunitySchema = z.object({
   trade: tradeSchema.nullable(),
 });
 export const commandSchema = z.discriminatedUnion("type", [
+  ...customerLinkCommands,
   ...appraisalCommands,
   z.object({
     type: z.literal("save_profile_name"),
@@ -551,6 +572,8 @@ function demoCommandInner(
   now = new Date(),
 ): Workspace {
   const parsed = commandSchema.parse(command);
+  if (parsed.type === "merge_customers")
+    return demoCustomerMerge(ws, parsed, now);
   const titleResult = demoTitleClerk(ws, parsed, now);
   if (titleResult) return titleResult;
   const appraisalResult = demoAppraisal(ws, parsed, now);
@@ -791,6 +814,7 @@ function baseDemoCommand(
     return o;
   };
   const addOpp = (cid: string, data: z.infer<typeof opportunitySchema>) => {
+    const buyer = s.customers.find((c) => c.id === cid);
     const o: Opportunity = {
       ...canonical(data),
       assigned_to:
@@ -798,6 +822,8 @@ function baseDemoCommand(
       id: id(),
       org_id,
       customer_id: cid,
+      co_buyer_id: buyer?.co_buyer_id ?? null,
+      co_buyer: structuredClone(buyer?.co_buyer ?? null),
       sold_on: null,
       lost_reason: "",
       closed_at: null,
@@ -844,8 +870,19 @@ function baseDemoCommand(
       });
   }
   if (p.type === "create_customer") {
+    const linked = p.customer.co_buyer_link
+      ? resolveDemoCoBuyer(s, p.customer.co_buyer_link, stamp)
+      : p.customer.co_buyer
+        ? resolveDemoCoBuyer(
+            s,
+            { mode: "new", person: p.customer.co_buyer },
+            stamp,
+          )
+        : null;
     const c: Customer = {
       ...p.customer,
+      co_buyer_id: linked?.id ?? null,
+      co_buyer: linked?.person ?? null,
       assigned_to: me ?? null,
       status: "new",
       id: id(),
@@ -895,6 +932,9 @@ function baseDemoCommand(
     }
     const { name, email, phone, source, birthday, person, co_buyer } =
       p.customer;
+    const linked = p.customer.co_buyer_link
+      ? resolveDemoCoBuyer(s, p.customer.co_buyer_link, stamp, c.id)
+      : undefined;
     Object.assign(c, {
       name,
       email,
@@ -903,9 +943,42 @@ function baseDemoCommand(
       birthday,
       ...(person !== undefined ? { person } : {}),
       ...(co_buyer !== undefined ? { co_buyer } : {}),
+      ...(linked !== undefined
+        ? { co_buyer_id: linked?.id ?? null, co_buyer: linked?.person ?? null }
+        : {}),
       updated_at: stamp,
     });
+    refreshDemoCoBuyer(s, c, stamp);
     activity(c.id, "Customer contact details updated");
+  }
+  if (p.type === "set_co_buyer") {
+    const o = s.opportunities.find((o) => o.id === p.opportunity_id);
+    if (!o) throw Error("Opportunity unavailable");
+    if (!manager && o.assigned_to !== me)
+      throw Error("Assigned salesperson or manager required");
+    if (!opportunityOpen(o))
+      throw Error("Closed deals keep their original co-buyer.");
+    if (o.updated_at !== p.expected_updated_at)
+      throw Error("Deal changed. Refresh before changing the co-buyer.");
+    const linked = resolveDemoCoBuyer(s, p.link, stamp, o.customer_id);
+    if (JSON.stringify(o.co_buyer) !== JSON.stringify(linked?.person ?? null)) {
+      const paperwork = clearCoBuyerPaperwork(o.paperwork);
+      if (JSON.stringify(paperwork) !== JSON.stringify(o.paperwork)) {
+        o.paperwork = paperwork;
+        o.paperwork_revision++;
+      }
+    }
+    o.co_buyer_id = linked?.id ?? null;
+    o.co_buyer = linked?.person ?? null;
+    o.updated_at = stamp;
+    activity(
+      o.customer_id,
+      linked
+        ? `Co-buyer linked: ${linked.name}`
+        : "Co-buyer removed from this opportunity; customer profile retained",
+      "system",
+      o.id,
+    );
   }
   if (p.type === "create_opportunity") {
     if (!s.customers.some((c) => c.id === p.customer_id))
@@ -951,7 +1024,7 @@ function baseDemoCommand(
     o.updated_at = stamp;
     o.sale_snapshot = {
       salesperson: s.staff.find((m) => m.id === o.assigned_to) ?? null,
-      customer: structuredClone(c),
+      customer: structuredClone(opportunityCustomer(c, o)),
       insurance: structuredClone(c.insurance ?? null),
       quote: structuredClone(
         s.quotes

@@ -10,6 +10,7 @@ import { verifyAppraisals } from "./verify-appraisals.mjs";
 import { verifyTitleClerk } from "./verify-title-clerk.mjs";
 import { verifyFacebook } from "./verify-facebook.mjs";
 import { verifyDocumentVault } from "./verify-document-vault.mjs";
+import { verifyCustomerLinks } from "./verify-customer-links.mjs";
 import { setupWorkflowScheduler } from "./setup-workflow-scheduler.mjs";
 if (process.env.VERCEL_ENV === "production") {
   if (!process.env.POSTGRES_URL)
@@ -93,6 +94,10 @@ if (process.env.VERCEL_ENV === "production") {
       "Verified title clerk: sold queue, audited amount reviews, preserved sale records, tag history, private document links and resale isolation; all fixtures rolled back.",
     );
     await verifyFacebook(client);
+    await verifyCustomerLinks(client);
+    console.log(
+      "Verified customer merges and co-buyer profiles: correspondence, sold snapshots, private files, contact aliases, opt-outs and deal-specific co-buyers; all fixtures rolled back.",
+    );
     console.log(
       "Verified Facebook intake: retry deduplication and repeat messages, with all fixtures rolled back.",
     );

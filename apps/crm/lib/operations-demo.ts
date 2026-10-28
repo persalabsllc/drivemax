@@ -1,5 +1,6 @@
 import { demoAttention } from "./attention";
 import type { Command, Opportunity, Workspace } from "./model";
+import { opportunityCustomer } from "./model";
 import { clearFIPaperwork } from "./fi-paperwork";
 import {
   emptyAccounting,
@@ -461,7 +462,9 @@ export function demoOperations(
   );
   if (p.type === "save_quote" && p.values.fiMenu) {
     const q = next.quotes[0],
-      c = next.customers.find((c) => c.id === q.customer_id)!;
+      buyer = next.customers.find((c) => c.id === q.customer_id)!,
+      opportunity = next.opportunities.find((o) => o.id === q.opportunity_id),
+      c = opportunity ? opportunityCustomer(buyer, opportunity) : buyer;
     q.values.fiMenu = {
       ...q.values.fiMenu!,
       customer_name: c.name,

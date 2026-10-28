@@ -47,7 +47,12 @@ export function demoAttention(ws: Workspace): AttentionFeed {
       ? ws.opportunities.find((o) => o.id === oid)?.assigned_to
       : ws.customers.find((c) => c.id === cid)?.assigned_to) === me;
   for (const c of ws.customers.filter(
-    (c) => c.status === "new" && allowed(c.id),
+    (c) =>
+      c.status === "new" &&
+      !c.merged_into &&
+      allowed(c.id) &&
+      (c.source !== "Co-buyer" ||
+        ws.opportunities.some((o) => o.customer_id === c.id)),
   )) {
     items.push({
       key: `lead:${c.id}`,

@@ -7,6 +7,7 @@ export type WorkspaceScope = {
 };
 export const workspaceTables = [
   "customers",
+  "customer_aliases",
   "visits",
   "activities",
   "tasks",
@@ -66,6 +67,7 @@ export async function readWorkspaceRecords(
         .eq("org_id", s.org_id);
       if (table === "inventory" || table === "trades")
         query = query.is("deleted_at", null);
+      if (table === "customers") query = query.is("merged_into", null);
       // Never deliver another salesperson's tasks to the browser, exports, or planner.
       if (table === "tasks" && !canManage(s.role))
         query = query.eq("assigned_to", s.staff_id);
@@ -87,6 +89,10 @@ export async function readWorkspaceRecords(
   const records = Object.fromEntries(
     workspaceTables.map((t, i) => [t, rows[i]]),
   ) as WorkspaceRecords;
+  const customerIds = new Set(records.customers.map((c) => c.id));
+  records.buyer_preferences = records.buyer_preferences?.filter((p) =>
+    customerIds.has(p.id),
+  );
   // File names and metadata follow the same scope as the private download route.
   if (!canManage(s.role)) {
     const assigned = new Set(

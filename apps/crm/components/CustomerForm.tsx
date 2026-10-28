@@ -15,6 +15,8 @@ import {
 } from "./Appointments";
 import { blankPerson, fullName, personFromCustomer } from "../lib/people";
 import { PersonFields } from "./PersonFields";
+import { CoBuyerPicker } from "./CoBuyerPicker";
+import { coBuyerSelection, type CoBuyerLink } from "../lib/customer-links";
 export function CustomerForm({
   existing,
   ws,
@@ -36,8 +38,9 @@ export function CustomerForm({
   const [person, setPerson] = useState(() =>
       existing ? personFromCustomer(existing) : { ...blankPerson },
     ),
-    [co, setCo] = useState(() => existing?.co_buyer ?? { ...blankPerson }),
-    [hasCo, setHasCo] = useState(!!existing?.co_buyer),
+    [coLink, setCoLink] = useState<CoBuyerLink>(() =>
+      existing ? coBuyerSelection(existing) : { mode: "none" },
+    ),
     [createOpp, setCreateOpp] = useState(true),
     [schedule, setSchedule] = useState(false),
     [appointmentId] = useState(() => crypto.randomUUID()),
@@ -54,7 +57,7 @@ export function CustomerForm({
           phone: person.phone,
           email: person.email,
           person,
-          co_buyer: hasCo ? co : null,
+          co_buyer_link: coLink,
           birthday: String(f.get("birthday")) || null,
           source: String(f.get("source")),
           status: existing?.status ?? "new",
@@ -115,6 +118,7 @@ export function CustomerForm({
               "Phone",
               "Referral",
               "Repeat customer",
+              "Co-buyer",
               "Other",
             ].map((x) => (
               <option key={x}>{x}</option>
@@ -123,29 +127,22 @@ export function CustomerForm({
         </label>
       </div>
       <section className="editor-section">
-        <label className="checkbox-label">
-          <input
-            type="checkbox"
-            checked={hasCo}
-            onChange={(e) => setHasCo(e.target.checked)}
-          />
-          Add a co-buyer
-        </label>
-        {hasCo && (
+        {existing && (
           <>
-            <h3>Co-buyer information</h3>
+            <h3>Default co-buyer for new opportunities</h3>
             <p className="fine-print">
-              Enter their name, driver’s license, and residential address.
-              Completed deals keep the co-buyer recorded at sale.
+              Existing deals keep their selected co-buyer. Use “Manage co-buyer”
+              on an opportunity to change that deal.
             </p>
-            <PersonFields
-              value={co}
-              onChange={setCo}
-              prefix="Co-buyer"
-              complete
-            />
           </>
         )}
+        <CoBuyerPicker
+          customers={ws.customers}
+          buyerId={existing?.id}
+          value={coLink}
+          onChange={setCoLink}
+          disabled={busy}
+        />
       </section>
       {!existing && purpose !== "quick_quote" && (
         <section className="editor-section">

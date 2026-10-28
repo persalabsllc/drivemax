@@ -1,4 +1,5 @@
 import { titleErrors } from "../../../lib/title-clerk";
+import { customerLinkErrors } from "../../../lib/customer-links";
 import { NextRequest, NextResponse, after } from "next/server";
 import { dispatchEmail } from "../../../lib/messaging";
 import { session, workspace, db } from "../../../lib/server";
@@ -137,6 +138,7 @@ export async function POST(req: NextRequest) {
                           "Assigned salesperson or manager required",
                           "Record changed. Refresh before saving.",
                           ...titleErrors,
+                          ...customerLinkErrors,
                           "Manager access required for funding changes",
                           "Enter the funded date",
                           "Check recon items",

@@ -38,6 +38,8 @@ import {
 import { personFromCustomer, fullName } from "../lib/people";
 import { Avatar, Badge, Modal, Empty } from "./ui";
 import { CustomerForm } from "./CustomerForm";
+import { CoBuyerDialog } from "./CoBuyerPicker";
+import { MergeCustomers } from "./MergeCustomers";
 import { AppointmentDialog, CustomerAppointments } from "./Appointments";
 import type { Appointment } from "../lib/appointments";
 import { OpportunityForm } from "./OpportunityForm";
@@ -76,6 +78,7 @@ export function CustomerProfile({
   onClose,
   onPrintQuote,
   onRefresh,
+  onOpenCustomer,
   initialTab = "Activity",
   initialOpportunityId,
 }: {
@@ -88,6 +91,7 @@ export function CustomerProfile({
   onClose: () => void;
   onPrintQuote: (c: Customer, q: Quote) => void;
   onRefresh?: () => Promise<void>;
+  onOpenCustomer?: (customer: Customer, opportunityId?: string | null) => void;
   initialTab?: Tab;
   initialOpportunityId?: string | null;
 }) {
@@ -110,6 +114,8 @@ export function CustomerProfile({
     [modal, setModal] = useState<
       | "unwind"
       | "customer"
+      | "merge"
+      | "co-buyer"
       | "new-opportunity"
       | "edit-opportunity"
       | "edit-vehicle"
@@ -179,6 +185,11 @@ export function CustomerProfile({
           <button className="btn small" onClick={() => setModal("customer")}>
             Edit customer
           </button>
+          {manager && (
+            <button className="btn small" onClick={() => setModal("merge")}>
+              Merge duplicate
+            </button>
+          )}
         </div>
         <div className="profile-contact">
           <span>
@@ -190,6 +201,44 @@ export function CustomerProfile({
             {customer.email || "No email added"}
           </span>
         </div>
+        {!!ws.customer_aliases?.some((a) => a.customer_id === customer.id) && (
+          <details className="customer-aliases">
+            <summary>Merged profile history</summary>
+            {ws.customer_aliases
+              .filter((a) => a.customer_id === customer.id)
+              .map((a) => (
+                <p key={a.id}>
+                  <strong>{a.name}</strong> ·{" "}
+                  {[a.phone, a.email].filter(Boolean).join(" · ") ||
+                    "No contact details"}
+                </p>
+              ))}
+          </details>
+        )}
+        {!!ws.opportunities.some((o) => o.co_buyer_id === customer.id) && (
+          <section className="co-buyer-relationships">
+            <h3>Deals as co-buyer</h3>
+            {ws.opportunities
+              .filter((o) => o.co_buyer_id === customer.id)
+              .map((related) => {
+                const buyer = ws.customers.find(
+                  (c) => c.id === related.customer_id,
+                );
+                return (
+                  buyer && (
+                    <button
+                      key={related.id}
+                      type="button"
+                      className="btn small"
+                      onClick={() => onOpenCustomer?.(buyer, related.id)}
+                    >
+                      {related.title} · {buyer.name} · {related.status}
+                    </button>
+                  )
+                );
+              })}
+          </section>
+        )}
         <CustomerTasks ws={ws} customer={customer} onTask={setTaskAction} />
         <CustomerAppointments
           ws={ws}
@@ -238,6 +287,39 @@ export function CustomerProfile({
             ))}
           </div>
         </section>
+        {o && (
+          <div className="deal-co-buyer">
+            <div>
+              <strong>Co-buyer</strong>
+              <span>
+                {co ? fullName(co) : "No co-buyer on this opportunity"}
+              </span>
+              {closed && <small>Recorded when this deal closed</small>}
+            </div>
+            {o.co_buyer_id &&
+              ws.customers.some((c) => c.id === o.co_buyer_id) && (
+                <button
+                  className="btn small"
+                  onClick={() =>
+                    onOpenCustomer?.(
+                      ws.customers.find((c) => c.id === o.co_buyer_id)!,
+                    )
+                  }
+                >
+                  Open co-buyer profile
+                </button>
+              )}
+            {!closed && (
+              <button
+                className="btn small"
+                disabled={busy || (!manager && assigned !== me)}
+                onClick={() => setModal("co-buyer")}
+              >
+                {co ? "Manage co-buyer" : "Add co-buyer"}
+              </button>
+            )}
+          </div>
+        )}
         {o && (
           <div className="opportunity-summary">
             <div>
@@ -543,7 +625,14 @@ export function CustomerProfile({
             onRefresh={onRefresh}
           />
         )}
-        {tab === "Facebook" && <FacebookThread ws={ws} customerId={customer.id} busy={busy} onRefresh={onRefresh}/>}
+        {tab === "Facebook" && (
+          <FacebookThread
+            ws={ws}
+            customerId={customer.id}
+            busy={busy}
+            onRefresh={onRefresh}
+          />
+        )}
         {(tab === "Texts" || tab === "Emails") && (
           <Communications
             run={run}
@@ -1042,6 +1131,26 @@ export function CustomerProfile({
             }}
           />
         </Modal>
+      )}
+      {modal === "merge" && manager && (
+        <MergeCustomers
+          ws={ws}
+          customer={customer}
+          busy={busy}
+          error={error}
+          run={run}
+          onClose={() => setModal(null)}
+        />
+      )}
+      {modal === "co-buyer" && o && !closed && (
+        <CoBuyerDialog
+          ws={ws}
+          opportunity={o}
+          busy={busy}
+          error={error}
+          run={run}
+          onClose={() => setModal(null)}
+        />
       )}
       {(modal === "new-opportunity" ||
         modal === "edit-opportunity" ||

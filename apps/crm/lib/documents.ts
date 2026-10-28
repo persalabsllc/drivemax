@@ -4,6 +4,7 @@ import { fiBillOfSale } from "./fi-menu";
 import {
   dayKey,
   opportunityOpen,
+  opportunityCustomer,
   quoteMath,
   type Workspace,
   type Customer,
@@ -113,7 +114,7 @@ export function documentContext(
   o: Opportunity,
 ): PaperValues {
   const closed = !opportunityOpen(o),
-    c = closed ? (o.sale_snapshot?.customer ?? customer) : customer,
+    c = opportunityCustomer(customer, o),
     p = personFromCustomer(c),
     co = c.co_buyer;
   const q = closed

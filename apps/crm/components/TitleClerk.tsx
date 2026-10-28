@@ -29,7 +29,12 @@ import {
   type Customer,
   type Workspace,
 } from "../lib/model";
-import { pendingTitleTotals, titleAmounts } from "../lib/title-clerk-money";
+import {
+  pendingTitleTotals,
+  titleAmounts,
+  titleAmountsNeedReview,
+} from "../lib/title-clerk-money";
+import { TitleAmountEditor } from "./TitleAmountEditor";
 import { titleFormGroups } from "../lib/title-form-catalog";
 import {
   calendarDays,
@@ -128,6 +133,7 @@ export function TitleClerk(props: Props) {
     (t) => tagTiming(t, today).expiring || tagTiming(t, today).expired,
   );
   const totals = pendingTitleTotals(ws, cases);
+  const reviewCount = open.filter((c) => titleAmountsNeedReview(ws, c)).length;
   const matches = (c: TitleCase) =>
     search
       .toLowerCase()
@@ -170,7 +176,9 @@ export function TitleClerk(props: Props) {
             ? !!c.next_action_on && c.next_action_on <= today
             : filter === "missing_amounts"
               ? titleAmounts(ws, c).total === null
-              : c.status === filter),
+              : filter === "review_amounts"
+                ? titleAmountsNeedReview(ws, c)
+                : c.status === filter),
     )
     .sort((a, b) => a.sold_on.localeCompare(b.sold_on));
   const tagRows = tags
@@ -225,7 +233,7 @@ export function TitleClerk(props: Props) {
               and pending items.
             </p>
           </div>
-          <span className="tc-eyebrow">SAVED SALE AMOUNTS</span>
+          <span className="tc-eyebrow">TITLE-WORK AMOUNTS</span>
         </div>
         <div className="tc-money-grid">
           <div>
@@ -254,14 +262,12 @@ export function TitleClerk(props: Props) {
           </div>
           <div>
             <span>
-              {totals.missingDeals
-                ? "Known combined subtotal"
-                : "Combined total"}
+              {totals.missingDeals ? "Known fees + taxes" : "DMV fees + taxes"}
             </span>
-            <output aria-label="Combined DMV and tax total">
+            <output aria-label="Total DMV fees plus taxes">
               {totals.total === null ? "Not recorded" : fullMoney(totals.total)}
             </output>
-            <small>Open-deal amounts before DMV payments</small>
+            <small>The two totals added together · before DMV payments</small>
           </div>
         </div>
         {totals.missingDeals > 0 && (
@@ -283,6 +289,24 @@ export function TitleClerk(props: Props) {
           </div>
         )}
       </section>
+      {reviewCount > 0 && (
+        <div className="tc-money-review" role="status">
+          <span>
+            {reviewCount} {reviewCount === 1 ? "deal has" : "deals have"}{" "}
+            missing or unconfirmed $0 amounts. Review them before relying on
+            these totals.
+          </span>
+          <button
+            className="text-btn"
+            onClick={() => {
+              setSearch("");
+              switchPage("queue", "review_amounts");
+            }}
+          >
+            Review amounts <ArrowUpRight size={14} />
+          </button>
+        </div>
+      )}
       <div className="tc-stats">
         <button onClick={() => switchPage("queue")}>
           <span>
@@ -370,6 +394,7 @@ export function TitleClerk(props: Props) {
                   <option value="missing_amounts">
                     Missing fee / tax amounts
                   </option>
+                  <option value="review_amounts">Amounts to review</option>
                 </>
               )}
             </select>
@@ -442,6 +467,7 @@ export function TitleClerk(props: Props) {
                 <tr>
                   <th>Customer / vehicle</th>
                   <th>Sold / age</th>
+                  <th>DMV fees / taxes</th>
                   <th>Paperwork</th>
                   <th>Next step</th>
                   <th>Temporary tag</th>
@@ -456,7 +482,8 @@ export function TitleClerk(props: Props) {
                     tag = tags.find(
                       (t) => t.case_id === c.id && t.status === "active",
                     ),
-                    active = isActiveTitle(ws, c);
+                    active = isActiveTitle(ws, c),
+                    money = titleAmounts(ws, c);
                   return (
                     <tr key={c.id}>
                       <td>
@@ -488,6 +515,25 @@ export function TitleClerk(props: Props) {
                           {c.status === "complete" ? " to finish" : ""}
                         </span>
                         <small>{dateLabel(c.sold_on)}</small>
+                      </td>
+                      <td className="tc-row-amounts">
+                        <strong>
+                          Fees{" "}
+                          {money.fees === null
+                            ? "Not recorded"
+                            : fullMoney(money.fees)}
+                        </strong>
+                        <small>
+                          Tax{" "}
+                          {money.taxes === null
+                            ? "Not recorded"
+                            : fullMoney(money.taxes)}
+                        </small>
+                        {titleAmountsNeedReview(ws, c) && (
+                          <span className="tc-amount-review-label">
+                            Review amounts
+                          </span>
+                        )}
                       </td>
                       <td>
                         {active ? (
@@ -598,6 +644,7 @@ function TitleCaseDetail({
     [dirty, setDirty] = useState(false),
     [error, setError] = useState(""),
     [formSearch, setFormSearch] = useState(""),
+    [editingAmounts, setEditingAmounts] = useState(false),
     [printForms, setPrintForms] = useState<string[] | null>(null);
   useEffect(() => {
     if (!dirty) {
@@ -722,15 +769,49 @@ function TitleCaseDetail({
           </strong>
         </span>
         <span>
-          Combined{" "}
+          DMV fees + taxes{" "}
           <strong>
             {amounts.total === null
               ? "Incomplete amounts"
               : fullMoney(amounts.total)}
           </strong>
         </span>
-        <small>Saved sale amounts, before DMV payments.</small>
+        <small>
+          {c.amounts ? "Reviewed for title work" : "Saved sale amounts"} ·
+          before DMV payments.
+        </small>
+        {canManage(ws.member.role) && (
+          <button
+            className="text-btn"
+            onClick={() => setEditingAmounts(true)}
+            disabled={!active || busy || dirty}
+            title={
+              dirty
+                ? "Save checklist changes before reviewing amounts"
+                : undefined
+            }
+          >
+            Review / correct amounts
+          </button>
+        )}
       </div>
+      {titleAmountsNeedReview(ws, c) && (
+        <p className="tc-money-review">
+          This file has missing or unconfirmed $0 amounts. A manager can verify
+          or correct them using Review / correct amounts.
+        </p>
+      )}
+      {c.amounts && (
+        <p className="tc-amount-note">Amount verification: {c.amounts.note}</p>
+      )}
+      {editingAmounts && (
+        <TitleAmountEditor
+          ws={ws}
+          record={c}
+          run={run}
+          onClose={() => setEditingAmounts(false)}
+        />
+      )}
       {!active && (
         <div className="tc-notice">
           This sale was unwound. Its documents and history remain available;
@@ -1105,6 +1186,12 @@ function TitleCaseDetail({
 function eventSummary(e: TitleEvent): string[] {
   const before = e.detail.before as Record<string, unknown> | undefined,
     after = e.detail.after as Record<string, unknown> | undefined;
+  if (e.event === "DMV amounts reviewed" && after)
+    return [
+      `DMV fees: ${typeof before?.fees === "number" ? fullMoney(before.fees) : "Not recorded"} → ${fullMoney(Number(after.fees))}`,
+      `Taxes: ${typeof before?.taxes === "number" ? fullMoney(before.taxes) : "Not recorded"} → ${fullMoney(Number(after.taxes))}`,
+      String(after.note ?? ""),
+    ];
   if (e.event === "Document filed")
     return [
       `${titleDocumentPurposes[e.detail.purpose as TitlePurpose] ?? "Document"}: ${String(e.detail.name ?? "")}`,

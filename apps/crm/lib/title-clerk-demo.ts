@@ -1,6 +1,7 @@
 import type { Command, Workspace } from "./model";
 import { dayKey } from "./model";
 import { titleValidation, calendarDays, type TitleCase } from "./title-clerk";
+import { titleAmounts } from "./title-clerk-money";
 
 export function seedTitleClerk(input: Workspace): Workspace {
   const ws = structuredClone(input),
@@ -81,15 +82,19 @@ export function demoTitleClerk(
   now: Date,
 ): Workspace | null {
   if (
-    !["save_title_case", "save_temp_tag", "attach_title_document"].includes(
-      command.type,
-    )
+    ![
+      "save_title_case",
+      "save_title_amounts",
+      "save_temp_tag",
+      "attach_title_document",
+    ].includes(command.type)
   )
     return null;
   const ws = seedTitleClerk(input),
     cmd = command;
   if (
     cmd.type !== "save_title_case" &&
+    cmd.type !== "save_title_amounts" &&
     cmd.type !== "save_temp_tag" &&
     cmd.type !== "attach_title_document"
   )
@@ -113,7 +118,21 @@ export function demoTitleClerk(
     throw Error("Unwound sale is read-only");
   let event = "Paperwork updated",
     detail: Record<string, unknown> = {};
-  if (cmd.type === "save_title_case") {
+  if (cmd.type === "save_title_amounts") {
+    if (!["owner", "manager"].includes(ws.member.role))
+      throw Error("Manager required to correct DMV amounts");
+    if (cmd.revision !== c.revision)
+      throw Error("Record changed. Refresh before saving.");
+    const previous = titleAmounts(ws, c);
+    detail = {
+      before: c.amounts ?? { fees: previous.fees, taxes: previous.taxes },
+      after: cmd.values,
+    };
+    c.amounts = { ...cmd.values };
+    c.revision++;
+    c.updated_at = stamp;
+    event = "DMV amounts reviewed";
+  } else if (cmd.type === "save_title_case") {
     if (cmd.revision !== c.revision)
       throw Error("Record changed. Refresh before saving.");
     const error = titleValidation(c, cmd.values, today);

@@ -24,6 +24,10 @@ import { seedTitleClerk } from "../lib/title-clerk-demo";
 import { soldPackForms, documentContext } from "../lib/documents";
 import { buildSoldPack } from "../lib/pdf-output";
 import { verifyTitleClerk } from "../scripts/verify-title-clerk.mjs";
+import {
+  repairTitleAmounts,
+  readPendingTitleTotals,
+} from "../scripts/repair-title-amounts.mjs";
 import { readWorkspaceRecords } from "../lib/workspace-records";
 
 test("workspace responses limit title files, tags, documents and history to the salesperson's current deals", async () => {
@@ -263,7 +267,7 @@ test("title clerk database lifecycle isolates sales, permissions, documents and 
       `insert into auth.users(id,email) values('${owner}','owner@example.invalid'),('${sales}','sales@example.invalid'),('${other}','other@example.invalid');insert into staff(id,email,name,role) values('${owner}','owner@example.invalid','Owner','owner');`,
     );
     for (const file of (await fs.readdir(new URL("../db/", import.meta.url)))
-      .filter((f) => /^\d{3}_.*\.sql$/.test(f) && !f.startsWith("022_"))
+      .filter((f) => /^\d{3}_.*\.sql$/.test(f) && f < "022_")
       .sort())
       await pg.exec(
         await fs.readFile(new URL("../db/" + file, import.meta.url), "utf8"),
@@ -298,6 +302,12 @@ test("title clerk database lifecycle isolates sales, permissions, documents and 
     await pg.exec(
       await fs.readFile(
         new URL("../db/022_title_clerk.sql", import.meta.url),
+        "utf8",
+      ),
+    );
+    await pg.exec(
+      await fs.readFile(
+        new URL("../db/023_title_amounts.sql", import.meta.url),
         "utf8",
       ),
     );
@@ -464,6 +474,90 @@ test("title clerk database lifecycle isolates sales, permissions, documents and 
         );
       },
     );
+    await t.test(
+      "reviewed title amounts require a manager, a current revision and valid amounts; preserve sale records and audit corrections",
+      async () => {
+        const originalSale = await row("sales", c.sale_id);
+        const originalOpportunity = await row("opportunities", oid);
+        const originalQuotes = (
+          await pg.query("select * from dmcrm_quotes where opportunity_id=$1", [
+            oid,
+          ])
+        ).rows;
+        const amounts = {
+          fees: 114,
+          taxes: 146.97,
+          note: "Verified against title packet",
+        };
+        const review = (
+          values: unknown,
+          revision = c.revision,
+          actor = owner,
+          id = c.id,
+        ) => cmd({ type: "save_title_amounts", id, revision, values }, actor);
+        await assert.rejects(
+          review(amounts, c.revision, sales),
+          /Manager required/,
+        );
+        await assert.rejects(
+          review(amounts, c.revision, randomUUID()),
+          /membership/,
+        );
+        await assert.rejects(
+          review(amounts, c.revision, owner, randomUUID()),
+          /unavailable/,
+        );
+        for (const values of [
+          null,
+          { ...amounts, fees: "114" },
+          { ...amounts, fees: null },
+          { ...amounts, taxes: -1 },
+          { ...amounts, taxes: 1.001 },
+          { ...amounts, fees: 1000001 },
+        ])
+          await assert.rejects(review(values), /valid DMV fees and taxes/);
+        for (const note of [null, "", "  ", "x".repeat(1001)])
+          await assert.rejects(review({ ...amounts, note }), /reason/);
+        await review(amounts);
+        assert.deepEqual((await row("title_cases", c.id)).amounts, amounts);
+        await assert.rejects(review(amounts), /Record changed/);
+        c = await row("title_cases", c.id);
+        const zero = {
+          fees: 0,
+          taxes: 0,
+          note: "Verified exemption; no charge",
+        };
+        await review(zero);
+        c = await row("title_cases", c.id);
+        assert.deepEqual(c.amounts, zero);
+        const history = await one(
+          "select actor_name,detail from dmcrm_title_events where case_id=$1 and event='DMV amounts reviewed' and detail#>>'{after,fees}'='0'",
+          [c.id],
+        );
+        assert.equal(history.actor_name, "Owner");
+        assert.deepEqual(history.detail, { before: amounts, after: zero });
+        assert.equal(
+          (
+            await one(
+              "select count(*)::int n from dmcrm_audit where record_id=$1 and action='save_title_amounts'",
+              [c.id],
+            )
+          ).n,
+          2,
+        );
+        assert.deepEqual(await row("sales", c.sale_id), originalSale);
+        assert.deepEqual(await row("opportunities", oid), originalOpportunity);
+        assert.deepEqual(
+          (
+            await pg.query(
+              "select * from dmcrm_quotes where opportunity_id=$1",
+              [oid],
+            )
+          ).rows,
+          originalQuotes,
+        );
+      },
+    );
     let file: string;
     await t.test(
       "document attachment rejects other deals, retries safely and keeps archived metadata immutable",
@@ -526,6 +620,15 @@ test("title clerk database lifecycle isolates sales, permissions, documents and 
           0,
         );
         await assert.rejects(save(base), /Unwound/);
+        await assert.rejects(
+          cmd({
+            type: "save_title_amounts",
+            id: c.id,
+            revision: c.revision,
+            values: { fees: 114, taxes: 0, note: "Attempted change" },
+          }),
+          /Unwound/,
+        );
         await cmd({ type: "close_opportunity", id: oid, outcome: "sold" });
         const next = await one(
           "select c.* from dmcrm_title_cases c join dmcrm_sales s on s.id=c.sale_id where c.opportunity_id=$1 and s.status='sold'",
@@ -534,6 +637,12 @@ test("title clerk database lifecycle isolates sales, permissions, documents and 
         assert.notEqual(next.id, oldCase);
         assert.equal(next.status, "sold");
         assert.deepEqual(next.checklist, {});
+        assert.equal(next.amounts, null);
+        assert.deepEqual((await row("title_cases", oldCase)).amounts, {
+          fees: 0,
+          taxes: 0,
+          note: "Verified exemption; no charge",
+        });
         await assert.rejects(
           cmd({
             type: "attach_title_document",
@@ -606,6 +715,107 @@ test("title clerk database lifecycle isolates sales, permissions, documents and 
             "select (select count(*) from dmcrm_sales)::int sales,(select count(*) from dmcrm_title_cases)::int cases,(select count(*) from dmcrm_deal_files)::int files",
           ),
           before,
+        );
+      },
+    );
+    await t.test(
+      "guarded repair is atomic, idempotent, preserves sold records and refuses an intervening review",
+      async () => {
+        const manifests = [];
+        for (let n = 0; n < 2; n++) {
+          const opportunity = randomUUID(),
+            quote = randomUUID();
+          const values = {
+            price: 4000,
+            docFee: 300,
+            tax: 0,
+            taxMode: "manual",
+            taxReason: "",
+            titleFee: 0,
+            tradeAllowance: 0,
+            addOns: 0,
+            otherTaxes: 0,
+            payoff: 0,
+            downPayment: 0,
+            apr: 0,
+            months: 60,
+            acv: 0,
+            recon: 0,
+          };
+          await pg.query(
+            "insert into dmcrm_opportunities(id,org_id,customer_id,assigned_to,vehicle_interest) values($1,$2,$3,$4,'Repair fixture')",
+            [opportunity, org, cid, staff],
+          );
+          await pg.query(
+            "insert into dmcrm_quotes(id,org_id,customer_id,opportunity_id,vehicle,values) values($1,$2,$3,$4,'Repair fixture',$5::jsonb)",
+            [quote, org, cid, opportunity, JSON.stringify(values)],
+          );
+          await cmd({
+            type: "close_opportunity",
+            id: opportunity,
+            outcome: "sold",
+          });
+          const record = await one(
+            "select * from dmcrm_title_cases where opportunity_id=$1",
+            [opportunity],
+          );
+          manifests.push({
+            org_id: org,
+            case_id: record.id,
+            sale_id: record.sale_id,
+            quote_id: quote,
+            expected_values: {
+              price: 4000,
+              docFee: 300,
+              tax: 0,
+              taxMode: "manual",
+              taxReason: "",
+              titleFee: 0,
+              tradeAllowance: 0,
+              addOns: 0,
+              otherTaxes: 0,
+            },
+            values: { fees: 110, taxes: 129, note: "Verified fixture amounts" },
+          });
+        }
+        const wrong = structuredClone(manifests);
+        wrong[1].expected_values.price++;
+        await assert.rejects(
+          repairTitleAmounts(pg, wrong),
+          /Saved figures changed/,
+        );
+        assert.equal(
+          (await row("title_cases", manifests[0].case_id)).amounts,
+          null,
+        );
+        assert.equal(
+          (
+            await one(
+              "select count(*)::int n from dmcrm_audit where record_id=$1 and action='save_title_amounts'",
+              [manifests[0].case_id],
+            )
+          ).n,
+          0,
+        );
+        const before = await readPendingTitleTotals(pg, org);
+        const original = await row("sales", manifests[0].sale_id);
+        assert.deepEqual(await repairTitleAmounts(pg, manifests), {
+          corrected: 2,
+          alreadyCorrect: 0,
+        });
+        assert.deepEqual(await row("sales", manifests[0].sale_id), original);
+        const after = await readPendingTitleTotals(pg, org);
+        assert.equal(after.fees! - (before.fees ?? 0), 220);
+        assert.equal(after.taxes! - (before.taxes ?? 0), 258);
+        assert.deepEqual(await repairTitleAmounts(pg, manifests), {
+          corrected: 0,
+          alreadyCorrect: 2,
+        });
+        const changed = structuredClone(manifests);
+        changed[0].values.fees = 120;
+        await assert.rejects(
+          repairTitleAmounts(pg, changed),
+          /preserve the intervening correction/,
         );
       },
     );

@@ -61,6 +61,7 @@ export type TitleCase = {
   revision: number;
   created_at: string;
   updated_at: string;
+  amounts?: { fees: number; taxes: number; note: string } | null;
 };
 export type TempTag = {
   id: string;
@@ -132,6 +133,20 @@ export const tempTagValues = z.object({
 });
 export const titleClerkCommands = [
   z.object({
+    type: z.literal("save_title_amounts"),
+    id: z.uuid(),
+    revision: z.number().int().nonnegative(),
+    values: z.object({
+      fees: z.number().min(0).max(1000000).multipleOf(0.01),
+      taxes: z.number().min(0).max(1000000).multipleOf(0.01),
+      note: z
+        .string()
+        .trim()
+        .min(3, "Enter a reason for these DMV amounts")
+        .max(1000),
+    }),
+  }),
+  z.object({
     type: z.literal("save_title_case"),
     id: z.uuid(),
     revision: z.number().int().nonnegative(),
@@ -170,6 +185,9 @@ export const titleErrors = [
   "Document does not belong to this sale",
   "Document is already filed with another title case",
   "Invalid title clerk information",
+  "Manager required to correct DMV amounts",
+  "Enter valid DMV fees and taxes",
+  "Enter a reason for these DMV amounts",
 ] as const;
 export function calendarDays(from: string, to: string): number {
   return Math.round(

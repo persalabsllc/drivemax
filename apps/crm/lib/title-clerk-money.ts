@@ -6,8 +6,13 @@ const validAmount = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value) && value >= 0;
 const cents = (value: number) => Math.round((value + Number.EPSILON) * 100);
 
-/** Only saved sale figures belong in the title queue, never a later proposal. */
+/** Reviewed title amounts take priority; otherwise use the saved sale, never a later proposal. */
 export function titleAmounts(ws: Workspace, record: TitleCase) {
+  if (validAmount(record.amounts?.fees) && validAmount(record.amounts?.taxes)) {
+    const fees = cents(record.amounts.fees) / 100,
+      taxes = cents(record.amounts.taxes) / 100;
+    return { fees, taxes, total: (cents(fees) + cents(taxes)) / 100 };
+  }
   const sale = ws.sales?.find(
     (s) =>
       s.id === record.sale_id &&
@@ -50,6 +55,14 @@ export function titleAmounts(ws: Workspace, record: TitleCase) {
         ? (cents(fees) + cents(taxes)) / 100
         : null,
   };
+}
+
+/** An unreviewed zero is visible, never silently treated as a verified amount. */
+export function titleAmountsNeedReview(ws: Workspace, record: TitleCase) {
+  const a = titleAmounts(ws, record);
+  return (
+    a.total === null || (!record.amounts && (a.fees === 0 || a.taxes === 0))
+  );
 }
 
 export function pendingTitleTotals(

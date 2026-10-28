@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ScanLine, CheckCircle2, LoaderCircle } from "lucide-react";
+import { Camera, ScanLine, CheckCircle2, LoaderCircle } from "lucide-react";
+import { VinScanner } from "./VinScanner";
 import {
   type DecodedVin,
   type VehicleDetails,
@@ -69,6 +70,7 @@ export function VinField({
   demo?: boolean;
 }) {
   const [busy, setBusy] = useState(false),
+    [scanning, setScanning] = useState(false),
     [message, setMessage] = useState(""),
     [warning, setWarning] = useState(false);
   const sequence = useRef(0),
@@ -143,18 +145,24 @@ export function VinField({
     },
     [],
   );
+  function changeVin(value: string) {
+    sequence.current++;
+    currentVin.current = value;
+    setBusy(false);
+    setMessage("");
+    setWarning(false);
+    onChange(value);
+  }
   return (
     <div className="vin-field">
       <label>
         {label}
         <div className="vin-entry">
           <input
+            aria-label={label}
             value={vin}
             onChange={(e) => {
-              sequence.current++;
-              setBusy(false);
-              setMessage("");
-              onChange(normalizeVin(e.target.value));
+              changeVin(normalizeVin(e.target.value));
             }}
             required={required}
             maxLength={17}
@@ -163,7 +171,18 @@ export function VinField({
             title="17-character VIN without I, O, or Q"
             placeholder="Enter 17-character VIN"
             autoComplete="off"
+            autoCapitalize="characters"
+            autoCorrect="off"
+            spellCheck={false}
           />
+          <button
+            type="button"
+            className="btn vin-scan-button"
+            aria-label={`Scan ${label}`}
+            onClick={() => setScanning(true)}
+          >
+            <Camera size={17} /> Scan VIN
+          </button>
           <button
             type="button"
             className="btn"
@@ -183,6 +202,15 @@ export function VinField({
         {message ||
           "Year, make, model, and available trim decode automatically."}
       </p>
+      {scanning && (
+        <VinScanner
+          onClose={() => setScanning(false)}
+          onScan={(value) => {
+            changeVin(value);
+            if (value === vin) void decode(value);
+          }}
+        />
+      )}
     </div>
   );
 }

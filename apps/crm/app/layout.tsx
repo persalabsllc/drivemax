@@ -14,6 +14,7 @@ import "./title-clerk.css";
 import "./overview-colors.css";
 import "./vin-scanner.css";
 import "./customer-links.css";
+import "./customer-profile.css";
 export const metadata: Metadata = {
   title: "Drive Max CRM",
   applicationName: "Drive Max CRM",

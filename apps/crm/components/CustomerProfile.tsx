@@ -159,47 +159,62 @@ export function CustomerProfile({
     <>
       <Modal
         title="Customer profile"
-        subtitle="One relationship. Every opportunity."
+        className="customer-profile-modal"
         wide
         onClose={onClose}
       >
-        <div className="profile-top">
-          <Avatar name={customer.name} size="large" />
-          <div>
-            <h2>{customer.name}</h2>
-            <div className="profile-tags">
-              <span
-                className={
-                  active.length
-                    ? "active-opportunity-tag"
-                    : "no-opportunity-tag"
-                }
-              >
-                {active.length
-                  ? `${active.length} active ${active.length === 1 ? "opportunity" : "opportunities"}`
-                  : "No active opportunity"}
+        <div className="profile-overview">
+          <div className="profile-identity">
+            <div className="profile-top">
+              <Avatar name={customer.name} size="large" />
+              <div>
+                <h2>{customer.name}</h2>
+                <div className="profile-tags">
+                  <span
+                    className={
+                      active.length
+                        ? "active-opportunity-tag"
+                        : "no-opportunity-tag"
+                    }
+                  >
+                    {active.length
+                      ? `${active.length} active ${active.length === 1 ? "opportunity" : "opportunities"}`
+                      : "No active opportunity"}
+                  </span>
+                  <span>{customer.source}</span>
+                </div>
+              </div>
+            </div>
+            <div className="profile-contact">
+              <span>
+                <Phone size={14} />
+                {customer.phone || "No phone added"}
               </span>
-              <span>{customer.source}</span>
+              <span>
+                <Mail size={14} />
+                {customer.email || "No email added"}
+              </span>
+            </div>
+            <div className="profile-identity-actions">
+              <button
+                className="btn small"
+                onClick={() => setModal("customer")}
+              >
+                Edit customer
+              </button>
+              {manager && (
+                <button className="btn small" onClick={() => setModal("merge")}>
+                  Merge duplicate
+                </button>
+              )}
             </div>
           </div>
-          <button className="btn small" onClick={() => setModal("customer")}>
-            Edit customer
-          </button>
-          {manager && (
-            <button className="btn small" onClick={() => setModal("merge")}>
-              Merge duplicate
-            </button>
-          )}
-        </div>
-        <div className="profile-contact">
-          <span>
-            <Phone size={14} />
-            {customer.phone || "No phone added"}
-          </span>
-          <span>
-            <Mail size={14} />
-            {customer.email || "No email added"}
-          </span>
+          <CustomerAppointments
+            ws={ws}
+            customer={customer}
+            onSchedule={() => setAppointmentDialog("new")}
+            onOpen={setAppointmentDialog}
+          />
         </div>
         {!!ws.customer_aliases?.some((a) => a.customer_id === customer.id) && (
           <details className="customer-aliases">
@@ -240,26 +255,9 @@ export function CustomerProfile({
           </section>
         )}
         <CustomerTasks ws={ws} customer={customer} onTask={setTaskAction} />
-        <CustomerAppointments
-          ws={ws}
-          customer={customer}
-          onSchedule={() => setAppointmentDialog("new")}
-          onOpen={setAppointmentDialog}
-        />
+
         <section className="opportunity-section">
-          <div className="desk-section-head">
-            <div>
-              <span className="eyebrow">OPPORTUNITIES</span>
-              <h3>Every purchase has a story.</h3>
-            </div>
-            <button
-              className="btn primary small"
-              onClick={() => setModal("new-opportunity")}
-            >
-              <Plus size={15} />
-              New opportunity
-            </button>
-          </div>
+          <h3>Opportunities</h3>
           <div className="opportunity-list">
             <button
               className={
@@ -286,89 +284,96 @@ export function CustomerProfile({
               </button>
             ))}
           </div>
+          <button
+            className="btn primary small"
+            onClick={() => setModal("new-opportunity")}
+          >
+            <Plus size={15} />
+            New opportunity
+          </button>
         </section>
         {o && (
-          <div className="deal-co-buyer">
-            <div>
-              <strong>Co-buyer</strong>
-              <span>
-                {co ? fullName(co) : "No co-buyer on this opportunity"}
-              </span>
-              {closed && <small>Recorded when this deal closed</small>}
-            </div>
-            {o.co_buyer_id &&
-              ws.customers.some((c) => c.id === o.co_buyer_id) && (
-                <button
-                  className="btn small"
-                  onClick={() =>
-                    onOpenCustomer?.(
-                      ws.customers.find((c) => c.id === o.co_buyer_id)!,
+          <div className="profile-deal-overview">
+            <div className="opportunity-summary">
+              <div>
+                <span className="eyebrow">SELECTED OPPORTUNITY</span>
+                <h3>{o.title}</h3>
+                <p>
+                  <Badge value={o.status} />
+                  {o.sold_on
+                    ? `Sold ${o.sold_on}`
+                    : o.status === "lost"
+                      ? o.lost_reason || "Closed without a sale"
+                      : o.source}
+                </p>
+              </div>
+              <label className="opportunity-assignee">
+                Assigned salesperson
+                <select
+                  value={o.assigned_to ?? ""}
+                  disabled={busy || !manager}
+                  onChange={(e) =>
+                    run(
+                      {
+                        type: "assign_opportunity",
+                        id: o.id,
+                        assigned_to: e.target.value || null,
+                      },
+                      "Salesperson and unfinished follow-ups updated",
                     )
                   }
                 >
-                  Open co-buyer profile
+                  <option value="">Unassigned · manager queue</option>
+                  {ws.staff
+                    .filter((m) => m.active || m.id === o.assigned_to)
+                    .map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                        {!m.active ? " (inactive)" : ""}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              {!closed && (
+                <button
+                  className="btn small"
+                  onClick={() => setModal("edit-opportunity")}
+                >
+                  Edit opportunity
                 </button>
               )}
-            {!closed && (
-              <button
-                className="btn small"
-                disabled={busy || (!manager && assigned !== me)}
-                onClick={() => setModal("co-buyer")}
-              >
-                {co ? "Manage co-buyer" : "Add co-buyer"}
-              </button>
-            )}
-          </div>
-        )}
-        {o && (
-          <div className="opportunity-summary">
-            <div>
-              <span className="eyebrow">SELECTED OPPORTUNITY</span>
-              <h3>{o.title}</h3>
-              <p>
-                <Badge value={o.status} />
-                {o.sold_on
-                  ? `Sold ${o.sold_on}`
-                  : o.status === "lost"
-                    ? o.lost_reason || "Closed without a sale"
-                    : o.source}
-              </p>
             </div>
-            <label className="opportunity-assignee">
-              Assigned salesperson
-              <select
-                value={o.assigned_to ?? ""}
-                disabled={busy || !manager}
-                onChange={(e) =>
-                  run(
-                    {
-                      type: "assign_opportunity",
-                      id: o.id,
-                      assigned_to: e.target.value || null,
-                    },
-                    "Salesperson and unfinished follow-ups updated",
-                  )
-                }
-              >
-                <option value="">Unassigned · manager queue</option>
-                {ws.staff
-                  .filter((m) => m.active || m.id === o.assigned_to)
-                  .map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                      {!m.active ? " (inactive)" : ""}
-                    </option>
-                  ))}
-              </select>
-            </label>
-            {!closed && (
-              <button
-                className="btn small"
-                onClick={() => setModal("edit-opportunity")}
-              >
-                Edit opportunity
-              </button>
-            )}
+            <div className="deal-co-buyer">
+              <div>
+                <strong>Co-buyer</strong>
+                <span>
+                  {co ? fullName(co) : "No co-buyer on this opportunity"}
+                </span>
+                {closed && <small>Recorded when this deal closed</small>}
+              </div>
+              {o.co_buyer_id &&
+                ws.customers.some((c) => c.id === o.co_buyer_id) && (
+                  <button
+                    className="btn small"
+                    onClick={() =>
+                      onOpenCustomer?.(
+                        ws.customers.find((c) => c.id === o.co_buyer_id)!,
+                      )
+                    }
+                  >
+                    Open co-buyer profile
+                  </button>
+                )}
+              {!closed && (
+                <button
+                  className="btn small"
+                  disabled={busy || (!manager && assigned !== me)}
+                  onClick={() => setModal("co-buyer")}
+                >
+                  {co ? "Manage co-buyer" : "Add co-buyer"}
+                </button>
+              )}
+            </div>
           </div>
         )}
         <div className="profile-actions">

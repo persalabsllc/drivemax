@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { ArrowUp, ArrowDown, Plus, Trash2 } from "lucide-react";
 import {
   type FIProduct,
   productKinds,
@@ -47,9 +47,42 @@ export function FIProducts({
             ]
           : []),
     ),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [movedId, setMovedId] = useState<string | null>(null);
   const update = (id: string, p: Partial<FIProduct>) =>
-    setItems(items.map((x) => (x.id === id ? { ...x, ...p } : x)));
+    setItems((current) =>
+      current.map((x) => (x.id === id ? { ...x, ...p } : x)),
+    );
+  const movedIndex = items.findIndex((p) => p.id === movedId);
+  const productName = (p: FIProduct) => p.name?.trim() || productKinds[p.kind];
+  function moveProduct(
+    id: string,
+    direction: -1 | 1,
+    button: HTMLButtonElement,
+  ) {
+    if (readOnly) return;
+    setItems((current) => {
+      const from = current.findIndex((p) => p.id === id),
+        to = from + direction;
+      if (from < 0 || to < 0 || to >= current.length) return current;
+      const next = [...current];
+      [next[from], next[to]] = [next[to], next[from]];
+      return next;
+    });
+    setMovedId(id);
+    // Keep the same product's controls in view after moving its long form.
+    requestAnimationFrame(() => {
+      const header = button.closest<HTMLElement>(".ops-product-head");
+      if (!header?.isConnected) return;
+      const nextButton = button.disabled
+        ? header.querySelector<HTMLButtonElement>(
+            "[data-reorder]:not(:disabled)",
+          )
+        : button;
+      nextButton?.focus({ preventScroll: true });
+      header.scrollIntoView({ block: "nearest" });
+    });
+  }
   const money = (
     p: FIProduct,
     k: "price" | "cost" | "deductible",
@@ -104,7 +137,18 @@ export function FIProducts({
           }
         }}
       >
-        {items.map((p) => (
+        {!readOnly && items.length > 1 && (
+          <p
+            className="ops-help ops-product-order-status"
+            role="status"
+            aria-live="polite"
+          >
+            {movedIndex >= 0
+              ? `${productName(items[movedIndex])} moved to position ${movedIndex + 1} of ${items.length}.`
+              : "Use the up and down arrows to change the product order."}
+          </p>
+        )}
+        {items.map((p, index) => (
           <section className="ops-product" key={p.id}>
             <div className="ops-product-head">
               <label>
@@ -124,14 +168,48 @@ export function FIProducts({
                 </select>
               </label>
               {!readOnly && (
-                <button
-                  type="button"
-                  className="icon-btn"
-                  aria-label={`Remove ${productKinds[p.kind]}`}
-                  onClick={() => setItems(items.filter((x) => x.id !== p.id))}
-                >
-                  <Trash2 size={16} />
-                </button>
+                <div className="ops-product-actions">
+                  <span
+                    className="ops-product-position"
+                    aria-label={`Position ${index + 1} of ${items.length}`}
+                  >
+                    {index + 1} / {items.length}
+                  </span>
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    data-reorder="up"
+                    aria-label={`Move ${productName(p)} up`}
+                    title="Move product up"
+                    disabled={index === 0}
+                    onClick={(e) => moveProduct(p.id, -1, e.currentTarget)}
+                  >
+                    <ArrowUp size={17} />
+                  </button>
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    data-reorder="down"
+                    aria-label={`Move ${productName(p)} down`}
+                    title="Move product down"
+                    disabled={index === items.length - 1}
+                    onClick={(e) => moveProduct(p.id, 1, e.currentTarget)}
+                  >
+                    <ArrowDown size={17} />
+                  </button>
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    aria-label={`Remove ${productKinds[p.kind]}`}
+                    onClick={() =>
+                      setItems((current) =>
+                        current.filter((x) => x.id !== p.id),
+                      )
+                    }
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               )}
             </div>
             <div className="ops-form-grid">

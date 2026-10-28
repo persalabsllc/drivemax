@@ -145,12 +145,55 @@
 }
 .ops-product-head {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 10px;
+  scroll-margin-top: 110px;
 }
 .ops-product-head label {
   flex: 1;
+  min-width: 0;
+}
+.ops-product-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ops-product-actions .icon-btn {
+  width: 36px;
+  height: 40px;
+  border: 1px solid #dfe5ed;
+  background: white;
+}
+.ops-product-actions .icon-btn:not(:disabled):hover {
+  background: #edf2f8;
+  border-color: #b8c8db;
+}
+.ops-product-position {
+  min-width: 38px;
+  text-align: center;
+  font-size: 11px;
+  color: #69798d;
+  font-variant-numeric: tabular-nums;
+}
+.ops-product-order-status {
+  margin-top: 0;
+  margin-bottom: 14px;
+}
+@media (max-width: 600px) {
+  .ops-product-head {
+    flex-wrap: wrap;
+  }
+  .ops-product-head label {
+    flex-basis: 100%;
+  }
+  .ops-product-actions {
+    margin-left: auto;
+  }
+  .ops-product-actions .icon-btn {
+    width: 44px;
+    height: 44px;
+  }
 }
 .ops-product-profit {
   padding: 11px;

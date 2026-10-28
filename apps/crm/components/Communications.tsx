@@ -654,62 +654,64 @@ export function CustomerTasks({
       .filter((t) => t.customer_id === customer.id && isOpenTask(t))
       .sort((a, b) => a.due_date.localeCompare(b.due_date));
   return (
-    <section className="ops-customer-tasks">
+    <section className="ops-customer-tasks" aria-label="Open customer tasks">
       <div className="section-heading">
         <div>
           <h3>
             Open tasks <span className="ops-count">{tasks.length}</span>
           </h3>
-          <p>Across all opportunities · click a task to take action.</p>
+          <p>Across all opportunities</p>
         </div>
       </div>
-      <div className="ops-task-grid">
-        {tasks.map((t) => {
-          const state =
-              t.due_date < today
-                ? "overdue"
-                : t.due_date === today
-                  ? "today"
-                  : "upcoming",
-            channel = taskChannel(t);
-          return (
-            <button
-              key={t.id}
-              className={`ops-task ${state}`}
-              onClick={() => onTask(t)}
-            >
-              <span className="ops-task-status">
-                {state === "overdue"
-                  ? "Past due"
-                  : state === "today"
-                    ? "Due today"
-                    : "Upcoming"}{" "}
-                · {t.due_date}
-              </span>
-              <strong>{t.title}</strong>
-              <small>
-                {channel === "sms" ? (
-                  <MessageSquare size={13} />
-                ) : channel === "email" ? (
-                  <Mail size={13} />
-                ) : (
-                  <Phone size={13} />
-                )}{" "}
-                {channel === "sms"
-                  ? "Text"
-                  : channel === "email"
-                    ? "Email"
-                    : channel === "call"
-                      ? "Call"
-                      : "Task"}{" "}
-                ·{" "}
-                {ws.staff.find((m) => m.id === t.assigned_to)?.name ??
-                  "Unassigned"}
-              </small>
-            </button>
-          );
-        })}
-      </div>
+      {tasks.length > 0 && (
+        <div className="ops-task-grid">
+          {tasks.map((t) => {
+            const state =
+                t.due_date < today
+                  ? "overdue"
+                  : t.due_date === today
+                    ? "today"
+                    : "upcoming",
+              channel = taskChannel(t);
+            return (
+              <button
+                key={t.id}
+                className={`ops-task ${state}`}
+                onClick={() => onTask(t)}
+              >
+                <span className="ops-task-status">
+                  {state === "overdue"
+                    ? "Past due"
+                    : state === "today"
+                      ? "Due today"
+                      : "Upcoming"}{" "}
+                  · {t.due_date}
+                </span>
+                <strong>{t.title}</strong>
+                <small>
+                  {channel === "sms" ? (
+                    <MessageSquare size={13} />
+                  ) : channel === "email" ? (
+                    <Mail size={13} />
+                  ) : (
+                    <Phone size={13} />
+                  )}{" "}
+                  {channel === "sms"
+                    ? "Text"
+                    : channel === "email"
+                      ? "Email"
+                      : channel === "call"
+                        ? "Call"
+                        : "Task"}{" "}
+                  ·{" "}
+                  {ws.staff.find((m) => m.id === t.assigned_to)?.name ??
+                    "Unassigned"}
+                </small>
+              </button>
+            );
+          })}
+        </div>
+      )}
       {!tasks.length && (
         <p className="ops-help">No open tasks for this customer.</p>
       )}

@@ -498,10 +498,12 @@ export function AppointmentRow({
   appointment: a,
   ws,
   onClick,
+  compact = false,
 }: {
   appointment: Appointment;
   ws: Workspace;
   onClick: (a: Appointment) => void;
+  compact?: boolean;
 }) {
   const date = appointmentLocalParts(a.starts_at).date,
     today = dayKey();
@@ -535,9 +537,12 @@ export function AppointmentRow({
       </span>
       <span className="appt-person">
         <strong>
-          {ws.customers.find((c) => c.id === a.customer_id)?.name ?? "Customer"}
+          {compact
+            ? appointmentKinds[a.kind]
+            : (ws.customers.find((c) => c.id === a.customer_id)?.name ??
+              "Customer")}
         </strong>
-        <span>{appointmentKinds[a.kind]}</span>
+        {!compact && <span>{appointmentKinds[a.kind]}</span>}
         <small>{a.description || "No additional notes."}</small>
       </span>
       <span className="appt-owner">
@@ -701,6 +706,7 @@ export function CustomerAppointments({
   onOpen: (a: Appointment) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [showAllOpen, setShowAllOpen] = useState(false);
   const appointments = (ws.appointments ?? []).filter(
     (a) => a.customer_id === customer.id,
   );
@@ -716,20 +722,43 @@ export function CustomerAppointments({
         <h3>
           <CalendarDays size={17} />
           Appointments
+          {open.length > 0 && <span className="ops-count">{open.length}</span>}
         </h3>
-        <button className="btn small" onClick={onSchedule}>
+        <button
+          className="btn small"
+          onClick={onSchedule}
+          aria-label="Schedule appointment"
+          title="Schedule appointment"
+        >
           <Plus size={14} />
-          Schedule appointment
+          <span className="appt-schedule-label">Schedule</span>
         </button>
       </div>
       {open.length ? (
-        open.map((a) => (
-          <AppointmentRow key={a.id} appointment={a} ws={ws} onClick={onOpen} />
-        ))
+        <div className="appt-customer-list">
+          {(showAllOpen ? open : open.slice(0, 1)).map((a) => (
+            <AppointmentRow
+              key={a.id}
+              appointment={a}
+              ws={ws}
+              onClick={onOpen}
+              compact
+            />
+          ))}
+        </div>
       ) : (
-        <p className="ops-help">
-          No open appointments. Plan their next visit here.
-        </p>
+        <p className="ops-help">No open appointments.</p>
+      )}
+      {open.length > 1 && (
+        <button
+          className="text-btn appt-show-more"
+          aria-expanded={showAllOpen}
+          onClick={() => setShowAllOpen(!showAllOpen)}
+        >
+          {showAllOpen
+            ? "Show fewer appointments"
+            : `Show all ${open.length} open appointments`}
+        </button>
       )}
       {history.length > 0 && (
         <>
@@ -741,15 +770,19 @@ export function CustomerAppointments({
             <Clock size={13} />
             {expanded ? "Hide" : "Show"} appointment history ({history.length})
           </button>
-          {expanded &&
-            history.map((a) => (
-              <AppointmentRow
-                key={a.id}
-                appointment={a}
-                ws={ws}
-                onClick={onOpen}
-              />
-            ))}
+          {expanded && (
+            <div className="appt-customer-list">
+              {history.map((a) => (
+                <AppointmentRow
+                  key={a.id}
+                  appointment={a}
+                  ws={ws}
+                  onClick={onOpen}
+                  compact
+                />
+              ))}
+            </div>
+          )}
         </>
       )}
     </section>

@@ -131,6 +131,42 @@ export async function verifyTitleClerk(client) {
         ),
       ) === JSON.stringify(sale),
     );
+    const reviewedAmounts = {
+      fees: 114,
+      taxes: 146.97,
+      note: "Verification only",
+    };
+    await cmd({
+      type: "save_title_amounts",
+      id: c.id,
+      revision: 1,
+      values: reviewedAmounts,
+    });
+    const reviewed = await one(
+      "select amounts,revision from public.dmcrm_title_cases where id=$1",
+      [c.id],
+    );
+    check(
+      reviewed.amounts.fees === 114 &&
+        reviewed.amounts.taxes === 146.97 &&
+        reviewed.revision === 2,
+    );
+    check(
+      JSON.stringify(
+        await one(
+          "select snapshot,accounting from public.dmcrm_sales where id=$1",
+          [c.sale_id],
+        ),
+      ) === JSON.stringify(sale),
+    );
+    check(
+      (
+        await one(
+          "select count(*)::int n from public.dmcrm_title_events where case_id=$1 and event='DMV amounts reviewed'",
+          [c.id],
+        )
+      ).n === 1,
+    );
     await cmd({
       type: "unwind_sale",
       opportunity_id: oid,
@@ -144,6 +180,14 @@ export async function verifyTitleClerk(client) {
       ).status === "void",
     );
     await cmd({ type: "close_opportunity", id: oid, outcome: "sold" });
+    check(
+      (
+        await one(
+          "select c.amounts from public.dmcrm_title_cases c join public.dmcrm_sales s on s.id=c.sale_id where c.opportunity_id=$1 and s.status='sold'",
+          [oid],
+        )
+      ).amounts === null,
+    );
     check(
       Number(
         (

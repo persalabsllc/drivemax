@@ -3,7 +3,12 @@ import assert from "node:assert/strict";
 import { demoWorkspace } from "../lib/demo";
 import { seedOperations } from "../lib/operations-demo";
 import { seedTitleClerk } from "../lib/title-clerk-demo";
-import { pendingTitleTotals, titleAmounts } from "../lib/title-clerk-money";
+import {
+  pendingTitleTotals,
+  titleAmounts,
+  titleAmountsNeedReview,
+} from "../lib/title-clerk-money";
+import { demoCommand, commandSchema } from "../lib/model";
 import type { FinanceValues } from "../lib/finance";
 import type { TitleStatus } from "../lib/title-clerk";
 
@@ -152,4 +157,110 @@ test("totals add integer cents and expose partial subtotals without treating mis
     missingTaxes: 1,
     missingDeals: 1,
   });
+});
+
+test("three title files with unconfirmed zeros count reviewed corrections once and preserve the original sale", () => {
+  const { ws, c, sale, quote } = fixture();
+  quote.values = {
+    ...values,
+    price: 4500,
+    docFee: 399,
+    taxMode: "manual",
+    tax: 0,
+    titleFee: 0,
+    tradeAllowance: 0,
+    addOns: 0,
+    otherTaxes: 0,
+  };
+  for (let n = 1; n < 3; n++) {
+    const nextSale = { ...structuredClone(sale), id: `sale-${n}` };
+    nextSale.snapshot.quote!.values = {
+      ...quote.values,
+      tax: n === 1 ? 149.61 : 146.97,
+      titleFee: n === 1 ? 114 : 0,
+    };
+    ws.sales!.push(nextSale);
+    ws.title_cases!.push({
+      ...structuredClone(c),
+      id: `case-${n}`,
+      sale_id: nextSale.id,
+    });
+  }
+  assert.deepEqual(
+    [
+      pendingTitleTotals(ws).fees,
+      pendingTitleTotals(ws).taxes,
+      pendingTitleTotals(ws).total,
+    ],
+    [114, 296.58, 410.58],
+  );
+  assert.equal(
+    ws.title_cases!.filter((c) => titleAmountsNeedReview(ws, c)).length,
+    2,
+  );
+  const original = JSON.stringify(ws.sales);
+  c.amounts = { fees: 114, taxes: 146.97, note: "Verified title packet" };
+  ws.title_cases![2].amounts = { ...c.amounts };
+  assert.deepEqual(
+    [
+      pendingTitleTotals(ws).fees,
+      pendingTitleTotals(ws).taxes,
+      pendingTitleTotals(ws).total,
+    ],
+    [342, 443.55, 785.55],
+  );
+  assert.equal(
+    ws.title_cases!.filter((c) => titleAmountsNeedReview(ws, c)).length,
+    0,
+  );
+  assert.equal(JSON.stringify(ws.sales), original);
+  ws.title_cases![2].amounts!.fees = 75;
+  assert.equal(
+    pendingTitleTotals(ws).fees,
+    303,
+    "Fees are per-deal amounts, never count multiplied by a fixed fee",
+  );
+  c.amounts = { fees: 0, taxes: 0, note: "Confirmed exemption" };
+  assert.equal(titleAmountsNeedReview(ws, c), false);
+  assert.equal(pendingTitleTotals(ws).fees, 189);
+});
+
+test("demo amount review enforces manager permission, stale revisions, validation and history", () => {
+  let { ws, c } = fixture();
+  const command = {
+    type: "save_title_amounts",
+    id: c.id,
+    revision: c.revision,
+    values: { fees: 114, taxes: 146.97, note: "Verified packet" },
+  } as const;
+  assert(commandSchema.safeParse(command).success);
+  for (const values of [
+    { ...command.values, note: " " },
+    { ...command.values, taxes: -1 },
+    { ...command.values, fees: 0.001 },
+    { ...command.values, fees: "114" },
+  ])
+    assert(!commandSchema.safeParse({ ...command, values }).success);
+  const sold = JSON.stringify(ws.sales),
+    quotes = JSON.stringify(ws.quotes);
+  ws = demoCommand(ws, command);
+  assert.deepEqual(ws.title_cases![0].amounts, command.values);
+  assert.equal(JSON.stringify(ws.sales), sold);
+  assert.equal(JSON.stringify(ws.quotes), quotes);
+  assert(
+    ws.title_events!.some(
+      (e) =>
+        e.case_id === c.id &&
+        e.event === "DMV amounts reviewed" &&
+        (e.detail.after as any).fees === 114,
+    ),
+  );
+  assert.throws(() => demoCommand(ws, command), /Record changed/);
+  ws.member.role = "sales";
+  ws.opportunities.find((o) => o.id === c.opportunity_id)!.assigned_to =
+    ws.member.staff_id;
+  assert.throws(
+    () => demoCommand(ws, { ...command, revision: c.revision + 1 }),
+    /Manager required/,
+  );
 });

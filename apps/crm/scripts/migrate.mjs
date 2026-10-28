@@ -90,7 +90,7 @@ if (process.env.VERCEL_ENV === "production") {
     await verifyDocumentVault(client);
     await verifyTitleClerk(client);
     console.log(
-      "Verified title clerk: automatic sold queue, tag history, private document links and resale isolation; all fixtures rolled back.",
+      "Verified title clerk: sold queue, audited amount reviews, preserved sale records, tag history, private document links and resale isolation; all fixtures rolled back.",
     );
     await verifyFacebook(client);
     console.log(

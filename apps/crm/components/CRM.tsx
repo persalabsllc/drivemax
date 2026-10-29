@@ -1168,6 +1168,7 @@ export default function CRM({
             {view === "Desking" && quickQuoteOpen && (
               <QuickQuote
                 ws={ws}
+                demo={demo}
                 busy={busy}
                 error={error}
                 onClearError={() => {
@@ -1185,15 +1186,15 @@ export default function CRM({
                     command,
                     "Customer created · quick quote saved",
                   );
-                  if (result.ok && result.id) {
-                    setQuickQuoteOpen(false);
-                    setPrintData(null);
-                    setSelectedOpp(null);
-                    setSelected(result.id);
-                    setProfileTab("Desking");
-                    setNote("");
-                  }
                   return result;
+                }}
+                onComplete={(id) => {
+                  setQuickQuoteOpen(false);
+                  setPrintData(null);
+                  setSelectedOpp(null);
+                  setSelected(id);
+                  setProfileTab("Desking");
+                  setNote("");
                 }}
               />
             )}
@@ -1473,6 +1474,7 @@ export default function CRM({
         >
           <CustomerForm
             ws={ws}
+            demo={demo}
             existing={edit}
             busy={busy}
             error={error}
@@ -1487,15 +1489,16 @@ export default function CRM({
                     ? "Customer added and appointment scheduled"
                     : "Customer added",
               );
-              if (result.ok) {
-                setModal(null);
-                setEdit(null);
-                if (result.id && !edit) {
-                  setSelected(result.id);
-                  setSelectedOpp(null);
-                  setProfileTab("Activity");
-                  setNote("");
-                }
+              return result;
+            }}
+            onComplete={(id) => {
+              setModal(null);
+              setEdit(null);
+              if (!edit) {
+                setSelected(id);
+                setSelectedOpp(null);
+                setProfileTab("Activity");
+                setNote("");
               }
             }}
           />

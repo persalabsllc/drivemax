@@ -38,6 +38,7 @@ import {
 import { personFromCustomer, fullName } from "../lib/people";
 import { Avatar, Badge, Modal, Empty } from "./ui";
 import { CustomerForm } from "./CustomerForm";
+import { CustomerLicense } from "./CustomerLicense";
 import { CoBuyerDialog } from "./CoBuyerPicker";
 import { MergeCustomers } from "./MergeCustomers";
 import { AppointmentDialog, CustomerAppointments } from "./Appointments";
@@ -166,7 +167,11 @@ export function CustomerProfile({
         <div className="profile-overview">
           <div className="profile-identity">
             <div className="profile-top">
-              <Avatar name={customer.name} size="large" />
+              <CustomerLicense
+                customerId={customer.id}
+                name={customer.name}
+                demo={demo}
+              />
               <div>
                 <h2>{customer.name}</h2>
                 <div className="profile-tags">
@@ -1115,24 +1120,21 @@ export function CustomerProfile({
           onClose={() => setModal(null)}
         >
           <CustomerForm
+            demo={demo}
+            onComplete={() => setModal(null)}
             ws={ws}
             existing={customer}
             busy={busy}
             error={error}
             submit={async (data) => {
-              if (
-                (
-                  await run(
-                    {
-                      type: "update_customer",
-                      id: customer.id,
-                      customer: data,
-                    },
-                    "Customer updated",
-                  )
-                ).ok
-              )
-                setModal(null);
+              return await run(
+                {
+                  type: "update_customer",
+                  id: customer.id,
+                  customer: data,
+                },
+                "Customer updated",
+              );
             }}
           />
         </Modal>

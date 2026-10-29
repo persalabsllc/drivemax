@@ -11,6 +11,7 @@ import { verifyTitleClerk } from "./verify-title-clerk.mjs";
 import { verifyFacebook } from "./verify-facebook.mjs";
 import { verifyDocumentVault } from "./verify-document-vault.mjs";
 import { verifyCustomerLinks } from "./verify-customer-links.mjs";
+import { verifyCustomerLicenses } from "./verify-customer-licenses.mjs";
 import { setupWorkflowScheduler } from "./setup-workflow-scheduler.mjs";
 if (process.env.VERCEL_ENV === "production") {
   if (!process.env.POSTGRES_URL)
@@ -95,6 +96,10 @@ if (process.env.VERCEL_ENV === "production") {
     );
     await verifyFacebook(client);
     await verifyCustomerLinks(client);
+    await verifyCustomerLicenses(client);
+    console.log(
+      "Verified customer licenses: private access, idempotent filing, immutable originals and merge preservation; all fixtures rolled back.",
+    );
     console.log(
       "Verified customer merges and co-buyer profiles: correspondence, sold snapshots, private files, contact aliases, opt-outs and deal-specific co-buyers; all fixtures rolled back.",
     );

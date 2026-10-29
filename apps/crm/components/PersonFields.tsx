@@ -51,6 +51,10 @@ export function PersonFields({
             onChange={(e) => onChange({ ...value, suffix: e.target.value })}
           >
             <option value="">None</option>
+            {!!value.suffix &&
+              !["Jr.", "Sr.", "II", "III", "IV", "V"].includes(
+                value.suffix,
+              ) && <option value={value.suffix}>{value.suffix}</option>}
             {["Jr.", "Sr.", "II", "III", "IV", "V"].map((s) => (
               <option key={s}>{s}</option>
             ))}

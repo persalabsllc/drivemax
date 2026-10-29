@@ -11,20 +11,25 @@ export type VinCameraControls = {
 
 // Loaded only after Scan VIN / a photo is selected. This also works in browsers
 // without the native BarcodeDetector API, including Safari.
-export async function createBarcodeDecoder(): Promise<BarcodeDecoder> {
+export async function createBarcodeDecoder(
+  format: "vin" | "pdf417" = "vin",
+): Promise<BarcodeDecoder> {
   const zxing = await import("@zxing/library");
   const hints = new Map();
   hints.set(zxing.DecodeHintType.TRY_HARDER, true);
   // Try door-label formats first. Individual readers avoid the aggregate reader's
   // warning log on every ordinary no-barcode frame and support optional Code 39 checksums.
-  const readers = [
-    new zxing.Code39Reader(),
-    new zxing.Code128Reader(),
-    new zxing.Code39Reader(true),
-    new zxing.DataMatrixReader(),
-    new zxing.QRCodeReader(),
-    new zxing.PDF417Reader(),
-  ];
+  const readers =
+    format === "pdf417"
+      ? [new zxing.PDF417Reader()]
+      : [
+          new zxing.Code39Reader(),
+          new zxing.Code128Reader(),
+          new zxing.Code39Reader(true),
+          new zxing.DataMatrixReader(),
+          new zxing.QRCodeReader(),
+          new zxing.PDF417Reader(),
+        ];
   function read(pixels: Uint8ClampedArray, width: number, height: number) {
     const bitmap = new zxing.BinaryBitmap(
       new zxing.HybridBinarizer(
@@ -35,16 +40,14 @@ export async function createBarcodeDecoder(): Promise<BarcodeDecoder> {
     for (const reader of readers) {
       try {
         const text = reader.decode(bitmap, hints).getText();
-        if (vinFromBarcode(text)) return text;
+        if (format === "pdf417" || vinFromBarcode(text)) return text;
         other ??= text;
       } catch (error) {
-        if (
-          !(
-            error instanceof zxing.NotFoundException ||
-            error instanceof zxing.ChecksumException ||
-            error instanceof zxing.FormatException
-          )
-        )
+        if (!(
+          error instanceof zxing.NotFoundException ||
+          error instanceof zxing.ChecksumException ||
+          error instanceof zxing.FormatException
+        ))
           throw error;
       } finally {
         reader.reset();
@@ -68,7 +71,11 @@ export async function createBarcodeDecoder(): Promise<BarcodeDecoder> {
             );
     }
     const result = read(gray, width, height);
-    if ((result !== null && vinFromBarcode(result)) || !rotate) return result;
+    if (
+      (result !== null && (format === "pdf417" || vinFromBarcode(result))) ||
+      !rotate
+    )
+      return result;
     const turned = new Uint8ClampedArray(gray.length);
     for (let y = 0; y < height; y++)
       for (let x = 0; x < width; x++)
@@ -201,8 +208,7 @@ export async function startVinCamera({
     timer = setTimeout(scan, 0);
     const track = stream.getVideoTracks()[0];
     const capabilities = track?.getCapabilities?.() as
-      | (MediaTrackCapabilities & { torch?: boolean })
-      | undefined;
+      (MediaTrackCapabilities & { torch?: boolean }) | undefined;
     return {
       stop,
       ...(capabilities?.torch

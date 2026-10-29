@@ -34,6 +34,12 @@ import {
 import { uploadDocument } from "../lib/document-upload";
 import { dayKey } from "../lib/model";
 import { buildSoldPack, buildMvr2 } from "../lib/pdf-output";
+import { appendLicenseCopies } from "../lib/license-print";
+import {
+  customerLicense,
+  licenseImageUrl,
+} from "../lib/customer-license-client";
+import type { SavedLicense } from "../lib/license-scan";
 import { titleFormCatalog } from "../lib/title-form-catalog";
 const cache = new Map<string, Promise<Uint8Array>>();
 function template(f: FormTemplate) {
@@ -211,7 +217,59 @@ export function SoldPack({
     [error, setError] = useState(""),
     [showShared, setShowShared] = useState(false),
     [confirmClose, setConfirmClose] = useState(false),
-    [archivePacket, setArchivePacket] = useState(!demo);
+    [archivePacket, setArchivePacket] = useState(!demo),
+    [includeLicenses, setIncludeLicenses] = useState(true),
+    [licenses, setLicenses] = useState<
+      { name: string; license: SavedLicense }[]
+    >([]),
+    [licenseError, setLicenseError] = useState(""),
+    [licenseLoading, setLicenseLoading] = useState(mode === "pack" && !formIds),
+    [licenseRetry, setLicenseRetry] = useState(0);
+  const licenseCustomerIds = [customer.id, o.co_buyer_id].filter(
+    (id): id is string => !!id,
+  );
+  const licenseKey = licenseCustomerIds.join(":");
+  useEffect(() => {
+    if (mode !== "pack" || formIds) return;
+    const controller = new AbortController();
+    setLicenseLoading(true);
+    setLicenseError("");
+    void Promise.all(
+      licenseKey.split(":").map(async (id) => {
+        const license = await customerLicense(id, demo, controller.signal);
+        return license
+          ? { name: id === customer.id ? customer.name : "Co-buyer", license }
+          : null;
+      }),
+    )
+      .then((found) => {
+        if (!controller.signal.aborted)
+          setLicenses(
+            found.filter(
+              (entry): entry is { name: string; license: SavedLicense } =>
+                entry !== null,
+            ),
+          );
+      })
+      .catch(() => {
+        if (!controller.signal.aborted)
+          setLicenseError(
+            "License files could not be checked. Retry, or uncheck license copies to print without them.",
+          );
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLicenseLoading(false);
+      });
+    return () => controller.abort();
+  }, [
+    licenseKey,
+    customer.id,
+    customer.name,
+    demo,
+    mode,
+    formIds,
+    licenseRetry,
+  ]);
   const missing = deliveryChecks(workspace, o).filter((c) => !c.ready);
   const context = useMemo(
     () => documentContext(workspace, customer, o),
@@ -282,11 +340,36 @@ export function SoldPack({
         win?.close();
         return;
       }
-      const bytes =
-          mode === "pack"
-            ? await buildSoldPack(context, paperwork, template, forms)
-            : await buildMvr2(context, paperwork, template, test),
-        blob = new Blob([new Uint8Array(bytes)], { type: "application/pdf" }),
+      let bytes =
+        mode === "pack"
+          ? await buildSoldPack(context, paperwork, template, forms)
+          : await buildMvr2(context, paperwork, template, test);
+      if (mode === "pack" && !formIds && includeLicenses) {
+        if (licenseLoading || licenseError)
+          throw Error(
+            "Check the saved license files before printing, or uncheck license copies.",
+          );
+        const copies = await Promise.all(
+          licenses.map(async ({ name, license }) => {
+            const response = await fetch(licenseImageUrl(license, demo), {
+              cache: "no-store",
+            });
+            if (!response.ok)
+              throw Error(
+                "A license photo could not be loaded. Retry, or uncheck license copies.",
+              );
+            return {
+              name,
+              capturedAt: license.created_at,
+              bytes: new Uint8Array(await response.arrayBuffer()),
+            };
+          }),
+        );
+        if (copies.length) bytes = await appendLicenseCopies(bytes, copies);
+      }
+      const blob = new Blob([new Uint8Array(bytes)], {
+          type: "application/pdf",
+        }),
         url = URL.createObjectURL(blob);
       if (mode === "pack" && archivePacket && !demo) {
         try {
@@ -319,25 +402,22 @@ export function SoldPack({
                 "The PDF is saved in Document Vault. Attach it from the title file’s Documents tab, or uncheck archive to print without another copy.",
               );
           } else {
-            const data = new FormData();
-            data.set(
-              "file",
-              blob,
-              `Drive-Max-${formIds ? "DMV" : "Sold-Pack-" + variant}-${new Date().toISOString().slice(0, 10)}.pdf`,
+            await uploadDocument(
+              new File(
+                [blob],
+                `Drive-Max-${formIds ? "DMV" : "Sold-Pack-" + variant}-${new Date().toISOString().slice(0, 10)}.pdf`,
+                { type: "application/pdf" },
+              ),
+              {
+                customer_id: customer.id,
+                opportunity_id: o.id,
+                inventory_id: null,
+                kind: "packet",
+                document_date: dayKey(),
+                notes:
+                  "Finalized print packet, including selected license copies.",
+              },
             );
-            data.set("customer_id", customer.id);
-            data.set("opportunity_id", o.id);
-            data.set("kind", "packet");
-            const r = await fetch("/api/deal-files", {
-              method: "POST",
-              body: data,
-            });
-            if (!r.ok) {
-              URL.revokeObjectURL(url);
-              throw Error(
-                "The packet could not be archived. Try again, or uncheck archive to print without saving a copy.",
-              );
-            }
           }
         } catch (e) {
           URL.revokeObjectURL(url);
@@ -426,6 +506,49 @@ export function SoldPack({
               Archive this exact PDF in the customer's Delivery → Deal file when
               printed or downloaded
             </label>
+          )}
+          {!formIds && (
+            <div className="license-pack-review">
+              <label className="check-line">
+                <input
+                  type="checkbox"
+                  checked={includeLicenses}
+                  disabled={working}
+                  onChange={(e) => setIncludeLicenses(e.target.checked)}
+                />
+                Include saved driver license copies with this sold pack
+                {licenseLoading
+                  ? " · Checking…"
+                  : ` · ${licenses.length} available`}
+              </label>
+              <div className="license-pack-files">
+                {licenses.map(({ name, license }) => (
+                  <a
+                    key={license.id}
+                    href={licenseImageUrl(license, demo)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    View {name === "Co-buyer" ? "co-buyer" : "buyer"} license ·{" "}
+                    {new Date(license.created_at).toLocaleDateString("en-US", {
+                      timeZone: "America/New_York",
+                    })}
+                  </a>
+                ))}
+              </div>
+              {licenseError && (
+                <p className="form-error" role="alert">
+                  {licenseError}{" "}
+                  <button
+                    type="button"
+                    className="text-btn"
+                    onClick={() => setLicenseRetry((n) => n + 1)}
+                  >
+                    Retry license check
+                  </button>
+                </p>
+              )}
+            </div>
           )}
         </div>
       )}

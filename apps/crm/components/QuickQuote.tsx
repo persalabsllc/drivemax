@@ -19,17 +19,21 @@ export function QuickQuote({
   onClose,
   onPrint,
   onCreate,
+  onComplete,
+  demo,
   onClearError,
 }: {
   ws: Workspace;
   busy: boolean;
   error: string;
+  demo: boolean;
+  onComplete: (id: string) => void;
   onClose: () => void;
   onClearError: () => void;
   onPrint: (quote: PrintableQuote) => void;
   onCreate: (
     command: Extract<Command, { type: "convert_quick_quote" }>,
-  ) => Promise<{ ok: boolean }>;
+  ) => Promise<{ ok: boolean; id?: string }>;
 }) {
   const [conversion, setConversion] = useState<QuickQuoteInput | null>(null);
   const [id, setId] = useState(() => crypto.randomUUID());
@@ -79,13 +83,15 @@ export function QuickQuote({
           }}
         >
           <CustomerForm
+            demo={demo}
+            onComplete={onComplete}
             existing={null}
             purpose="quick_quote"
             ws={ws}
             busy={busy}
             error={error}
             submit={async (customer) => {
-              await onCreate({
+              return await onCreate({
                 type: "convert_quick_quote",
                 id,
                 customer,

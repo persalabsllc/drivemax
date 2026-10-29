@@ -182,12 +182,14 @@ export async function verifyCustomerLicenses(client) {
         [oid],
       );
     }
+    // Preserve PostgreSQL microseconds for the merge's exact revision check.
+    // node-postgres otherwise converts timestamptz to a millisecond JS Date.
     const source = await one(
-      "select updated_at from dmcrm_customers where id=$1",
+      "select updated_at::text as updated_at from dmcrm_customers where id=$1",
       [cid],
     );
     const dest = await one(
-      "select updated_at from dmcrm_customers where id=$1",
+      "select updated_at::text as updated_at from dmcrm_customers where id=$1",
       [target],
     );
     await client.query("select dmcrm_command($1,$2,$3::jsonb)", [

@@ -95,16 +95,16 @@ if (process.env.VERCEL_ENV === "production") {
       "Verified title clerk: sold queue, audited amount reviews, preserved sale records, tag history, private document links and resale isolation; all fixtures rolled back.",
     );
     await verifyFacebook(client);
-    await verifyCustomerLinks(client);
-    await verifyCustomerLicenses(client);
     console.log(
-      "Verified customer licenses: private access, idempotent filing, immutable originals and merge preservation; all fixtures rolled back.",
+      "Verified Facebook intake: retry deduplication and repeat messages, with all fixtures rolled back.",
     );
+    await verifyCustomerLinks(client);
     console.log(
       "Verified customer merges and co-buyer profiles: correspondence, sold snapshots, private files, contact aliases, opt-outs and deal-specific co-buyers; all fixtures rolled back.",
     );
+    await verifyCustomerLicenses(client);
     console.log(
-      "Verified Facebook intake: retry deduplication and repeat messages, with all fixtures rolled back.",
+      "Verified customer licenses: private access, idempotent filing, immutable originals and merge preservation; all fixtures rolled back.",
     );
     console.log(
       "Verified document vault with rolled-back fixtures: private storage, historical stock/VIN, idempotent filing and retention protection.",

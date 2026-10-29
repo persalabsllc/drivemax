@@ -182,6 +182,10 @@ test("license archive verifies authorization, retry safety, retention, immutable
       [org, sales],
     );
     await pg.exec("begin");
+    // Production PostgreSQL timestamps retain microseconds; JS Date does not.
+    await pg.exec(
+      "alter table dmcrm_customers alter column updated_at set default '2026-10-28T12:34:56.123456Z'::timestamptz",
+    );
     await verifyCustomerLicenses(pg);
     await pg.exec("commit");
   } finally {

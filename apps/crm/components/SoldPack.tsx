@@ -40,6 +40,11 @@ import {
   licenseImageUrl,
 } from "../lib/customer-license-client";
 import type { SavedLicense } from "../lib/license-scan";
+import {
+  customerInsurance,
+  insuranceImageUrl,
+} from "../lib/customer-insurance-client";
+import type { SavedInsuranceCard } from "../lib/insurance-scan";
 import { titleFormCatalog } from "../lib/title-form-catalog";
 const cache = new Map<string, Promise<Uint8Array>>();
 function template(f: FormTemplate) {
@@ -229,6 +234,47 @@ export function SoldPack({
     (id): id is string => !!id,
   );
   const licenseKey = licenseCustomerIds.join(":");
+  const [includeInsurance, setIncludeInsurance] = useState(true),
+    [insuranceCard, setInsuranceCard] = useState<SavedInsuranceCard | null>(
+      null,
+    ),
+    [insuranceLoading, setInsuranceLoading] = useState(
+      mode === "pack" && !formIds,
+    ),
+    [insuranceError, setInsuranceError] = useState(""),
+    [insuranceRetry, setInsuranceRetry] = useState(0);
+  const savedPolicy =
+    o.status === "sold" || o.status === "lost"
+      ? o.sale_snapshot?.insurance
+      : customer.insurance;
+  const policyKey = JSON.stringify(savedPolicy);
+  useEffect(() => {
+    if (mode !== "pack" || formIds) return;
+    const controller = new AbortController();
+    setInsuranceLoading(true);
+    setInsuranceError("");
+    setInsuranceCard(null);
+    void customerInsurance(
+      customer.id,
+      o.id,
+      demo,
+      savedPolicy,
+      controller.signal,
+    )
+      .then((card) => {
+        if (!controller.signal.aborted) setInsuranceCard(card);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted)
+          setInsuranceError(
+            "The insurance card could not be checked. Retry, or uncheck its copy to print without it.",
+          );
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setInsuranceLoading(false);
+      });
+    return () => controller.abort();
+  }, [customer.id, o.id, demo, mode, formIds, policyKey, insuranceRetry]);
   useEffect(() => {
     if (mode !== "pack" || formIds) return;
     const controller = new AbortController();
@@ -367,6 +413,29 @@ export function SoldPack({
         );
         if (copies.length) bytes = await appendLicenseCopies(bytes, copies);
       }
+      if (mode === "pack" && !formIds && includeInsurance) {
+        if (insuranceLoading || insuranceError)
+          throw Error(
+            "Check the saved insurance card before printing, or uncheck its copy.",
+          );
+        if (insuranceCard) {
+          const response = await fetch(insuranceImageUrl(insuranceCard, demo), {
+            cache: "no-store",
+          });
+          if (!response.ok)
+            throw Error(
+              "The insurance card could not be loaded. Retry, or uncheck its copy.",
+            );
+          bytes = await appendLicenseCopies(bytes, [
+            {
+              title: "Insurance card copy",
+              name: customer.name,
+              capturedAt: insuranceCard.created_at,
+              bytes: new Uint8Array(await response.arrayBuffer()),
+            },
+          ]);
+        }
+      }
       const blob = new Blob([new Uint8Array(bytes)], {
           type: "application/pdf",
         }),
@@ -415,7 +484,7 @@ export function SoldPack({
                 kind: "packet",
                 document_date: dayKey(),
                 notes:
-                  "Finalized print packet, including selected license copies.",
+                  "Finalized print packet, including selected license and insurance copies.",
               },
             );
           }
@@ -545,6 +614,41 @@ export function SoldPack({
                     onClick={() => setLicenseRetry((n) => n + 1)}
                   >
                     Retry license check
+                  </button>
+                </p>
+              )}
+              <label className="check-line">
+                <input
+                  type="checkbox"
+                  checked={includeInsurance}
+                  disabled={working}
+                  onChange={(e) => setIncludeInsurance(e.target.checked)}
+                />{" "}
+                Include saved insurance card with this sold pack
+                {insuranceLoading
+                  ? " · Checking…"
+                  : insuranceCard
+                    ? " · 1 available"
+                    : " · No card matching this deal's policy"}
+              </label>
+              {insuranceCard && (
+                <a
+                  href={insuranceImageUrl(insuranceCard, demo)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  View insurance card · {insuranceCard.insurance_values.company}
+                </a>
+              )}
+              {insuranceError && (
+                <p className="form-error" role="alert">
+                  {insuranceError}{" "}
+                  <button
+                    type="button"
+                    className="text-btn"
+                    onClick={() => setInsuranceRetry((n) => n + 1)}
+                  >
+                    Retry insurance check
                   </button>
                 </p>
               )}

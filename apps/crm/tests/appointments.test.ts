@@ -20,7 +20,7 @@ const owner = "00000000-0000-4000-8000-000000000099",
 const customer = {
   name: "Appointment Test Buyer",
   email: "buyer@example.invalid",
-  phone: "2525550101",
+  phone: "2525550197",
   source: "Phone",
   status: "new",
   vehicle_interest: "Honda Accord",

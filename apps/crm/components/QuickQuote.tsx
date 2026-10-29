@@ -32,7 +32,10 @@ export function QuickQuote({
   onClearError: () => void;
   onPrint: (quote: PrintableQuote) => void;
   onCreate: (
-    command: Extract<Command, { type: "convert_quick_quote" }>,
+    command: Extract<
+      Command,
+      { type: "convert_quick_quote" | "convert_quick_quote_existing" }
+    >,
   ) => Promise<{ ok: boolean; id?: string }>;
 }) {
   const [conversion, setConversion] = useState<QuickQuoteInput | null>(null);
@@ -87,6 +90,15 @@ export function QuickQuote({
             onComplete={onComplete}
             existing={null}
             purpose="quick_quote"
+            onUseExisting={(customerId, source) =>
+              onCreate({
+                type: "convert_quick_quote_existing",
+                id,
+                customer_id: customerId,
+                source,
+                quote: conversion,
+              })
+            }
             ws={ws}
             busy={busy}
             error={error}

@@ -5,8 +5,21 @@ import { Download, Printer } from "lucide-react";
 import { canManage, dayKey, money, type Workspace } from "../lib/model";
 import { salesFunnel, percent } from "../lib/sales-reports";
 import { csvText, saleMath } from "../lib/operations";
+import { Advertising } from "./Advertising";
+import type { Command } from "../lib/model";
 import { SectionTitle } from "./ui";
-export function SalesReports({ ws }: { ws: Workspace }) {
+export function SalesReports({
+  ws,
+  run,
+  busy,
+  error,
+}: {
+  ws: Workspace;
+  run: (p: Command, message?: string) => Promise<{ ok: boolean }>;
+  busy: boolean;
+  error: string;
+}) {
+  const [reportTab, setReportTab] = useState("funnel");
   const [printing, setPrinting] = useState(false);
   useEffect(() => {
     if (!printing) return;
@@ -114,141 +127,165 @@ export function SalesReports({ ws }: { ws: Workspace }) {
   }
   return (
     <>
-      <section className="panel sales-reports">
-        <SectionTitle
-          title="From inquiry to sold"
-          subtitle="Measure opportunities created in the selected period and their outcomes so far."
-          action={
-            <div className="ops-actions">
-              <button className="btn small" onClick={exportCsv}>
-                <Download size={14} />
-                CSV
-              </button>
-              <button className="btn small" onClick={() => setPrinting(true)}>
-                <Printer size={14} />
-                Print
-              </button>
-            </div>
-          }
-        />
-        <div className="work-toolbar no-print">
-          <label>
-            Opportunity created from
-            <input
-              type="date"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-            />
-          </label>
-          <label>
-            Through
-            <input
-              type="date"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-            />
-          </label>
-          {canManage(ws.member.role) && (
+      {canManage(ws.member.role) && (
+        <div className="business-tabs" aria-label="Sales report type">
+          <button
+            className={reportTab === "funnel" ? "active" : ""}
+            onClick={() => setReportTab("funnel")}
+          >
+            Sales funnel
+          </button>
+          <button
+            className={reportTab === "advertising" ? "active" : ""}
+            onClick={() => setReportTab("advertising")}
+          >
+            Advertising profitability
+          </button>
+        </div>
+      )}
+      {reportTab === "advertising" && canManage(ws.member.role) ? (
+        <Advertising ws={ws} run={run} busy={busy} error={error} />
+      ) : (
+        <section className="panel sales-reports">
+          <SectionTitle
+            title="From inquiry to sold"
+            subtitle="Measure opportunities created in the selected period and their outcomes so far."
+            action={
+              <div className="ops-actions">
+                <button className="btn small" onClick={exportCsv}>
+                  <Download size={14} />
+                  CSV
+                </button>
+                <button className="btn small" onClick={() => setPrinting(true)}>
+                  <Printer size={14} />
+                  Print
+                </button>
+              </div>
+            }
+          />
+          <div className="work-toolbar no-print">
             <label>
-              Salesperson
-              <select value={staff} onChange={(e) => setStaff(e.target.value)}>
-                <option value="all">Entire team</option>
-                {ws.staff.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
+              Opportunity created from
+              <input
+                type="date"
+                value={from}
+                onChange={(e) => setFrom(e.target.value)}
+              />
             </label>
-          )}
-        </div>
-        <div className="sales-funnel">
-          {[
-            ["Opportunities", s.leads],
-            ["Contacted", s.contacted],
-            ["Appointments", s.appointments],
-            ["Shows", s.shows],
-            ["Sold", s.sold],
-          ].map(([label, n]) => (
-            <div key={label}>
-              <span>{label}</span>
-              <strong>{n}</strong>
-            </div>
-          ))}
-        </div>
-        <div className="workflow-summary">
-          <span>
-            Contact rate <strong>{percent(s.contacted, s.leads)}</strong>
-          </span>
-          <span>
-            Appointment rate <strong>{percent(s.appointments, s.leads)}</strong>
-          </span>
-          <span>
-            Show rate{" "}
-            <strong>{percent(data.appointmentShows, s.appointments)}</strong>
-          </span>
-          <span>
-            Close rate <strong>{percent(s.sold, s.leads)}</strong>
-          </span>
-        </div>
-        <p className="work-note">
-          First response counts logged calls and personal outbound messages.
-          Automatic acknowledgments are excluded. These are opportunity cohorts,
-          so a sale may occur after the selected date range. Older records only
-          contribute milestones supported by their saved history.
-        </p>
-        <div className="work-toolbar no-print">
-          <label>
-            Compare by
-            <select
-              value={group}
-              onChange={(e) => setGroup(e.target.value as typeof group)}
-            >
-              <option value="sources">Lead source</option>
-              <option value="salespeople">Salesperson</option>
-              <option value="vehicles">Stock / vehicle</option>
-            </select>
-          </label>
-        </div>
-        <div className="table-wrap">{table}</div>
-        {canManage(ws.member.role) && (
-          <div className="workflow-summary">
-            <span>
-              Gross per retail unit{" "}
-              <strong>
-                {gross.length
-                  ? money(
-                      gross.reduce((sum, t) => sum + (t.gross ?? 0), 0) /
-                        gross.length,
-                    )
-                  : "—"}
-              </strong>
-            </span>
-            <span>
-              F&I product penetration{" "}
-              <strong>{percent(products.length, sales.length)}</strong>
-            </span>
-            <small>
-              Gross uses completed accounting for {gross.length} of{" "}
-              {sales.length} sold deals in this cohort. Use Accounting for
-              reports by sold date.
-            </small>
+            <label>
+              Through
+              <input
+                type="date"
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+              />
+            </label>
+            {canManage(ws.member.role) && (
+              <label>
+                Salesperson
+                <select
+                  value={staff}
+                  onChange={(e) => setStaff(e.target.value)}
+                >
+                  <option value="all">Entire team</option>
+                  {ws.staff.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
           </div>
-        )}
-        <div className="report-lost">
-          <h3>Recorded lost reasons</h3>
-          {data.lostReasons.length ? (
-            data.lostReasons.map(([r, n]) => (
-              <div key={r}>
-                <span>{r}</span>
+          <div className="sales-funnel">
+            {[
+              ["Opportunities", s.leads],
+              ["Contacted", s.contacted],
+              ["Appointments", s.appointments],
+              ["Shows", s.shows],
+              ["Sold", s.sold],
+            ].map(([label, n]) => (
+              <div key={label}>
+                <span>{label}</span>
                 <strong>{n}</strong>
               </div>
-            ))
-          ) : (
-            <p>No lost opportunities in this cohort.</p>
+            ))}
+          </div>
+          <div className="workflow-summary">
+            <span>
+              Contact rate <strong>{percent(s.contacted, s.leads)}</strong>
+            </span>
+            <span>
+              Appointment rate{" "}
+              <strong>{percent(s.appointments, s.leads)}</strong>
+            </span>
+            <span>
+              Show rate{" "}
+              <strong>{percent(data.appointmentShows, s.appointments)}</strong>
+            </span>
+            <span>
+              Close rate <strong>{percent(s.sold, s.leads)}</strong>
+            </span>
+          </div>
+          <p className="work-note">
+            First response counts logged calls and personal outbound messages.
+            Automatic acknowledgments are excluded. These are opportunity
+            cohorts, so a sale may occur after the selected date range. Older
+            records only contribute milestones supported by their saved history.
+          </p>
+          <div className="work-toolbar no-print">
+            <label>
+              Compare by
+              <select
+                value={group}
+                onChange={(e) => setGroup(e.target.value as typeof group)}
+              >
+                <option value="sources">Lead source</option>
+                <option value="salespeople">Salesperson</option>
+                <option value="vehicles">Stock / vehicle</option>
+              </select>
+            </label>
+          </div>
+          <div className="table-wrap">{table}</div>
+          {canManage(ws.member.role) && (
+            <div className="workflow-summary">
+              <span>
+                Gross per retail unit{" "}
+                <strong>
+                  {gross.length
+                    ? money(
+                        gross.reduce((sum, t) => sum + (t.gross ?? 0), 0) /
+                          gross.length,
+                      )
+                    : "—"}
+                </strong>
+              </span>
+              <span>
+                F&I product penetration{" "}
+                <strong>{percent(products.length, sales.length)}</strong>
+              </span>
+              <small>
+                Gross uses completed accounting for {gross.length} of{" "}
+                {sales.length} sold deals in this cohort. Use Accounting for
+                reports by sold date.
+              </small>
+            </div>
           )}
-        </div>
-      </section>
+          <div className="report-lost">
+            <h3>Recorded lost reasons</h3>
+            {data.lostReasons.length ? (
+              data.lostReasons.map(([r, n]) => (
+                <div key={r}>
+                  <span>{r}</span>
+                  <strong>{n}</strong>
+                </div>
+              ))
+            ) : (
+              <p>No lost opportunities in this cohort.</p>
+            )}
+          </div>
+        </section>
+      )}
       {printing &&
         createPortal(
           <section className="sales-report-print">

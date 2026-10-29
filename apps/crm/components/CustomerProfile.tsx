@@ -82,6 +82,7 @@ export function CustomerProfile({
   onOpenCustomer,
   initialTab = "Activity",
   initialOpportunityId,
+  initialNewOpportunity = false,
 }: {
   ws: Workspace;
   customer: Customer;
@@ -95,6 +96,7 @@ export function CustomerProfile({
   onOpenCustomer?: (customer: Customer, opportunityId?: string | null) => void;
   initialTab?: Tab;
   initialOpportunityId?: string | null;
+  initialNewOpportunity?: boolean;
 }) {
   const [compose, setCompose] = useState<Compose | null>(null),
     [appointmentDialog, setAppointmentDialog] = useState<
@@ -128,7 +130,7 @@ export function CustomerProfile({
       | "mvr2"
       | "task"
       | null
-    >(null),
+    >(initialNewOpportunity ? "new-opportunity" : null),
     [packVariant, setPackVariant] = useState<"with-trade" | "without-trade">(
       "without-trade",
     ),
@@ -909,6 +911,11 @@ export function CustomerProfile({
           <div className="profile-body">
             <InsuranceForm
               key={o?.id ?? customer.id}
+              customerId={customer.id}
+              opportunityId={o?.id ?? null}
+              demo={demo}
+              vehicleVin={o?.vehicle_details?.vin}
+              onRefresh={onRefresh}
               initial={
                 closed ? o!.sale_snapshot?.insurance : customer.insurance
               }

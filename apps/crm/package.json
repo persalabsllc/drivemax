@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node scripts/prepare-pdf.mjs && next dev --webpack -p 3000",
-    "build": "node scripts/prepare-pdf.mjs && node scripts/migrate.mjs && node --import tsx scripts/verify-workspace-read.ts && next build --webpack",
+    "dev": "node scripts/prepare-pdf.mjs && node scripts/prepare-ocr.mjs && next dev --webpack -p 3000",
+    "build": "node scripts/prepare-pdf.mjs && node scripts/prepare-ocr.mjs && node scripts/migrate.mjs && node --import tsx scripts/verify-workspace-read.ts && next build --webpack",
     "start": "next start -p 3000",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts"
@@ -12,6 +12,7 @@
   "dependencies": {
     "@supabase/ssr": "^0.12.6",
     "@supabase/supabase-js": "^2.115.0",
+    "@tesseract.js-data/eng": "1.0.0",
     "@zxing/library": "0.23.0",
     "lucide-react": "^0.468.0",
     "next": "16.4.3",
@@ -21,6 +22,7 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "server-only": "^0.0.1",
+    "tesseract.js": "6.0.1",
     "web-push": "3.6.7",
     "zod": "^4.6.7"
   },

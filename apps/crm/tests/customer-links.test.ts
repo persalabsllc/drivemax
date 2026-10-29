@@ -25,7 +25,7 @@ const person = {
 };
 const data = {
   name: "Primary Buyer",
-  phone: "2525550100",
+  phone: "2525550198",
   email: "primary@example.invalid",
   person: { ...blankPerson, first_name: "Primary", last_name: "Buyer" },
   source: "Walk-in",
@@ -265,10 +265,8 @@ test("deal co-buyer survives closing and printing even when default and current 
   const sold = ws.opportunities.find((o) => o.id === opp.id)!;
   assert.deepEqual(sold.sale_snapshot, before);
   assert.equal(
-    opportunityCustomer(
-      ws.customers.find((c) => c.id === primary.id)!,
-      sold,
-    ).co_buyer?.first_name,
+    opportunityCustomer(ws.customers.find((c) => c.id === primary.id)!, sold)
+      .co_buyer?.first_name,
     "Different",
   );
   assert.throws(
@@ -350,7 +348,7 @@ test("merge consolidates history, preserves sold values and opt-outs, and search
   );
   for (const query of [
     "primary@example.invalid",
-    "2525550100",
+    "2525550198",
     "previous@example.invalid",
   ]) {
     const found = searchCustomers(ws, {
@@ -461,7 +459,11 @@ test("database relationships preserve every record and reject unauthorized, stal
         const sourceId = await cmd({ type: "create_customer", customer: data });
         const targetId = await cmd({
           type: "create_customer",
-          customer: { ...data, name: "Target Buyer" },
+          customer: {
+            ...data,
+            name: "Target Buyer",
+            duplicate_reviewed_ids: [sourceId],
+          },
         });
         const src = await row("customers", sourceId),
           dst = await row("customers", targetId);

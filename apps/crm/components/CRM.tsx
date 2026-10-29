@@ -1,4 +1,5 @@
 "use client";
+import { MoneyOwed } from "./MoneyOwed";
 import { useState, useMemo, useEffect } from "react";
 import { WorkToday } from "./WorkToday";
 import { TitleClerk } from "./TitleClerk";
@@ -122,6 +123,7 @@ type View =
   | "Document Vault"
   | "Appraisals"
   | "Trade-ins"
+  | "Money owed"
   | "Accounting"
   | "Conversations"
   | "Workspace";
@@ -138,6 +140,7 @@ const nav = [
   { name: "Appraisals", icon: Car },
   { name: "Title Clerk", icon: ShieldCheck },
   { name: "Document Vault", icon: FolderLock },
+  { name: "Money owed", icon: Calculator },
   { name: "Accounting", icon: TrendingUp },
   { name: "Sales reports", icon: Target },
 ] as const;
@@ -170,6 +173,7 @@ export default function CRM({
     [stage, setStage] = useState("all"),
     [selected, setSelected] = useState<string | null>(null),
     [selectedOpp, setSelectedOpp] = useState<string | null>(null),
+    [profileNewOpportunity, setProfileNewOpportunity] = useState(false),
     [profileTab, setProfileTab] = useState<
       "Activity" | "Details" | "Desking" | "Texts" | "Emails" | "Facebook"
     >("Activity"),
@@ -274,6 +278,7 @@ export default function CRM({
     setSearch("");
   }
   function openCustomer(c: Customer, opportunityId: string | null = null) {
+    setProfileNewOpportunity(false);
     setSelectedOpp(opportunityId);
     setSelected(c.id);
     setProfileTab("Activity");
@@ -292,7 +297,10 @@ export default function CRM({
         if (command.type === "create_customer") id = next.customers[0].id;
         if (command.type === "merge_customers") id = command.target_id;
         if (command.type === "set_co_buyer") id = command.opportunity_id;
-        if (command.type === "convert_quick_quote")
+        if (
+          command.type === "convert_quick_quote" ||
+          command.type === "convert_quick_quote_existing"
+        )
           id = next.quick_quote_conversions?.[command.id]?.customer_id;
         if (command.type === "create_opportunity")
           id = next.opportunities[0].id;
@@ -553,7 +561,9 @@ export default function CRM({
           <nav aria-label="Main navigation">
             {nav
               .filter(
-                (n) => n.name !== "Trade-ins" || canManage(ws.member.role),
+                (n) =>
+                  !["Trade-ins", "Money owed"].includes(n.name) ||
+                  canManage(ws.member.role),
               )
               .map(({ name, icon: Icon }) => (
                 <button
@@ -735,6 +745,8 @@ export default function CRM({
                         "Keep your trade conversations and working values together.",
                       "Trade-ins":
                         "Receive, prepare, and route every trade to retail or wholesale.",
+                      "Money owed":
+                        "Expected funds, recorded receipts, and every outstanding balance.",
                       Accounting:
                         "Your inventory investment, deal profit, and team earnings.",
                       Conversations:
@@ -831,7 +843,18 @@ export default function CRM({
                 />
               </>
             )}
-            {view === "Sales reports" && <SalesReports ws={ws} />}
+            {view === "Sales reports" && (
+              <SalesReports ws={ws} run={run} busy={busy} error={error} />
+            )}
+            {view === "Money owed" && (
+              <MoneyOwed
+                ws={ws}
+                run={run}
+                busy={busy}
+                error={error}
+                onOpen={openCustomer}
+              />
+            )}
             {view === "Inventory" && (
               <InventoryPreparation ws={ws} run={run} busy={busy} />
             )}
@@ -1447,7 +1470,8 @@ export default function CRM({
       )}
       {customer && (
         <CustomerProfile
-          key={customer.id}
+          key={customer.id + ":" + profileNewOpportunity}
+          initialNewOpportunity={profileNewOpportunity}
           ws={ws}
           customer={customer}
           demo={demo}
@@ -1476,6 +1500,15 @@ export default function CRM({
             ws={ws}
             demo={demo}
             existing={edit}
+            onOpenMatch={(id, newOpportunity) => {
+              setModal(null);
+              setEdit(null);
+              setSelected(id);
+              setSelectedOpp(null);
+              setProfileTab("Activity");
+              setProfileNewOpportunity(newOpportunity);
+              setError("");
+            }}
             busy={busy}
             error={error}
             submit={async (data, appointment) => {
@@ -1495,6 +1528,7 @@ export default function CRM({
               setModal(null);
               setEdit(null);
               if (!edit) {
+                setProfileNewOpportunity(false);
                 setSelected(id);
                 setSelectedOpp(null);
                 setProfileTab("Activity");

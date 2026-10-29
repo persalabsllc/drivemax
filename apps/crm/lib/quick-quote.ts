@@ -43,12 +43,22 @@ export function printableQuickQuote(
 
 export function demoQuickQuote(
   ws: Workspace,
-  command: Extract<Command, { type: "convert_quick_quote" }>,
+  command: Extract<
+    Command,
+    { type: "convert_quick_quote" | "convert_quick_quote_existing" }
+  >,
   now: Date,
   run: (ws: Workspace, command: Command, now: Date) => Workspace,
 ): Workspace {
   const existing = ws.quick_quote_conversions?.[command.id];
-  if (existing) return ws;
+  if (existing) {
+    if (
+      command.type === "convert_quick_quote_existing" &&
+      existing.customer_id !== command.customer_id
+    )
+      throw Error("Quote conversion unavailable");
+    return ws;
+  }
   const q = command.quote;
   const vehicle = ws.inventory.find(
     (v) =>
@@ -61,15 +71,23 @@ export function demoQuickQuote(
       "That vehicle is no longer in stock. Select another vehicle or use a manual price.",
     );
   const label = quickQuoteVehicleLabel(q, vehicle);
-  let next = run(
-    ws,
-    {
-      type: "create_customer",
-      customer: { ...command.customer, initial_opportunity: false },
-    },
-    now,
-  );
-  const customerId = next.customers[0].id;
+  let next =
+    command.type === "convert_quick_quote_existing"
+      ? ws
+      : run(
+          ws,
+          {
+            type: "create_customer",
+            customer: { ...command.customer, initial_opportunity: false },
+          },
+          now,
+        );
+  const customerId =
+    command.type === "convert_quick_quote_existing"
+      ? command.customer_id
+      : next.customers[0].id;
+  if (!next.customers.some((c) => c.id === customerId && !c.merged_into))
+    throw Error("Customer unavailable");
   next = run(
     next,
     {
@@ -77,7 +95,10 @@ export function demoQuickQuote(
       customer_id: customerId,
       opportunity: {
         title: label,
-        source: command.customer.source,
+        source:
+          command.type === "convert_quick_quote_existing"
+            ? command.source
+            : command.customer.source,
         status: "working",
         inventory_id: q.inventory_id,
         vehicle_interest: label,
@@ -118,7 +139,10 @@ export function demoQuickQuote(
     customer_id: customerId,
     opportunity_id: next.opportunities[0].id,
     kind: "system",
-    body: "Quick quote saved to new customer profile",
+    body:
+      command.type === "convert_quick_quote_existing"
+        ? "Quick quote saved as a new opportunity on the existing customer."
+        : "Quick quote saved to new customer profile",
     created_at: now.toISOString(),
     created_by: ws.member.name,
   });

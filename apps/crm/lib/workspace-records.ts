@@ -6,6 +6,10 @@ export type WorkspaceScope = {
   role: Workspace["member"]["role"];
 };
 export const workspaceTables = [
+  "money_plans",
+  "money_entries",
+  "ad_spend",
+  "business_events",
   "customers",
   "customer_aliases",
   "visits",
@@ -46,7 +50,17 @@ export async function readWorkspaceRecords(
 ): Promise<WorkspaceRecords> {
   // Pages are fetched fully in batches; never silently truncate the customer book.
   async function all(table: string) {
-    if (table === "trades" && !canManage(s.role)) return [];
+    if (
+      [
+        "trades",
+        "money_plans",
+        "money_entries",
+        "ad_spend",
+        "business_events",
+      ].includes(table) &&
+      !canManage(s.role)
+    )
+      return [];
     const rows: unknown[] = [];
     for (let start = 0; ; start += 1000) {
       let query = d

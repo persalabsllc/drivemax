@@ -3,6 +3,7 @@ export type LicenseCopy = {
   bytes: Uint8Array;
   name: string;
   capturedAt: string;
+  title?: string;
 };
 export async function appendLicenseCopies(
   base: Uint8Array | null,
@@ -14,7 +15,12 @@ export async function appendLicenseCopies(
     const image = await pdf.embedJpg(copy.bytes),
       page = pdf.addPage([612, 792]);
     const name = copy.name.replace(/[^\x20-\x7e]/g, "?").slice(0, 85);
-    page.drawText("Driver license copy", { x: 36, y: 748, size: 16, font });
+    page.drawText(copy.title ?? "Driver license copy", {
+      x: 36,
+      y: 748,
+      size: 16,
+      font,
+    });
     page.drawText(name, { x: 36, y: 725, size: 11, font });
     page.drawText(
       `Captured ${copy.capturedAt.slice(0, 10)} | Drive Max customer file`,

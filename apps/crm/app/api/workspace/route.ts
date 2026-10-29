@@ -1,3 +1,5 @@
+import { businessErrors } from "../../../lib/business";
+import { duplicateError } from "../../../lib/customer-matches";
 import { titleErrors } from "../../../lib/title-clerk";
 import { customerLinkErrors } from "../../../lib/customer-links";
 import { NextRequest, NextResponse, after } from "next/server";
@@ -67,6 +69,8 @@ export async function POST(req: NextRequest) {
                   : error.message === "Select an in-stock vehicle"
                     ? "That vehicle is no longer in stock. Refresh and select another vehicle."
                     : [
+                          ...businessErrors,
+                          duplicateError,
                           "Appraisal changed in another session. Reload before saving.",
                           "Appraisal source cannot be changed",
                           "Closed deal appraisals are read-only",

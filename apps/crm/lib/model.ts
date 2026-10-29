@@ -1,4 +1,12 @@
 import {
+  businessCommands,
+  type MoneyPlan,
+  type MoneyEntry,
+  type AdSpend,
+  type BusinessEvent,
+} from "./business";
+import { demoBusiness } from "./business-demo";
+import {
   titleClerkCommands,
   type TitleCase,
   type TempTag,
@@ -48,6 +56,7 @@ import {
 } from "./email";
 import { demoEmailCommand } from "./email-demo";
 import { z } from "zod";
+import { demoCustomerMatches, duplicateError } from "./customer-matches";
 import { staffSchema, profileNameSchema, type StaffDetails } from "./team";
 import {
   buyerSchema,
@@ -241,6 +250,10 @@ export type Staff = Partial<Omit<StaffDetails, "role" | "name" | "email">> & {
 export const canManage = (role: string) =>
   role === "owner" || role === "manager";
 export type Workspace = {
+  money_plans?: MoneyPlan[];
+  money_entries?: MoneyEntry[];
+  ad_spend?: AdSpend[];
+  business_events?: BusinessEvent[];
   customer_aliases?: CustomerAlias[];
   title_cases?: TitleCase[];
   temp_tags?: TempTag[];
@@ -373,6 +386,7 @@ const customer = {
   co_buyer: coBuyerSchema.nullable().optional(),
   co_buyer_link: coBuyerLinkSchema.optional(),
   initial_opportunity: z.boolean().optional(),
+  duplicate_reviewed_ids: z.array(z.uuid()).max(25).optional(),
   inventory_id: z.uuid().nullable().optional(),
   vehicle_details: vehicleDetailsSchema.nullable().optional(),
   trade: tradeSchema.nullable().optional(),
@@ -440,6 +454,7 @@ export const opportunitySchema = z.object({
   trade: tradeSchema.nullable(),
 });
 export const commandSchema = z.discriminatedUnion("type", [
+  ...businessCommands,
   ...customerLinkCommands,
   ...appraisalCommands,
   z.object({
@@ -454,6 +469,13 @@ export const commandSchema = z.discriminatedUnion("type", [
     type: z.literal("convert_quick_quote"),
     id: z.uuid(),
     customer: z.object(customer),
+    quote: quickQuoteSchema,
+  }),
+  z.object({
+    type: z.literal("convert_quick_quote_existing"),
+    id: z.uuid(),
+    customer_id: z.uuid(),
+    source: text,
     quote: quickQuoteSchema,
   }),
   ...appointmentCommands,
@@ -572,6 +594,23 @@ function demoCommandInner(
   now = new Date(),
 ): Workspace {
   const parsed = commandSchema.parse(command);
+  if (
+    parsed.type === "create_customer" ||
+    (parsed.type === "convert_quick_quote" &&
+      !ws.quick_quote_conversions?.[parsed.id])
+  ) {
+    const c = parsed.customer;
+    const matches = demoCustomerMatches(ws, {
+      phone: c.phone,
+      email: c.email,
+      license_number: c.person?.license_number ?? "",
+      license_state: c.person?.license_state ?? "",
+    });
+    if (matches.some((m) => !c.duplicate_reviewed_ids?.includes(m.id)))
+      throw Error(duplicateError);
+  }
+  const businessResult = demoBusiness(ws, parsed, now);
+  if (businessResult) return businessResult;
   if (parsed.type === "merge_customers")
     return demoCustomerMerge(ws, parsed, now);
   const titleResult = demoTitleClerk(ws, parsed, now);
@@ -616,7 +655,10 @@ function demoCommandInner(
         );
     }
   }
-  if (parsed.type === "convert_quick_quote") {
+  if (
+    parsed.type === "convert_quick_quote" ||
+    parsed.type === "convert_quick_quote_existing"
+  ) {
     return demoQuickQuote(ws, parsed, now, demoCommand);
   }
   return demoAppointments(ws, parsed, now, (input, p, time) =>

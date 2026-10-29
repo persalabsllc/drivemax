@@ -12,6 +12,7 @@ import { verifyFacebook } from "./verify-facebook.mjs";
 import { verifyDocumentVault } from "./verify-document-vault.mjs";
 import { verifyCustomerLinks } from "./verify-customer-links.mjs";
 import { verifyCustomerLicenses } from "./verify-customer-licenses.mjs";
+import { verifyBusinessExpansion } from "./verify-business-expansion.mjs";
 import { setupWorkflowScheduler } from "./setup-workflow-scheduler.mjs";
 if (process.env.VERCEL_ENV === "production") {
   if (!process.env.POSTGRES_URL)
@@ -105,6 +106,10 @@ if (process.env.VERCEL_ENV === "production") {
     await verifyCustomerLicenses(client);
     console.log(
       "Verified customer licenses: private access, idempotent filing, immutable originals and merge preservation; all fixtures rolled back.",
+    );
+    await verifyBusinessExpansion(client);
+    console.log(
+      "Verified duplicate review, existing-customer quotes, money receipts and corrections, advertising history and private insurance archives; all fixtures rolled back.",
     );
     console.log(
       "Verified document vault with rolled-back fixtures: private storage, historical stock/VIN, idempotent filing and retention protection.",

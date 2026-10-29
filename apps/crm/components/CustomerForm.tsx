@@ -21,6 +21,11 @@ import { CoBuyerPicker } from "./CoBuyerPicker";
 import { coBuyerSelection, type CoBuyerLink } from "../lib/customer-links";
 import type { LicenseCapture } from "../lib/license-scan";
 import { saveCustomerLicense } from "../lib/customer-license-client";
+import {
+  findCustomerMatches,
+  duplicateError,
+  type CustomerMatch,
+} from "../lib/customer-matches";
 const LicenseScanner = dynamic(
   () => import("./LicenseScanner").then((m) => m.LicenseScanner),
   { ssr: false },
@@ -32,6 +37,8 @@ export function CustomerForm({
   error,
   submit,
   onComplete,
+  onOpenMatch,
+  onUseExisting,
   demo = false,
   purpose = "customer",
 }: {
@@ -41,6 +48,11 @@ export function CustomerForm({
   error: string;
   demo?: boolean;
   onComplete: (id: string) => void;
+  onOpenMatch?: (id: string, newOpportunity: boolean) => void;
+  onUseExisting?: (
+    id: string,
+    source: string,
+  ) => Promise<{ ok: boolean; id?: string }>;
   purpose?: "customer" | "quick_quote";
   submit: (
     c: Extract<Command, { type: "create_customer" }>["customer"],
@@ -63,7 +75,93 @@ export function CustomerForm({
     [license, setLicense] = useState<LicenseCapture | null>(null),
     [licensePreview, setLicensePreview] = useState(""),
     [saving, setSaving] = useState(false),
-    [savedId, setSavedId] = useState<string | null>(null);
+    [savedId, setSavedId] = useState<string | null>(null),
+    [matches, setMatches] = useState<CustomerMatch[]>([]),
+    [matchError, setMatchError] = useState(""),
+    [matchLoading, setMatchLoading] = useState(false),
+    [matchRevision, setMatchRevision] = useState(0),
+    [reviewedMatches, setReviewedMatches] = useState("");
+  const matchInput = {
+    phone: person.phone,
+    email: person.email,
+    license_number: person.license_number,
+    license_state: person.license_state,
+  };
+  const matchSignature = JSON.stringify(matchInput);
+  const matchKey = (found: CustomerMatch[]) =>
+    matchSignature +
+    ":" +
+    found
+      .map((m) => m.id)
+      .sort()
+      .join(",");
+  useEffect(() => {
+    if (existing || savedId) return;
+    const controller = new AbortController();
+    setMatchLoading(true);
+    setMatchError("");
+    setMatches([]);
+    const timer = setTimeout(() => {
+      void findCustomerMatches(
+        ws,
+        JSON.parse(matchSignature),
+        demo,
+        controller.signal,
+      )
+        .then((found) => {
+          if (!controller.signal.aborted) setMatches(found);
+        })
+        .catch(() => {
+          if (!controller.signal.aborted)
+            setMatchError(
+              "Customer matches could not be checked. Please retry before saving.",
+            );
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setMatchLoading(false);
+        });
+    }, 300);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [
+    matchSignature,
+    demo,
+    existing,
+    savedId,
+    matchRevision,
+    ws.customers,
+    ws.customer_aliases,
+  ]);
+  async function useMatch(
+    match: CustomerMatch,
+    newOpportunity: boolean,
+    source: string,
+  ) {
+    if (saving || busy) return;
+    setSaving(true);
+    setLocalError("");
+    try {
+      if (onUseExisting) {
+        const result = await onUseExisting(match.id, source);
+        if (!result.ok) return;
+        setSavedId(match.id);
+        await finish(match.id);
+      } else {
+        if (license) await saveCustomerLicense(match.id, license, demo);
+        onOpenMatch?.(match.id, newOpportunity);
+      }
+    } catch (err) {
+      setLocalError(
+        err instanceof Error
+          ? err.message
+          : "The existing customer could not be opened. Please retry.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
   useEffect(() => {
     if (!license) {
       setLicensePreview("");
@@ -112,6 +210,7 @@ export function CustomerForm({
           vehicle_interest: existing?.vehicle_interest ?? "",
           trade_vehicle: existing?.trade_vehicle ?? "",
           initial_opportunity: createOpp,
+          duplicate_reviewed_ids: [] as string[],
         };
         let scheduled: NewCustomerAppointment | undefined;
         if (schedule && !existing) {
@@ -141,8 +240,21 @@ export function CustomerForm({
         setLocalError("");
         setSaving(true);
         try {
+          if (!existing) {
+            const found = await findCustomerMatches(ws, matchInput, demo);
+            setMatches(found);
+            setMatchError("");
+            if (found.length && reviewedMatches !== matchKey(found)) {
+              setLocalError(duplicateError);
+              return;
+            }
+            data.duplicate_reviewed_ids = found.map((m) => m.id);
+          }
           const result = await submit(data, scheduled);
-          if (!result.ok) return;
+          if (!result.ok) {
+            setMatchRevision((n) => n + 1);
+            return;
+          }
           const id = result.id ?? existing?.id;
           if (!id)
             throw Error(
@@ -222,6 +334,108 @@ export function CustomerForm({
               </button>
             </div>
           </div>
+        )}
+        {!existing && (
+          <section
+            className="customer-match-review"
+            aria-label="Duplicate customer check"
+            aria-live="polite"
+          >
+            {matchLoading && (
+              <p className="fine-print">Checking existing customers…</p>
+            )}
+            {matchError && (
+              <p className="form-error">
+                {matchError}{" "}
+                <button
+                  type="button"
+                  className="text-btn"
+                  onClick={() => setMatchRevision((n) => n + 1)}
+                >
+                  Retry match check
+                </button>
+              </p>
+            )}
+            {!!matches.length && (
+              <>
+                <h3>
+                  Possible existing customer{matches.length === 1 ? "" : "s"}
+                </h3>
+                <p>
+                  Choose the existing customer, or confirm that this is a
+                  different person.
+                </p>
+                {matches.map((match) => (
+                  <article key={match.id}>
+                    <div>
+                      <strong>{match.name}</strong>
+                      <small>
+                        {match.reasons.join(" · ")} match ·{" "}
+                        {match.phone || match.email}
+                      </small>
+                    </div>
+                    <div className="match-actions">
+                      {onUseExisting ? (
+                        <button
+                          type="button"
+                          className="btn small"
+                          onClick={(e) =>
+                            void useMatch(
+                              match,
+                              true,
+                              String(
+                                new FormData(e.currentTarget.form!).get(
+                                  "source",
+                                ),
+                              ),
+                            )
+                          }
+                        >
+                          Save quote on this customer
+                        </button>
+                      ) : (
+                        onOpenMatch && (
+                          <>
+                            <button
+                              type="button"
+                              className="btn small"
+                              onClick={() => void useMatch(match, false, "")}
+                            >
+                              {license
+                                ? "Save scan & open profile"
+                                : "Open profile"}
+                            </button>
+                            <button
+                              type="button"
+                              className="btn small"
+                              onClick={() => void useMatch(match, true, "")}
+                            >
+                              {license
+                                ? "Save scan & new opportunity"
+                                : "New opportunity"}
+                            </button>
+                          </>
+                        )
+                      )}
+                    </div>
+                  </article>
+                ))}
+                <label className="check-line">
+                  <input
+                    type="checkbox"
+                    checked={reviewedMatches === matchKey(matches)}
+                    onChange={(e) =>
+                      setReviewedMatches(
+                        e.target.checked ? matchKey(matches) : "",
+                      )
+                    }
+                  />
+                  I reviewed these matches. This is a different person and needs
+                  a separate profile.
+                </label>
+              </>
+            )}
+          </section>
         )}
         <p className="fine-print">
           Contact information stays with the customer across every opportunity.

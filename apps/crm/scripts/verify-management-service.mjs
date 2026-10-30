@@ -464,6 +464,25 @@ export async function verifyManagementService(client) {
       ).snapshot.title === "Original",
       "finished snapshot survives editing",
     );
+    const retryJob = randomUUID();
+    await cmd({
+      type: "queue_management_report",
+      request_id: randomUUID(),
+      id: reportId,
+      revision: 2,
+      run_id: retryJob,
+    });
+    await client.query("select * from dmcrm_claim_reports($1)", [org]);
+    await client.query(
+      "update dmcrm_report_runs set attempts=3,leased_at=now()-interval '6 minutes' where id=$1",
+      [retryJob],
+    );
+    await client.query("select * from dmcrm_claim_reports($1)", [org]);
+    check(
+      (await one("select state from dmcrm_report_runs where id=$1", [retryJob]))
+        .state === "failed",
+      "exhausted leases do not leave reports generating forever",
+    );
     const disabledJob = randomUUID();
     await cmd({
       type: "queue_management_report",
@@ -480,6 +499,14 @@ export async function verifyManagementService(client) {
       (await client.query("select * from dmcrm_claim_reports($1)", [org])).rows
         .length === 0,
       "disabled managers cannot generate reports",
+    );
+    check(
+      (
+        await one("select state from dmcrm_report_runs where id=$1", [
+          disabledJob,
+        ])
+      ).state === "canceled",
+      "lost access cancels queued runs",
     );
     for (const role of ["anon", "authenticated"]) {
       await client.query(`set local role ${role}`);

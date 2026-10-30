@@ -199,6 +199,13 @@ grant execute on function public.dmcrm_command(uuid,uuid,jsonb) to service_role;
 
 create function public.dmcrm_claim_reports(p_org uuid default null) returns setof public.dmcrm_report_runs language plpgsql security definer set search_path='' as $$
 declare r public.dmcrm_saved_reports%rowtype;j public.dmcrm_report_runs%rowtype;begin
+ update public.dmcrm_report_runs rr set state='canceled',lease_id=null,error='Report changed or access ended'
+  where rr.state in('pending','running','failed') and (p_org is null or rr.org_id=p_org) and not exists(
+   select 1 from public.dmcrm_saved_reports sr join public.dmcrm_members m on m.org_id=sr.org_id and m.user_id=sr.created_by
+   join public.dmcrm_staff s on s.org_id=m.org_id and s.user_id=m.user_id
+   where sr.id=rr.report_id and not sr.archived and sr.revision=rr.report_revision and m.active and s.active and m.role in('owner','manager'));
+ update public.dmcrm_report_runs set state='failed',lease_id=null,error='Generation interrupted three times. Use Generate now to create a fresh run.'
+  where state='running' and attempts>=3 and leased_at<now()-interval '5 minutes' and (p_org is null or org_id=p_org);
  for r in select sr.* from public.dmcrm_saved_reports sr where not sr.archived and sr.next_run_at<=now() and (p_org is null or sr.org_id=p_org)
   and exists(select 1 from public.dmcrm_members m join public.dmcrm_staff s on s.org_id=m.org_id and s.user_id=m.user_id where m.org_id=sr.org_id and m.user_id=sr.created_by and m.active and s.active and m.role in('owner','manager')) for update skip locked limit 20 loop
    insert into public.dmcrm_report_runs(org_id,report_id,report_revision,name,definition,scheduled_for,trigger) values(r.org_id,r.id,r.revision,r.name,r.definition,r.next_run_at,'scheduled') on conflict do nothing;

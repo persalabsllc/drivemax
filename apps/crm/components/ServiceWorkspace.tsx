@@ -76,7 +76,7 @@ export function ServiceWorkspace({
   const [selected, setSelected] = useState(initialOrderId ?? ""),
     [editor, setEditor] = useState<ServiceOrder | ServiceInput | null>(null),
     [query, setQuery] = useState(""),
-    [filter, setFilter] = useState("open"),
+    [filter, setFilter] = useState(customerId ? "all" : "open"),
     [kind, setKind] = useState("all"),
     [staff, setStaff] = useState("");
   if (!canManage(ws.member.role)) return null;

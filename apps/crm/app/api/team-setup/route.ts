@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { auth, db } from "../../../lib/server";
+import { startIdleSession } from "../../../lib/idle-server";
 const json = (v: unknown, status = 200) =>
   NextResponse.json(v, {
     status,
@@ -116,6 +117,7 @@ export async function POST(req: NextRequest) {
     const { error: cookieError } = await (
       await auth()
     ).auth.setSession(signed.data.session);
+    if (!cookieError) await startIdleSession(signed.data.user.id);
     return json({ ok: true, redirect: cookieError ? "/login" : "/" });
   } catch {
     return json(

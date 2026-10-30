@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { canManage, type Workspace } from "./model";
 import { emailConnection } from "./messaging";
 import { readWorkspaceRecords } from "./workspace-records";
+import { readIdleState } from "./idle-server";
 export const ready = () =>
   !!(
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
@@ -54,12 +55,15 @@ export async function auth() {
 }
 export async function session() {
   if (!ready()) return null;
+  // Staff API requests and background polling never renew inactivity.
+  const idle = await readIdleState();
+  if (!idle) return null;
   const a = await auth();
   const {
     data: { user },
     error,
   } = await a.auth.getUser();
-  if (error || !user?.email_confirmed_at) return null;
+  if (error || !user?.email_confirmed_at || idle.userId !== user.id) return null;
   const { data, error: e } = await db()
     .from("dmcrm_members")
     .select("org_id,user_id,name,role")

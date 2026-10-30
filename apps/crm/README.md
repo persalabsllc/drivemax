@@ -10,6 +10,8 @@ A standalone Next.js application for Drive Max customer management, showroom vis
 - `/` requires a verified account, active CRM dealership membership, and an active linked CRM team record.
 - `/demo` uses fictional, in-memory sample data. Demo mutations never reach the live API or persist in local storage.
 - `/login` uses the existing Supabase identity provider, a separate cookie name, and local-scope sign-out. `/team-setup` accepts a one-use, 72-hour setup link issued by an authorized manager. Tokens are hashed in storage and carried in the URL fragment; no invitation email is sent automatically.
+- Staff sessions end after 30 minutes without pointer, keyboard, or touch activity. A two-minute warning offers Stay signed in. Tabs share activity; background refreshes, status checks, page reloads, and focusing a tab do not extend the deadline. A signed, HttpOnly inactivity cookie is checked by every staff API through `session()`. Expired sessions require credentials again, including after sleep or offline use. Existing sessions need one fresh sign-in after this policy is deployed. The public demo and customer appointment links are unaffected.
+
 - The new project has its own deployment settings and environment variables. Do not copy website email/cron settings.
 
 ## Setup

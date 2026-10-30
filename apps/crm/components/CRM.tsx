@@ -1,4 +1,7 @@
 "use client";
+import { ManagementReports } from "./ManagementReports";
+import { ServiceWorkspace } from "./ServiceWorkspace";
+import { serviceOpen } from "../lib/service";
 import { MoneyOwed } from "./MoneyOwed";
 import { useState, useMemo, useEffect } from "react";
 import { WorkToday } from "./WorkToday";
@@ -112,6 +115,8 @@ import { signOut } from "../app/login/actions";
 
 type View =
   | "Work Today"
+  | "Management reports"
+  | "Service"
   | "Sales reports"
   | "Overview"
   | "Customers"
@@ -143,6 +148,8 @@ const nav = [
   { name: "Money owed", icon: Calculator },
   { name: "Accounting", icon: TrendingUp },
   { name: "Sales reports", icon: Target },
+  { name: "Management reports", icon: LayoutDashboard },
+  { name: "Service", icon: Car },
 ] as const;
 const time = (d: string) =>
   new Date(d).toLocaleTimeString("en-US", {
@@ -168,6 +175,7 @@ export default function CRM({
         ? seedTitleClerk(seedSalesWorkspace(seedOperations(initial)))
         : initial,
     ),
+    [serviceId, setServiceId] = useState<string | undefined>(undefined),
     [view, setView] = useState<View>("Overview"),
     [search, setSearch] = useState(""),
     [stage, setStage] = useState("all"),
@@ -210,13 +218,24 @@ export default function CRM({
       setSelectedOpp(params.get("opportunity"));
       setProfileTab("Activity");
     } else if (params.get("view") === "work") setView("Work Today");
+    else if (params.get("view") === "reports" && canManage(initial.member.role))
+      setView("Management reports");
+    else if (
+      params.get("view") === "service" &&
+      canManage(initial.member.role)
+    ) {
+      setView("Service");
+      setServiceId(params.get("order") ?? undefined);
+    }
   }, [initial]);
   useEffect(() => {
     if (
       demo ||
       busy ||
       selected ||
-      (view !== "Work Today" && view !== "Overview")
+      (view !== "Work Today" &&
+        view !== "Overview" &&
+        view !== "Management reports")
     )
       return;
     let canceled = false;
@@ -229,7 +248,10 @@ export default function CRM({
         /* Header refresh remains available. */
       }
     };
-    const timer = setInterval(refreshQuietly, 60000);
+    const timer = setInterval(
+      refreshQuietly,
+      view === "Management reports" ? 5000 : 60000,
+    );
     window.addEventListener("focus", refreshQuietly);
     return () => {
       canceled = true;
@@ -274,6 +296,7 @@ export default function CRM({
     setPrintData(null);
     setStage("all");
     setView(v);
+    setServiceId(undefined);
     setMobileNav(false);
     setSearch("");
   }
@@ -333,7 +356,11 @@ export default function CRM({
       setError(
         e instanceof Error ? e.message : "Could not save. Please try again.",
       );
-      return { ok: false };
+      return {
+        ok: false,
+        error:
+          e instanceof Error ? e.message : "Could not save. Please try again.",
+      };
     } finally {
       setBusy(false);
     }
@@ -562,8 +589,12 @@ export default function CRM({
             {nav
               .filter(
                 (n) =>
-                  !["Trade-ins", "Money owed"].includes(n.name) ||
-                  canManage(ws.member.role),
+                  ![
+                    "Trade-ins",
+                    "Money owed",
+                    "Management reports",
+                    "Service",
+                  ].includes(n.name) || canManage(ws.member.role),
               )
               .map(({ name, icon: Icon }) => (
                 <button
@@ -725,6 +756,10 @@ export default function CRM({
                         "Your sales day, in focus. Let’s move a few opportunities forward.",
                       "Work Today":
                         "The customers, appointments and deals that need your attention next.",
+                      "Management reports":
+                        "Saved dashboards, comparisons, and scheduled snapshots.",
+                      Service:
+                        "Repair orders, customer promises, and service history.",
                       "Sales reports":
                         "See where opportunities progress and where the process needs attention.",
                       Inventory:
@@ -773,7 +808,9 @@ export default function CRM({
                 {!quickQuoteOpen &&
                   view !== "Workspace" &&
                   view !== "Document Vault" &&
-                  view !== "Title Clerk" && (
+                  view !== "Title Clerk" &&
+                  view !== "Management reports" &&
+                  view !== "Service" && (
                     <button
                       className={view === "Desking" ? "btn" : "btn primary"}
                       onClick={() => {
@@ -835,6 +872,31 @@ export default function CRM({
                     })
                   }
                 />
+                {canManage(ws.member.role) &&
+                  (ws.service_orders ?? []).some(
+                    (o) => serviceOpen(o) && o.due_on && o.due_on <= today,
+                  ) && (
+                    <section className="panel service-attention">
+                      <div>
+                        <strong>Repairs and promises due</strong>
+                        <p>
+                          {
+                            (ws.service_orders ?? []).filter(
+                              (o) =>
+                                serviceOpen(o) && o.due_on && o.due_on <= today,
+                            ).length
+                          }{" "}
+                          open orders are due today or overdue.
+                        </p>
+                      </div>
+                      <button
+                        className="btn"
+                        onClick={() => navigate("Service")}
+                      >
+                        Open Service &amp; We Owe
+                      </button>
+                    </section>
+                  )}
                 <BuyerMatches
                   ws={ws}
                   run={run}
@@ -842,6 +904,48 @@ export default function CRM({
                   onCustomer={openCustomer}
                 />
               </>
+            )}
+            {view === "Management reports" && (
+              <ManagementReports
+                ws={ws}
+                run={run}
+                busy={busy}
+                demo={demo}
+                onRefresh={refresh}
+                onOpen={(row) => {
+                  if (row.service_id) {
+                    navigate("Service");
+                    setServiceId(row.service_id);
+                  } else if (row.customer_id) {
+                    const c = ws.customers.find(
+                      (c) => c.id === row.customer_id,
+                    );
+                    if (c) openCustomer(c, row.opportunity_id ?? null);
+                  } else if (row.inventory_id) {
+                    const v = ws.inventory.find(
+                      (v) => v.id === row.inventory_id,
+                    );
+                    if (v) {
+                      navigate("Inventory");
+                      setInventoryEdit(v);
+                      setModal("inventory");
+                    }
+                  }
+                }}
+              />
+            )}
+            {view === "Service" && (
+              <ServiceWorkspace
+                key={serviceId ?? "service"}
+                ws={ws}
+                run={run}
+                busy={busy}
+                initialOrderId={serviceId}
+                onCustomer={(id, opp) => {
+                  const c = ws.customers.find((c) => c.id === id);
+                  if (c) openCustomer(c, opp ?? null);
+                }}
+              />
             )}
             {view === "Sales reports" && (
               <SalesReports ws={ws} run={run} busy={busy} error={error} />

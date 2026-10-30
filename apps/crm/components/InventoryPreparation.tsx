@@ -1,4 +1,6 @@
 "use client";
+import { ServiceOrderEditor } from "./ServiceWorkspace";
+import { serviceBlank, type ServiceInput } from "../lib/service";
 import { useState } from "react";
 import { Plus, Trash2, Wrench } from "lucide-react";
 import { type Workspace, type Command, canManage, money } from "../lib/model";
@@ -20,6 +22,7 @@ export function InventoryPreparation({
   run: Run;
   busy: boolean;
 }) {
+  const [repair, setRepair] = useState<ServiceInput | null>(null);
   const [selected, setSelected] = useState<InventoryVehicle | null>(null),
     [filter, setFilter] = useState("all"),
     [expanded, setExpanded] = useState(false);
@@ -93,11 +96,42 @@ export function InventoryPreparation({
                     >
                       Manage preparation
                     </button>
+                    {canManage(ws.member.role) && (
+                      <>
+                        <button
+                          className="btn small"
+                          onClick={() =>
+                            setRepair(
+                              serviceBlank(ws, undefined, undefined, v.id),
+                            )
+                          }
+                        >
+                          Create repair order
+                        </button>
+                        <small>
+                          {
+                            (ws.service_orders ?? []).filter(
+                              (o) => o.inventory_id === v.id,
+                            ).length
+                          }{" "}
+                          linked repair orders · review in Service
+                        </small>
+                      </>
+                    )}
                   </article>
                 );
               })}
           </div>
         </>
+      )}
+      {repair && (
+        <ServiceOrderEditor
+          ws={ws}
+          initial={repair}
+          run={run}
+          busy={busy}
+          onClose={() => setRepair(null)}
+        />
       )}
       {selected && (
         <PrepEditor

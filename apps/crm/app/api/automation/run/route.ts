@@ -1,3 +1,4 @@
+import { dispatchReports } from "../../../../lib/report-worker";
 import { timingSafeEqual } from "node:crypto";
 import { db } from "../../../../lib/server";
 import { dispatchEmail } from "../../../../lib/messaging";
@@ -19,12 +20,18 @@ export async function POST(req: Request) {
   const { error } = await db().rpc("dmcrm_workflow_prepare");
   if (error)
     return new Response("Workflow scheduler unavailable", { status: 503 });
-  const [emailReady] = await Promise.all([
+  const [emailReady, , reportsReady] = await Promise.all([
     dispatchEmail("d5a1c100-0000-4000-8000-000000000001"),
     dispatchPush(),
+    dispatchReports(),
   ]);
-  if (!emailReady)
-    return new Response("Email transport unavailable", { status: 503 });
+  if (!emailReady || !reportsReady)
+    return new Response(
+      emailReady
+        ? "Report generation unavailable"
+        : "Email transport unavailable",
+      { status: 503 },
+    );
   await db()
     .from("dmcrm_workflow_health")
     .update({ last_worker_at: new Date().toISOString() })

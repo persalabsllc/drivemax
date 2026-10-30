@@ -1,3 +1,6 @@
+import { serviceCommands, type ServiceOrder, type ServiceReceipt, type OperationsEvent } from "./service";
+import { reportCommands, type SavedReport, type ReportRun } from "./management-reports";
+import { demoManagement } from "./management-demo";
 import {
   businessCommands,
   type MoneyPlan,
@@ -250,6 +253,11 @@ export type Staff = Partial<Omit<StaffDetails, "role" | "name" | "email">> & {
 export const canManage = (role: string) =>
   role === "owner" || role === "manager";
 export type Workspace = {
+  service_orders?: ServiceOrder[];
+  service_receipts?: ServiceReceipt[];
+  management_events?: OperationsEvent[];
+  saved_reports?: SavedReport[];
+  report_runs?: ReportRun[];
   money_plans?: MoneyPlan[];
   money_entries?: MoneyEntry[];
   ad_spend?: AdSpend[];
@@ -454,6 +462,8 @@ export const opportunitySchema = z.object({
   trade: tradeSchema.nullable(),
 });
 export const commandSchema = z.discriminatedUnion("type", [
+  ...serviceCommands,
+  ...reportCommands,
   ...businessCommands,
   ...customerLinkCommands,
   ...appraisalCommands,
@@ -609,6 +619,8 @@ function demoCommandInner(
     if (matches.some((m) => !c.duplicate_reviewed_ids?.includes(m.id)))
       throw Error(duplicateError);
   }
+  const managementResult = demoManagement(ws, parsed, now);
+  if (managementResult) return managementResult;
   const businessResult = demoBusiness(ws, parsed, now);
   if (businessResult) return businessResult;
   if (parsed.type === "merge_customers")

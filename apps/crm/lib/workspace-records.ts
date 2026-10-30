@@ -6,6 +6,11 @@ export type WorkspaceScope = {
   role: Workspace["member"]["role"];
 };
 export const workspaceTables = [
+  "service_orders",
+  "service_receipts",
+  "management_events",
+  "saved_reports",
+  "report_runs",
   "money_plans",
   "money_entries",
   "ad_spend",
@@ -53,6 +58,11 @@ export async function readWorkspaceRecords(
     if (
       [
         "trades",
+        "service_orders",
+        "service_receipts",
+        "management_events",
+        "saved_reports",
+        "report_runs",
         "money_plans",
         "money_entries",
         "ad_spend",
@@ -66,17 +76,19 @@ export async function readWorkspaceRecords(
       let query = d
         .from("dmcrm_" + table)
         .select(
-          table === "facebook_messages"
-            ? "id,org_id,customer_id,opportunity_id,body,referral,received_at"
-            : table === "sales" && !canManage(s.role)
-              ? "id,org_id,opportunity_id,customer_id,sold_on,status,unwound_at,unwind_reason"
-              : table === "staff" && !canManage(s.role)
-                ? "id,org_id,user_id,name,email,role,active,created_at"
-                : table === "deal_files"
-                  ? "id,org_id,customer_id,opportunity_id,inventory_id,name,kind,size,created_at,created_by,customer_name,stock_number,vin,vehicle_label,document_date,notes,retain_until,sha256"
-                  : table === "workflow_jobs"
-                    ? "id,org_id,rule_id,customer_id,opportunity_id,appointment_id,event,run_at,state,reason,message_id,task_id,created_at"
-                    : "*",
+          table === "report_runs"
+            ? "id,org_id,report_id,report_revision,name,definition,scheduled_for,trigger,state,attempts,snapshot,error,created_at,completed_at"
+            : table === "facebook_messages"
+              ? "id,org_id,customer_id,opportunity_id,body,referral,received_at"
+              : table === "sales" && !canManage(s.role)
+                ? "id,org_id,opportunity_id,customer_id,sold_on,status,unwound_at,unwind_reason"
+                : table === "staff" && !canManage(s.role)
+                  ? "id,org_id,user_id,name,email,role,active,created_at"
+                  : table === "deal_files"
+                    ? "id,org_id,customer_id,opportunity_id,inventory_id,name,kind,size,created_at,created_by,customer_name,stock_number,vin,vehicle_label,document_date,notes,retain_until,sha256"
+                    : table === "workflow_jobs"
+                      ? "id,org_id,rule_id,customer_id,opportunity_id,appointment_id,event,run_at,state,reason,message_id,task_id,created_at"
+                      : "*",
         )
         .eq("org_id", s.org_id);
       if (table === "inventory" || table === "trades")

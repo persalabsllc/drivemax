@@ -182,6 +182,12 @@ export function demoCustomerMerge(
     for (const row of records ?? [])
       if (row.customer_id === src.id) row.customer_id = dst.id;
   }
+  for (const order of s.service_orders ?? [])
+    if (order.customer_id === src.id) {
+      order.customer_id = dst.id;
+      order.revision++;
+      order.updated_at = stamp;
+    }
   for (const q of Object.values(s.quick_quote_conversions ?? {}))
     if (q.customer_id === src.id) q.customer_id = dst.id;
   for (const a of s.customer_aliases)

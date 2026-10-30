@@ -3,6 +3,7 @@ import { FacebookThread } from "./FacebookThread";
 import { customerActivity } from "../lib/activity";
 import { CustomerWorkflows } from "./WorkflowSettings";
 import { BuyerPreferences } from "./BuyerMatches";
+import { ServiceWorkspace } from "./ServiceWorkspace";
 import { DealDelivery } from "./DealDelivery";
 import { useState } from "react";
 import {
@@ -68,7 +69,8 @@ type Tab =
   | "Facebook"
   | "Follow-up"
   | "Wish list"
-  | "Delivery";
+  | "Delivery"
+  | "Service";
 export function CustomerProfile({
   ws,
   customer,
@@ -591,9 +593,14 @@ export function CustomerProfile({
               "Follow-up",
               "Wish list",
               "Delivery",
+              "Service",
             ] as Tab[]
           )
-            .filter((t) => !!o || (t !== "Desking" && t !== "Delivery"))
+            .filter(
+              (t) =>
+                (!!o || (t !== "Desking" && t !== "Delivery")) &&
+                (t !== "Service" || canManage(ws.member.role)),
+            )
             .map((t) => (
               <button
                 key={t}
@@ -624,6 +631,16 @@ export function CustomerProfile({
             customer={customer}
             run={run}
             busy={busy}
+          />
+        )}
+        {tab === "Service" && (
+          <ServiceWorkspace
+            key={customer.id}
+            ws={ws}
+            run={run}
+            busy={busy}
+            customerId={customer.id}
+            opportunityId={o?.id}
           />
         )}
         {tab === "Delivery" && o && (

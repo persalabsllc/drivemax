@@ -1,3 +1,5 @@
+import { managementErrors } from "../../../lib/service";
+import { dispatchReports } from "../../../lib/report-worker";
 import { businessErrors } from "../../../lib/business";
 import { duplicateError } from "../../../lib/customer-matches";
 import { titleErrors } from "../../../lib/title-clerk";
@@ -70,6 +72,7 @@ export async function POST(req: NextRequest) {
                     ? "That vehicle is no longer in stock. Refresh and select another vehicle."
                     : [
                           ...businessErrors,
+                          ...managementErrors,
                           duplicateError,
                           "Appraisal changed in another session. Reload before saving.",
                           "Appraisal source cannot be changed",
@@ -155,7 +158,12 @@ export async function POST(req: NextRequest) {
         error.code === "42501" ? 403 : 400,
       );
     after(async () => {
-      await dispatchEmail(s.org_id);
+      await Promise.all([
+        dispatchEmail(s.org_id),
+        parsed.data.type === "queue_management_report"
+          ? dispatchReports(s.org_id)
+          : Promise.resolve(true),
+      ]);
     });
     return json({ id, workspace: await workspace(s) });
   } catch {

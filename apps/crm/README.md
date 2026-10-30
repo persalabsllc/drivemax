@@ -221,3 +221,17 @@ account/number/campaign setup and transport implementation. Keep
 customer consent and STOP handling separate from employee alert preferences.
 Existing customer texts remain drafts. Do not change or port the public
 252-541-0040 number without discussing the intended number arrangement first.
+
+## Saved management reports and service (migration 029)
+
+Owners/managers have **Management reports** and **Service** in the sidebar. Sales staff cannot read these tables through the workspace API or invoke their commands.
+
+Management reports save dashboard cards, period/team/source filters, inventory age/no-appointment filters, overdue views, and unit/gross targets. Sales use preserved sold-deal snapshots and sold dates; leads use Eastern created dates. Incomplete deal costs are excluded and called out. Current balances, inventory, tasks and service are explicitly current; historical values are not invented. Results open the current customer, deal, vehicle or repair order, with CSV and print/PDF exports.
+
+Daily/weekly/monthly schedules deliver immutable dated snapshots to the **Reports inbox**, using the existing five-minute authenticated production worker. This version does not send report emails. No schedule starts enabled. The manager who last saved the definition must remain active and authorized. Edits/archive cancel unfinished jobs; completed snapshots retain their original definition and figures. Jobs use leases, up to three attempts, revision checks and per-slot deduplication. Missed schedule intervals produce one current snapshot instead of misleading backfilled historical reports.
+
+Service supports inventory recon, customer-pay repairs, warranty/goodwill, and We Owe promises, linked to a customer, opportunity and/or vehicle. It records assignments, shop/vendor, due dates, labor/parts/sublet items, estimates, actual costs, customer prices, reviewed tax, authorization, and work status. Scope/pricing changes invalidate authorization; actual-cost updates preserve it. Completion requires authorization and actual costs within the applicable approved amount. Completed/canceled work is frozen. New work or a correction to scope belongs on a new order; receipt reversals preserve payment history.
+
+Customer-facing estimates, invoices and We Owe copies omit internal notes/costs. Recorded authorization documents an approval received outside the CRM, not an electronic signature. Customer-pay receipts record money already received; they do not charge a card or move funds. Inventory recon updates require explicit review of completed order costs plus other costs, replace the reviewed total, and reject sold inventory. Service receipts are a separate ledger and do not post to sales-deal accounting. A customer Service tab keeps repair history, inventory preparation can create a recon order, and Work Today highlights due repairs/promises.
+
+`tests/management-service.test.ts` checks report periods/DST, calculations, demo command parity and historical snapshots. `verify-management-service.mjs` exercises real PostgreSQL commands, manager boundaries, approvals, reversals, recon, jobs, access removal and snapshot preservation. The release verification runs within a savepoint and rolls back all fixtures before migrations commit.

@@ -1,3 +1,4 @@
+import { verifyManagementService } from "./verify-management-service.mjs";
 import fs from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
@@ -108,6 +109,7 @@ if (process.env.VERCEL_ENV === "production") {
       "Verified customer licenses: private access, idempotent filing, immutable originals and merge preservation; all fixtures rolled back.",
     );
     await verifyBusinessExpansion(client);
+    await verifyManagementService(client);
     console.log(
       "Verified duplicate review, existing-customer quotes, money receipts and corrections, advertising history and private insurance archives; all fixtures rolled back.",
     );

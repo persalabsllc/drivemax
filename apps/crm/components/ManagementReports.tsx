@@ -77,11 +77,13 @@ export function ManagementReports({
     definition = saved?.definition ?? defaultReport;
   const live = useMemo(
     () =>
-      buildManagementReport(
-        ws,
-        definition,
-        saved?.name ?? "Management overview",
-      ),
+      canManage(ws.member.role)
+        ? buildManagementReport(
+            ws,
+            definition,
+            saved?.name ?? "Management overview",
+          )
+        : null,
     [ws, definition, saved?.name],
   );
   const runs = [...(ws.report_runs ?? [])]
@@ -91,7 +93,7 @@ export function ManagementReports({
   const snapshot = snapshotRun?.snapshot;
   const drillDefinition = snapshotRun?.definition ?? definition;
   const shown = snapshot ?? live;
-  if (!canManage(ws.member.role)) return null;
+  if (!canManage(ws.member.role) || !shown) return null;
   const drillSales = drill
     ? (ws.sales ?? []).filter(
         (s) =>

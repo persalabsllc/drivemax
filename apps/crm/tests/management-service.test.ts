@@ -1,3 +1,6 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { ManagementReports } from "../components/ManagementReports";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -427,5 +430,33 @@ test("saved snapshots remain unchanged after report or source edits and overdue 
       now,
     ).rows.length,
     0,
+  );
+});
+
+test("a manager losing access can refresh an open report without processing restricted sale records", () => {
+  const ws = demoWorkspace(now);
+  ws.member.role = "sales";
+  ws.sales = [
+    {
+      id: randomUUID(),
+      org_id: ws.org.id,
+      customer_id: ws.customers[0].id,
+      opportunity_id: ws.opportunities[0].id,
+      status: "sold",
+      sold_on: "2026-10-30",
+    } as Sale,
+  ];
+  assert.equal(
+    renderToStaticMarkup(
+      createElement(ManagementReports, {
+        ws,
+        run: async () => ({ ok: false }),
+        busy: false,
+        demo: false,
+        onRefresh: async () => {},
+        onOpen: () => {},
+      }),
+    ),
+    "",
   );
 });

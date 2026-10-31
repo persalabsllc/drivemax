@@ -1,3 +1,4 @@
+import { claimErrors } from "../../../lib/protection-claims";
 import { pricingErrors } from "../../../lib/protection-pricing";
 import { protectionErrors } from "../../../lib/protection";
 import { managementErrors } from "../../../lib/service";
@@ -112,6 +113,7 @@ export async function POST(req: NextRequest) {
                     : [
                           ...businessErrors,
                           ...protectionErrors,
+                          ...claimErrors,
                           ...pricingErrors,
                           ...managementErrors,
                           duplicateError,

@@ -1,3 +1,4 @@
+import { verifyProtectionClaims } from "./verify-protection-claims.mjs";
 import { verifyProtectionPricing } from "./verify-protection-pricing.mjs";
 import { verifyProtectionPackets } from "./verify-protection-packets.mjs";
 import { verifyManagementService } from "./verify-management-service.mjs";
@@ -143,6 +144,10 @@ if (process.env.VERCEL_ENV === "production") {
     await verifyProtectionPricing(client);
     console.log(
       "Verified draft approval, six-month/deductible costing, menu and standalone contract allocations, frozen historical costs and claims fund transactions; all fixtures rolled back.",
+    );
+    await verifyProtectionClaims(client);
+    console.log(
+      "Verified contract-linked open claims, paid history, duplicate prevention, fund reconciliation and private access; all fixtures rolled back.",
     );
     await setupWorkflowScheduler(client);
     console.log(

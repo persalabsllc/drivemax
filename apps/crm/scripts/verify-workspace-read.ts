@@ -68,6 +68,33 @@ async function main() {
       if (!records) throw new Error("Workspace read result incomplete");
       if (workspaceTables.some((table) => !Array.isArray(records[table])))
         throw new Error("Workspace read result incomplete");
+      if (
+        role === "sales" &&
+        (records.protection_claims?.length ||
+          records.protection_claim_events?.length)
+      )
+        throw new Error("Claim records escaped manager-only access");
+      if (role === "owner") {
+        const totals = new Map<string, number>();
+        for (const claim of records.protection_claims ?? [])
+          if (claim.status === "paid")
+            totals.set(
+              claim.contract_id,
+              (totals.get(claim.contract_id) ?? 0) +
+                Math.round(Number(claim.amount) * 100),
+            );
+        for (const contract of records.protection_contracts ?? [])
+          if (
+            (totals.get(contract.id) ?? 0) !==
+            Math.round(Number(contract.claims_paid) * 100)
+          )
+            throw new Error(
+              "Claim tracking does not reconcile to contract payments",
+            );
+        console.log(
+          "Verified paid-claim tracking reconciles to contract payments.",
+        );
+      }
       const pricing = records.product_pricing?.[0];
       if (role === "owner" && pricing?.active && pricing.active_revision) {
         const config = pricingConfigSchema.parse(pricing.active);

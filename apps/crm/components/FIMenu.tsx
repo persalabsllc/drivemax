@@ -62,6 +62,12 @@ export function FIMenu({
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
     .slice(0, 30);
   function checkedMenu() {
+    if (!readOnly && menu.products.some((p) => !p.protection_plan)) {
+      setError(
+        "Only Drive Max Protection products are available. Open Edit menu products to replace or remove previously saved products before applying this menu.",
+      );
+      return null;
+    }
     const parsed = fiMenuSchema.safeParse(menu);
     if (!parsed.success) {
       setError(
@@ -169,7 +175,7 @@ export function FIMenu({
           <div className="fi-menu-empty">
             <h3>Start with the products you offer</h3>
             <p>
-              Enter the provider, coverage details, cost and selling price. Then
+              Choose Drive Max Protection coverage, cost and selling price. Then
               include each product in the options below.
             </p>
             <button className="btn primary" onClick={() => setEditing(true)}>
@@ -234,7 +240,7 @@ export function FIMenu({
                         type="checkbox"
                         aria-label={`${option.name}: ${fiProductName(product)}`}
                         checked={option.product_ids.includes(product.id)}
-                        disabled={readOnly || busy}
+                        disabled={readOnly || busy || !product.protection_plan}
                         onChange={(e) =>
                           setMenu({
                             ...menu,

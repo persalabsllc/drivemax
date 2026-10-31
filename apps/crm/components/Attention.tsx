@@ -161,7 +161,7 @@ export function AttentionCenter({
               >
                 <ArrowUpRight size={17} />
               </button>
-              {item.kind !== "task" && (
+              {item.kind !== "task" && item.kind !== "chat" && (
                 <button
                   className="btn small"
                   aria-label={`Mark reviewed: ${item.customer_name} ${item.title}`}

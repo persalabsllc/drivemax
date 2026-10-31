@@ -155,10 +155,12 @@ export async function workspace(
 export async function attention(
   s: NonNullable<Awaited<ReturnType<typeof session>>>,
 ) {
-  const { data, error } = await db().rpc("dmcrm_attention", {
-    p_org: s.org_id,
-    p_actor: s.user_id,
-  });
+  const [{data,error}, chats] = await Promise.all([
+    db().rpc("dmcrm_attention", {p_org:s.org_id,p_actor:s.user_id}),
+    db().rpc("dmcrm_chat_staff", {p_org:s.org_id,p_actor:s.user_id,p_action:"alerts",p_data:{}}),
+  ]);
   if (error) throw new Error("Attention feed unavailable");
-  return data as import("./attention").AttentionFeed;
+  const feed = data as import("./attention").AttentionFeed;
+  const items = chats.error ? [] : chats.data as import("./attention").AttentionItem[];
+  return {...feed, items:[...items,...feed.items], total:feed.total+items.length};
 }

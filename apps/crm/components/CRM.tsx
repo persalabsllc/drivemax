@@ -1,5 +1,6 @@
 "use client";
 import { canDesk, canAccessView, roleLabel } from "../lib/permissions";
+import { WebsiteChatInbox, WebsiteChatSettingsPanel } from "./WebsiteChatInbox";
 import { restrictWorkspace } from "../lib/workspace-permissions";
 import { ManagementReports } from "./ManagementReports";
 import { ServiceWorkspace } from "./ServiceWorkspace";
@@ -136,6 +137,7 @@ type View =
   | "Money owed"
   | "Accounting"
   | "Conversations"
+  | "Website chat"
   | "Workspace";
 const nav = [
   { name: "Overview", icon: LayoutDashboard },
@@ -145,6 +147,7 @@ const nav = [
   { name: "Desking", icon: FileText },
   { name: "F&I Products", icon: ShieldCheck },
   { name: "Conversations", icon: MessageSquare },
+  { name: "Website chat", icon: MessageSquare },
   { name: "Planner", icon: CalendarDays },
   { name: "Inventory", icon: Car },
   { name: "Trade-ins", icon: RefreshCw },
@@ -185,6 +188,7 @@ export default function CRM({
     ),
     [serviceId, setServiceId] = useState<string | undefined>(undefined),
     [view, setView] = useState<View>("Overview"),
+    [chatId, setChatId] = useState<string | undefined>(),
     [search, setSearch] = useState(""),
     [stage, setStage] = useState("all"),
     [selected, setSelected] = useState<string | null>(null),
@@ -380,6 +384,12 @@ export default function CRM({
     }
   }
   async function openAttention(item: AttentionItem) {
+    if (item.kind === "chat") {
+      setChatId(item.id);
+      setSelected(null);
+      setView("Website chat");
+      return;
+    }
     setBusy(true);
     setError("");
     try {
@@ -754,6 +764,8 @@ export default function CRM({
                         "Your sales day, in focus. Let’s move a few opportunities forward.",
                       "Work Today":
                         "The customers, appointments and deals that need your attention next.",
+                      "Website chat":
+                        "Website visitors, real conversations, and the next appointment.",
                       "Management reports":
                         "Saved dashboards, comparisons, and scheduled snapshots.",
                       Service:
@@ -1031,7 +1043,7 @@ export default function CRM({
                       onOpen={openAttention}
                       onRefresh={alerts.reload}
                       onReview={(item) => {
-                        if (item.kind !== "task")
+                        if (item.kind !== "task" && item.kind !== "chat")
                           void run(
                             {
                               type: "review_attention",
@@ -1453,6 +1465,18 @@ export default function CRM({
                 onCustomer={openCustomer}
               />
             )}
+            {view === "Website chat" && (
+              <WebsiteChatInbox ws={ws} demo={demo} initialId={chatId}
+                onCustomer={async (id, opportunityId) => {
+                  try {
+                    const current = demo ? ws : await (await fetch("/api/workspace", {cache:"no-store"})).json();
+                    const customer = current.customers?.find((c: Customer) => c.id === id);
+                    if (!customer) throw Error("Refresh the workspace to open this customer.");
+                    setWs(current);
+                    openCustomer(customer, opportunityId);
+                  } catch { setError("Could not open the customer. Please refresh and try again."); }
+                }} />
+            )}
             {view === "Conversations" && (
               <ConversationsInbox
                 ws={ws}
@@ -1472,6 +1496,7 @@ export default function CRM({
             {view === "Workspace" && (
               <>
                 <UserProfileSettings ws={ws} run={run} busy={busy} />
+                {canManage(ws.member.role) && <WebsiteChatSettingsPanel ws={ws} demo={demo} />}
                 {canManage(ws.member.role) && (
                   <ProductPricingSettings ws={ws} run={run} busy={busy} />
                 )}

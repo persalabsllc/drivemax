@@ -10,7 +10,7 @@ import {
 
 export type AttentionItem = {
   key: string;
-  kind: "reply" | "failed" | "lead" | "website" | "facebook" | "task";
+  kind: "reply" | "failed" | "lead" | "website" | "facebook" | "task" | "chat";
   id: string;
   customer_id: string | null;
   customer_name: string;
@@ -34,6 +34,7 @@ export const attentionLabel = {
   website: "Website inquiry",
   facebook: "Facebook message",
   task: "Task due",
+  chat: "Website chat",
 };
 
 /** Mirrors the live, per-user feed for the isolated demo. */

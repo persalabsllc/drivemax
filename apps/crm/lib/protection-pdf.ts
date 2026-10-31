@@ -10,12 +10,17 @@ import {
   protectionVersion,
   ancillaryProtectionVersion,
   protectionTermLabel,
+  protectionIssuer,
   type ProtectionContract,
 } from "./protection";
 import { protectionTermsV1 } from "./protection-terms";
 import fontkit from "@pdf-lib/fontkit";
 import { ancillaryTerms } from "./protection-ancillary-terms";
 import { isMechanicalPlan } from "./protection-programs";
+import {
+  protectionQuoteProductSchema,
+  type ProtectionQuote,
+} from "./protection-quote";
 export type ProtectionFonts = { regular: Uint8Array; bold: Uint8Array };
 const clean = (s: string) =>
   s
@@ -550,5 +555,125 @@ export async function buildProtectionPacketPdf(
       pdf.addPage(page);
   pdf.setTitle("Drive Max Protection - selected contracts");
   pdf.setAuthor(contracts[0].issuer.name);
+  return pdf.save();
+}
+
+/** Customer quote: render only explicitly allowed coverage/retail fields. */
+export async function buildProtectionQuotePdf(
+  quote: ProtectionQuote,
+  logo?: Uint8Array,
+  fonts?: ProtectionFonts,
+) {
+  if (!quote.products.length || quote.products.length > 30)
+    throw Error("Choose between 1 and 30 protection products.");
+  const products = quote.products.map((p) =>
+    protectionQuoteProductSchema.parse(p),
+  );
+  const pdf = await PDFDocument.create();
+  if (fonts) pdf.registerFontkit(fontkit);
+  const regular = await pdf.embedFont(
+    fonts?.regular ?? StandardFonts.Helvetica,
+    { subset: true },
+  );
+  const bold = await pdf.embedFont(fonts?.bold ?? StandardFonts.HelveticaBold, {
+    subset: true,
+  });
+  const emblem = logo ? await pdf.embedPng(logo) : null;
+  let page: PDFPage;
+  let y = 0;
+  const draw = (
+    text: string,
+    x: number,
+    top: number,
+    size = 10,
+    font = regular,
+  ) => page.drawText(clean(text), { x, y: top, size, font, color: ink });
+  function startPage() {
+    page = pdf.addPage([612, 792]);
+    page.drawRectangle({ x: 0, y: 780, width: 612, height: 12, color: red });
+    if (emblem) {
+      const size = emblem.scaleToFit(138, 51);
+      page.drawImage(emblem, {
+        x: 36,
+        y: 710,
+        width: size.width,
+        height: size.height,
+      });
+    } else draw("DRIVE MAX", 36, 736, 22, bold);
+    draw("PROTECTION QUOTE", 318, 746, 17, bold);
+    draw(`Prepared ${quote.prepared_on}`, 318, 726, 10);
+    draw("Coverage and prices", 36, 681, 19, bold);
+    draw("QUOTATION ONLY - NO COVERAGE ISSUED", 36, 662, 9);
+    const customer = quote.holder_name.trim() || "Customer to be confirmed";
+    const vehicle = quote.vehicle.trim() || "Vehicle to be confirmed";
+    const details = [
+      customer,
+      vehicle,
+      ...(quote.vin.trim() ? [`VIN ${quote.vin}`] : []),
+    ];
+    y = 638;
+    for (const detail of details) {
+      for (const row of wrap(detail, regular, 10, 540)) {
+        draw(row, 36, y, 10);
+        y -= 13;
+      }
+    }
+    y -= 16;
+  }
+  startPage();
+  for (const c of products) {
+    const benefits = isMechanicalPlan(c.plan)
+      ? `${money(c.deductible)} deductible per repair visit | Aggregate repair benefit: ${c.claim_limit === null ? "to be selected before issuance" : money(c.claim_limit)}`
+      : c.plan === "maintenance"
+        ? `${c.maintenance_visits} oil/filter change and tire rotation visits, up to $125 per visit.`
+        : c.plan === "key_replacement"
+          ? "Maximum 3 keys during the contract, maximum 2 in any rolling 12 months."
+          : c.plan === "pdr"
+            ? "Eligible dents the size of a credit card or smaller. $0 deductible."
+            : "$0 deductible. See the agreement for covered benefits.";
+    const rows = [protectionTermLabel(c), ...wrap(benefits, regular, 9, 500)];
+    const height = 32 + rows.length * 13;
+    if (y - height < 145) startPage();
+    page!.drawRectangle({
+      x: 36,
+      y: y - height + 8,
+      width: 540,
+      height,
+      color: pale,
+    });
+    draw(protectionPlans[c.plan], 46, y - 9, 11, bold);
+    const price = money(c.price);
+    draw(price, 565 - bold.widthOfTextAtSize(price, 11), y - 9, 11, bold);
+    rows.forEach((row, index) => draw(row, 46, y - 27 - index * 13, 9));
+    y -= height + 10;
+  }
+  if (y < 150) startPage();
+  const total = money(products.reduce((n, p) => n + p.price, 0));
+  draw(
+    `TOTAL CUSTOMER PRICE - ${products.length} ${products.length === 1 ? "PRODUCT" : "PRODUCTS"}`,
+    36,
+    y - 8,
+    11,
+    bold,
+  );
+  draw(total, 576 - bold.widthOfTextAtSize(total, 16), y - 10, 16, bold);
+  const note =
+    "This quote does not issue coverage. The final agreements show the coverage start date, expiration, benefits and exclusions. Purchase is optional and is not required to purchase or finance a vehicle.";
+  wrap(note, regular, 9, 540).forEach((row, i) =>
+    draw(row, 36, y - 38 - i * 12, 9),
+  );
+  for (const [i, p] of pdf.getPages().entries()) {
+    page = p;
+    page.drawLine({
+      start: { x: 36, y: 50 },
+      end: { x: 576, y: 50 },
+      thickness: 0.6,
+      color: line,
+    });
+    draw(`${protectionIssuer.name} | ${protectionIssuer.phone}`, 36, 34, 8);
+    draw(`Page ${i + 1} of ${pdf.getPageCount()}`, 515, 34, 8);
+  }
+  pdf.setTitle("Drive Max Protection - product quote");
+  pdf.setAuthor(protectionIssuer.name);
   return pdf.save();
 }

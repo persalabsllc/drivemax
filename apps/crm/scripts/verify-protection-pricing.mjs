@@ -397,6 +397,162 @@ export async function verifyProtectionPricing(client) {
       ).active === null,
       "owner can pause new pricing",
     );
+    const corrected = structuredClone(config);
+    corrected.rates.deluxe.basis = "first_limit";
+    corrected.rates.platinum.basis = "first_limit";
+    corrected.deductible_discounts = { 0: 0, 250: 10, 500: 20, 1000: 35 };
+    await deny({
+      type: "save_product_pricing",
+      request_id: randomUUID(),
+      revision: 5,
+      config: {
+        ...corrected,
+        deductible_discounts: { 0: 0, 250: 50, 500: 20, 1000: 35 },
+      },
+    });
+    await cmd({
+      type: "save_product_pricing",
+      request_id: randomUUID(),
+      revision: 5,
+      config: corrected,
+    });
+    await cmd({
+      type: "activate_product_pricing",
+      request_id: randomUUID(),
+      revision: 6,
+      approved: true,
+    });
+    const shortCost = async (p) =>
+      (
+        await one("select dmcrm_protection_cost($1::jsonb,$2::jsonb,7) value", [
+          JSON.stringify(p),
+          JSON.stringify(corrected),
+        ])
+      ).value;
+    const shortProduct = {
+      ...product,
+      id: randomUUID(),
+      kind: "service_contract",
+      protection_plan: "deluxe",
+      name: "Deluxe",
+      term_months: 6,
+      mileage_limit: 6000,
+      unlimited_miles: false,
+      deductible: 500,
+      price: 300,
+      claim_limit: 5000,
+    };
+    shortProduct.pricing_snapshot = await shortCost(shortProduct);
+    shortProduct.cost = shortProduct.pricing_snapshot.cost;
+    check(shortProduct.cost === 159.6, "six-month deductible-adjusted cost");
+    const floor = await shortCost({
+      ...shortProduct,
+      protection_plan: "platinum",
+      mileage_limit: 36000,
+      price: 800,
+    });
+    check(
+      floor.scheduled_cost === 239.6 && floor.cost === 320,
+      "short term with high mileage and separate funding floor",
+    );
+    const shortOpportunity = randomUUID();
+    await client.query(
+      "insert into dmcrm_opportunities(id,org_id,customer_id,assigned_to,vehicle_interest) values($1,$2,$3,$4,'2021 Chevrolet Tahoe')",
+      [shortOpportunity, org, cid, owner.id],
+    );
+    const shortQuote = {
+      ...quote,
+      opportunity_id: shortOpportunity,
+      values: {
+        ...values,
+        serviceContract: 300,
+        products: [shortProduct],
+        fiMenu: {
+          ...values.fiMenu,
+          products: [shortProduct],
+          packages: values.fiMenu.packages.map((p) => ({
+            ...p,
+            product_ids: [shortProduct.id],
+          })),
+        },
+      },
+    };
+    const staleDeductible = structuredClone(shortQuote);
+    staleDeductible.values.products[0].deductible = 0;
+    await deny(staleDeductible);
+    const shortSaved = await cmd(shortQuote);
+    const shortIssue = {
+      ...issue,
+      id: randomUUID(),
+      request_id: randomUUID(),
+      contract: {
+        ...common,
+        opportunity_id: shortOpportunity,
+        quote_id: shortSaved.id,
+        product_id: shortProduct.id,
+        plan: "deluxe",
+        term_months: 6,
+        term_miles: 6000,
+        deductible: 500,
+        price: 300,
+        claim_limit: 5000,
+      },
+    };
+    await cmd(shortIssue);
+    const shortStandalone = {
+      ...shortIssue,
+      id: randomUUID(),
+      request_id: randomUUID(),
+      contract: { ...shortIssue.contract, quote_id: null, product_id: null },
+    };
+    await cmd(shortStandalone);
+    for (const id of [shortIssue.id, shortStandalone.id]) {
+      const row = await one(
+        "select internal_cost,pricing_snapshot from dmcrm_protection_contracts where id=$1",
+        [id],
+      );
+      check(
+        Number(row.internal_cost) === 159.6 &&
+          row.pricing_snapshot.deductible === 500 &&
+          row.pricing_snapshot.deductible_discount_percent === 20,
+        "menu and standalone issuance agree on deductible cost",
+      );
+    }
+    corrected.rates.deluxe.amount = 799;
+    await cmd({
+      type: "save_product_pricing",
+      request_id: randomUUID(),
+      revision: 7,
+      config: corrected,
+    });
+    await cmd({
+      type: "activate_product_pricing",
+      request_id: randomUUID(),
+      revision: 8,
+      approved: true,
+    });
+    check(
+      Number(
+        (
+          await one(
+            "select internal_cost from dmcrm_protection_contracts where id=$1",
+            [shortIssue.id],
+          )
+        ).internal_cost,
+      ) === 159.6,
+      "issued short-term contract keeps its saved allocation",
+    );
+    check(
+      Number(
+        (
+          await one(
+            "select internal_cost from dmcrm_protection_contracts where id=$1",
+            [issue.id],
+          )
+        ).internal_cost,
+      ) === 400,
+      "legacy issued contract keeps its saved allocation",
+    );
   } finally {
     await client.query("rollback to savepoint protection_pricing_verification");
   }

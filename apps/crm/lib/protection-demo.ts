@@ -117,6 +117,7 @@ export function demoProtection(
               mileage_limit: c.term_miles ?? 0,
               unlimited_miles: c.term_miles === null,
               maintenance_visits: c.maintenance_visits ?? undefined,
+              deductible: c.deductible,
               price: c.price,
             },
             pricing.active,

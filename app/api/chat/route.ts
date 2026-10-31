@@ -4,6 +4,7 @@ import { after, NextResponse } from "next/server";
 import { backendReady, db } from "../../../lib/backend";
 import { takeSlot } from "../../../lib/rate-limit";
 import {
+  CHAT_ASSISTANT_PHOTO,
   chatActionSchema,
   publicChatSnapshot,
   type ChatConfig,
@@ -42,7 +43,10 @@ export async function GET() {
         else throw e;
       }
     }
-    return json({ config: config as ChatConfig, conversation });
+    return json({
+      config: { ...(config as ChatConfig), photo: CHAT_ASSISTANT_PHOTO },
+      conversation,
+    });
   } catch {
     return json(
       { error: "Chat is temporarily unavailable. Call 252-541-0040." },

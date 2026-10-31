@@ -518,6 +518,90 @@ export async function verifyProtectionPricing(client) {
         "menu and standalone issuance agree on deductible cost",
       );
     }
+    // Standalone packets use the same atomic command and active pricing as menu
+    // packets, with no saved car quote or product IDs required.
+    const packet = {
+      type: "issue_protection_batch",
+      id: randomUUID(),
+      request_id: randomUUID(),
+      contracts: [
+        "deluxe",
+        "maintenance",
+        "tire_wheel",
+        "pdr",
+        "appearance",
+        "key_replacement",
+      ].map((plan) => ({
+        id: randomUUID(),
+        contract: {
+          ...common,
+          opportunity_id: null,
+          quote_id: null,
+          product_id: null,
+          plan,
+          deductible: plan === "deluxe" ? 500 : 0,
+          price: plan === "deluxe" ? 300 : 699,
+          term_months: plan === "appearance" ? 96 : plan === "deluxe" ? 6 : 12,
+          term_miles:
+            plan === "appearance" ? null : plan === "deluxe" ? 6000 : 12000,
+          maintenance_visits: plan === "maintenance" ? 3 : null,
+          claim_limit:
+            plan === "deluxe" ? 5000 : plan === "maintenance" ? 375 : null,
+        },
+      })),
+    };
+    const invalidPacket = structuredClone(packet);
+    invalidPacket.contracts[5].contract.price = 0;
+    await deny(invalidPacket);
+    check(
+      Number(
+        (
+          await one(
+            "select count(*) n from dmcrm_protection_contracts where batch_id=$1",
+            [packet.id],
+          )
+        ).n,
+      ) === 0,
+      "invalid standalone packet leaves no partial contracts",
+    );
+    const wrongVehicle = structuredClone(packet);
+    wrongVehicle.contracts[5].contract.vin = "1HGCV1F34JA000001";
+    await deny(wrongVehicle);
+    await deny(packet, salesman);
+    await cmd(packet);
+    await cmd(packet);
+    const packetRows = (
+      await client.query(
+        "select id,batch_id,contract_number,internal_cost,pricing_snapshot,quote_id,product_id from dmcrm_protection_contracts where batch_id=$1",
+        [packet.id],
+      )
+    ).rows;
+    check(
+      packetRows.length === 6 &&
+        new Set(packetRows.map((c) => c.contract_number)).size === 6,
+      "six standalone contracts, unique numbers, retry does not duplicate",
+    );
+    for (const item of packet.contracts) {
+      const c = item.contract;
+      const expected = await shortCost({
+        protection_plan: c.plan,
+        price: c.price,
+        term_months: c.term_months,
+        mileage_limit: c.term_miles ?? 0,
+        unlimited_miles: c.term_miles === null,
+        deductible: c.deductible,
+        maintenance_visits: c.maintenance_visits,
+      });
+      const row = packetRows.find((x) => x.id === item.id);
+      check(
+        row &&
+          row.quote_id === null &&
+          row.product_id === null &&
+          Number(row.internal_cost) === expected.cost &&
+          row.pricing_snapshot.revision === 7,
+        "each standalone contract freezes its own allocation",
+      );
+    }
     corrected.rates.deluxe.amount = 799;
     await cmd({
       type: "save_product_pricing",

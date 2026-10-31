@@ -1,17 +1,19 @@
 "use client";
 import { useRef, useState } from "react";
-import { ShieldCheck } from "lucide-react";
 import { dayKey, fullMoney, type Workspace, type Quote } from "../lib/model";
 import type { FIProduct } from "../lib/operations";
-import { protectionCost } from "../lib/protection-pricing";
 import type { ManagementRun } from "./ServiceWorkspace";
 import { Modal } from "./ui";
-import { ProtectionCostSummary } from "./ProtectionCostSummary";
-import { ProtectionTermChoices } from "./ProtectionTermChoices";
+import { ProtectionQuoteProducts } from "./ProtectionQuoteProducts";
+import {
+  newProtectionQuoteItem,
+  protectionQuoteCoverage,
+  protectionQuoteProductSchema,
+  type ProtectionQuote,
+} from "../lib/protection-quote";
 import { ProtectionPDFPreview } from "./ProtectionPDFPreview";
 import {
   protectionDefaults,
-  protectionDeductibles,
   protectionDraft,
   protectionExpiry,
   protectionInputSchema,
@@ -24,7 +26,6 @@ import {
 import {
   isMechanicalPlan,
   protectionDescriptions,
-  type ProtectionPlan,
 } from "../lib/protection-programs";
 
 type Props = {
@@ -51,8 +52,20 @@ export function ProtectionIssue({
   onClose,
   onIssued,
 }: Props) {
-  const [ids] = useState(() =>
+  const [linkedIds] = useState(() =>
     Array.from({ length: products?.length ?? 1 }, () => crypto.randomUUID()),
+  );
+  const pricing = ws.product_pricing?.[0];
+  const [items, setItems] = useState(() => [
+    newProtectionQuoteItem(
+      crypto.randomUUID(),
+      "deluxe",
+      pricing?.active?.annual_miles,
+    ),
+  ]);
+  const ids = quote ? linkedIds : items.map((p) => p.id);
+  const [quotePreview, setQuotePreview] = useState<ProtectionQuote | null>(
+    null,
   );
   const [batchId] = useState(() => crypto.randomUUID());
   const request = useRef({ payload: "", id: "" });
@@ -73,32 +86,42 @@ export function ProtectionIssue({
   const form = useRef<HTMLFormElement>(null),
     submitting = useRef(false);
   const linked = !!quote,
-    blocked = busy || saving,
-    plan = (values.plan || "deluxe") as ProtectionPlan,
-    mechanical = isMechanicalPlan(plan);
+    blocked = busy || saving;
   const update = (key: string, value: string) => {
     setValues((v) => ({ ...v, [key]: value }));
     setReviewed(false);
     setError("");
   };
-  const unlimited = plan === "appearance" || values.unlimited_miles === "true";
-  const pricing = ws.product_pricing?.[0];
-  const allocation =
-    !linked && pricing?.active && pricing.active_revision
-      ? protectionCost(
-          {
-            protection_plan: plan,
-            term_months: Number(values.term_months),
-            mileage_limit: Number(values.term_miles),
-            unlimited_miles: unlimited,
-            maintenance_visits: Number(values.maintenance_visits),
-            deductible: Number(values.deductible ?? 0),
-            price: Number(values.price),
-          },
-          pricing.active,
-          pricing.active_revision,
-        )
-      : null;
+  function printQuote() {
+    const coverages = [];
+    for (const item of items) {
+      const parsed = protectionQuoteProductSchema.safeParse(
+        protectionQuoteCoverage(item),
+      );
+      if (!parsed.success) {
+        setError(
+          `${protectionPlans[item.plan]}: ${parsed.error.issues
+            .slice(0, 2)
+            .map(
+              (x) => `${x.path.join(" ").replaceAll("_", " ")}: ${x.message}`,
+            )
+            .join(" · ")}`,
+        );
+        return;
+      }
+      coverages.push(parsed.data);
+    }
+    setError("");
+    setQuotePreview({
+      prepared_on: dayKey(),
+      holder_name: values.holder_name || "",
+      vehicle: [values.year, values.make, values.model]
+        .filter(Boolean)
+        .join(" "),
+      vin: values.vin || "",
+      products: coverages,
+    });
+  }
   function inputs(): ProtectionInput[] | null {
     const common = {
       ...values,
@@ -111,31 +134,17 @@ export function ProtectionIssue({
         ? Number(values.start_miles)
         : undefined,
     };
-    const coverages = products?.map((p) => {
-      const coverage = protectionProductInput(p);
-      return {
-        ...coverage,
-        claim_limit:
-          coverage.claim_limit === undefined
-            ? Number(values.claim_limit)
-            : coverage.claim_limit,
-      };
-    }) ?? [
-      {
-        plan,
-        deductible: Number(values.deductible ?? 0),
-        price: Number(values.price),
-        term_months: Number(values.term_months),
-        term_miles: unlimited ? null : Number(values.term_miles),
-        maintenance_visits:
-          plan === "maintenance" ? Number(values.maintenance_visits) : null,
-        claim_limit: mechanical
-          ? Number(values.claim_limit)
-          : plan === "maintenance"
-            ? Number(values.maintenance_visits) * 125
-            : null,
-      },
-    ];
+    const coverages =
+      products?.map((p) => {
+        const coverage = protectionProductInput(p);
+        return {
+          ...coverage,
+          claim_limit:
+            coverage.claim_limit === undefined
+              ? Number(values.claim_limit)
+              : coverage.claim_limit,
+        };
+      }) ?? items.map(protectionQuoteCoverage);
     const result: ProtectionInput[] = [];
     for (const coverage of coverages) {
       const parsed = protectionInputSchema.safeParse({
@@ -237,7 +246,9 @@ export function ProtectionIssue({
     <Modal
       wide
       title={
-        linked ? "Contract selected products" : "Issue protection contract"
+        linked
+          ? "Contract selected products"
+          : "Quote & issue protection products"
       }
       subtitle={
         linked
@@ -248,13 +259,6 @@ export function ProtectionIssue({
         if (!blocked) onClose();
       }}
     >
-      {!linked && (
-        <p className="ops-help">
-          {allocation
-            ? "Coverage costs and claims funding are shown below. These amounts are excluded from the contract PDF."
-            : "Automatic cost schedule is inactive or coverage is incomplete. No new cost will be assumed for this standalone contract."}
-        </p>
-      )}
       <form
         ref={form}
         className="modal-form protection-form"
@@ -270,20 +274,14 @@ export function ProtectionIssue({
             const { buildProtectionPacketPdf } =
               await import("../lib/protection-pdf");
             await buildProtectionPacketPdf(draft(contracts), undefined, true);
-            const payload = linked
-              ? {
-                  type: "issue_protection_batch" as const,
-                  id: batchId,
-                  contracts: contracts.map((contract, i) => ({
-                    id: ids[i],
-                    contract,
-                  })),
-                }
-              : {
-                  type: "issue_protection" as const,
-                  id: ids[0],
-                  contract: contracts[0],
-                };
+            const payload = {
+              type: "issue_protection_batch" as const,
+              id: batchId,
+              contracts: contracts.map((contract, i) => ({
+                id: ids[i],
+                contract,
+              })),
+            };
             const serialized = JSON.stringify(payload);
             if (request.current.payload !== serialized)
               request.current = {
@@ -308,6 +306,32 @@ export function ProtectionIssue({
           }
         }}
       >
+        {!linked && (
+          <>
+            <ProtectionQuoteProducts
+              items={items}
+              pricing={pricing}
+              disabled={blocked}
+              issuedOn={values.issued_on}
+              startMiles={values.start_miles}
+              onChange={(next) => {
+                setItems(next);
+                setReviewed(false);
+                setError("");
+              }}
+            />
+            <div className="ops-actions">
+              <button
+                className="btn"
+                type="button"
+                disabled={blocked}
+                onClick={printQuote}
+              >
+                Preview / print quote
+              </button>
+            </div>
+          </>
+        )}
         {products && (
           <fieldset disabled={blocked}>
             <legend>Selected products · {products.length} new contracts</legend>
@@ -421,130 +445,6 @@ export function ProtectionIssue({
               )}
           </div>
         </fieldset>
-        {!linked && (
-          <fieldset disabled={blocked}>
-            <legend>Product and benefits</legend>
-            {mechanical && (
-              <ProtectionTermChoices
-                months={Number(values.term_months)}
-                miles={Number(values.term_miles)}
-                annualMiles={pricing?.active?.annual_miles}
-                disabled={blocked}
-                onChange={(months, miles) => {
-                  setValues((v) => ({
-                    ...v,
-                    term_months: String(months),
-                    term_miles: String(miles),
-                  }));
-                  setReviewed(false);
-                  setError("");
-                }}
-              />
-            )}
-            <div className="ops-form-grid">
-              <label>
-                Coverage plan
-                <select
-                  value={plan}
-                  onChange={(e) => {
-                    const next = e.target.value as ProtectionPlan;
-                    setValues((v) => ({
-                      ...v,
-                      plan: next,
-                      deductible: isMechanicalPlan(next) ? v.deductible : "0",
-                      term_months: next === "appearance" ? "96" : v.term_months,
-                      unlimited_miles: next === "appearance" ? "true" : "false",
-                      maintenance_visits: "",
-                    }));
-                    setReviewed(false);
-                  }}
-                >
-                  {Object.entries(protectionPlans).map(([k, v]) => (
-                    <option key={k} value={k}>
-                      {v}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {field("price", "Contract price", "number")}
-              {field(
-                "term_months",
-                "Term (months)",
-                "number",
-                true,
-                plan === "appearance",
-              )}
-              {!mechanical && (
-                <label>
-                  Coverage mileage
-                  <select
-                    disabled={plan === "appearance"}
-                    value={unlimited ? "true" : "false"}
-                    onChange={(e) => update("unlimited_miles", e.target.value)}
-                  >
-                    <option value="false">Additional mile allowance</option>
-                    <option value="true">Unlimited mileage</option>
-                  </select>
-                </label>
-              )}
-              {!unlimited &&
-                field("term_miles", "Additional covered miles", "number")}
-              {mechanical ? (
-                <>
-                  <label>
-                    Deductible per repair visit
-                    <select
-                      value={values.deductible ?? "0"}
-                      onChange={(e) => update("deductible", e.target.value)}
-                    >
-                      {protectionDeductibles.map((d) => (
-                        <option key={d} value={d}>
-                          {fullMoney(d)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  {field(
-                    "claim_limit",
-                    "Aggregate repair benefit limit",
-                    "number",
-                  )}
-                </>
-              ) : (
-                <label>
-                  Deductible
-                  <input value="$0" readOnly />
-                </label>
-              )}
-              {plan === "maintenance" &&
-                field(
-                  "maintenance_visits",
-                  "Included maintenance visits",
-                  "number",
-                )}
-            </div>
-            {allocation && (
-              <ProtectionCostSummary
-                snapshot={allocation}
-                price={Number(values.price)}
-              />
-            )}
-            <p className="ops-help">
-              {protectionDescriptions[plan]} See the agreement for coverage and
-              exclusions.
-            </p>
-            <div className="protection-expiry">
-              <ShieldCheck size={21} />
-              <div>
-                <small>COVERAGE EXPIRATION</small>
-                <strong>
-                  {expiry(Number(values.term_months))} {unlimited ? "·" : "or"}{" "}
-                  {endMiles(unlimited ? null : Number(values.term_miles))}
-                </strong>
-              </div>
-            </div>
-          </fieldset>
-        )}
         <fieldset disabled={blocked}>
           <legend>Lienholder · shared by all products</legend>
           <div className="ops-form-grid">
@@ -596,7 +496,7 @@ export function ProtectionIssue({
               if (c) setPreview(draft(c));
             }}
           >
-            Preview {linked ? "all contracts" : "contract"}
+            Preview {ids.length > 1 ? "all contracts" : "contract"}
           </button>
           <button
             className="btn primary"
@@ -604,12 +504,17 @@ export function ProtectionIssue({
           >
             {saving
               ? "Preparing contracts…"
-              : linked
-                ? `Issue ${products!.length} ${products!.length === 1 ? "contract" : "contracts"} & print`
-                : "Issue contract"}
+              : `Issue ${ids.length} ${ids.length === 1 ? "contract" : "contracts"} & print`}
           </button>
         </div>
       </form>
+      {quotePreview && (
+        <ProtectionPDFPreview
+          protectionQuote={quotePreview}
+          demo={demo}
+          onClose={() => setQuotePreview(null)}
+        />
+      )}
       {preview && (
         <ProtectionPDFPreview
           contracts={preview}

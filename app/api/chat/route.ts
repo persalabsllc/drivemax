@@ -1,3 +1,4 @@
+import { linkWebsiteActivity } from "../../../lib/website-activity-server";
 import { randomBytes, randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
 import { after, NextResponse } from "next/server";
@@ -124,6 +125,7 @@ export async function POST(request: Request) {
         path: "/",
         maxAge: 7 * 86400,
       });
+      await linkWebsiteActivity("chat", credential.id);
       return json({ conversation });
     }
     if (!credential)
@@ -151,6 +153,8 @@ export async function POST(request: Request) {
       } else context = { vehicle_id: null };
     }
     const result = await chatRPC(credential, action, { ...data, ...context });
+    if (action === "contact" || action === "book")
+      await linkWebsiteActivity("chat", credential.id);
     if (action === "slots") return json(result);
     if (action === "message" && result.run_id) {
       const saved = credential;

@@ -31,6 +31,7 @@ export default function VehicleGallery({
             type="button"
             onClick={() => setIndex(i)}
             aria-label={`Show photo ${i + 1}`}
+            data-activity="photo_view"
             aria-pressed={index === i}
           >
             <Image src={src} alt="" width={140} height={100} />

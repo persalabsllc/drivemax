@@ -1,3 +1,4 @@
+import { linkWebsiteActivity } from "../../../lib/website-activity-server";
 import { after } from "next/server";
 import { backendReady, db } from "../../../lib/backend";
 import { dispatchLeadNotificationsSafely } from "../../../lib/lead-notifications";
@@ -92,6 +93,7 @@ export async function POST(request: Request) {
     payload = captureContactNotice(payload, new Date().toISOString());
     const { data: leadId, error } = await db().rpc("submit_lead", { payload });
     if (error) throw error;
+    await linkWebsiteActivity("form", leadId);
     // The database queues the alert in the same transaction as the inquiry.
     after(async () => {
       await Promise.all([

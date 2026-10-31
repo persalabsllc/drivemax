@@ -59,8 +59,17 @@ export function ProtectionWorkspace(props: Context) {
   const [query, setQuery] = useState(""),
     [filter, setFilter] = useState("all"),
     [selected, setSelected] = useState(""),
-    [issuing, setIssuing] = useState(false);
+    [issuing, setIssuing] = useState(false),
+    [printingIds, setPrintingIds] = useState<string[]>([]);
   const { ws } = props;
+  const printingContracts = useMemo(
+    () =>
+      printingIds.flatMap((id) => {
+        const contract = ws.protection_contracts?.find((c) => c.id === id);
+        return contract ? [contract] : [];
+      }),
+    [printingIds, ws.protection_contracts],
+  );
   if (!canManage(ws.member.role)) return null;
   const contracts = ws.protection_contracts ?? [],
     today = dayKey(),
@@ -94,11 +103,11 @@ export function ProtectionWorkspace(props: Context) {
         <>
           <SectionTitle
             title="Drive Max Protection"
-            subtitle="Issue coverage, find a contract, or calculate a cancellation."
+            subtitle="Quote and issue protection products, find a contract, or calculate a cancellation."
             action={
               <button className="btn primary" onClick={() => setIssuing(true)}>
                 <Plus size={16} />
-                Issue protection contract
+                Quote / issue products
               </button>
             }
           />
@@ -199,9 +208,18 @@ export function ProtectionWorkspace(props: Context) {
           onIssued={(ids) => {
             setIssuing(false);
             setSelected(ids[0]);
+            setPrintingIds(ids);
           }}
         />
       )}
+      {printingIds.length > 0 &&
+        printingContracts.length === printingIds.length && (
+          <ProtectionPDFPreview
+            contracts={printingContracts}
+            demo={props.demo}
+            onClose={() => setPrintingIds([])}
+          />
+        )}
     </section>
   );
 }

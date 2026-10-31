@@ -1,9 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
+import type { ProtectionQuote } from "../lib/protection-quote";
 import type { ProtectionContract } from "../lib/protection";
 import { Modal } from "./ui";
 
 export function ProtectionPDFPreview({
+  protectionQuote,
   contract,
   contracts,
   demo,
@@ -11,6 +13,7 @@ export function ProtectionPDFPreview({
   cancellation = false,
   onClose,
 }: {
+  protectionQuote?: ProtectionQuote;
   contract?: ProtectionContract;
   contracts?: ProtectionContract[];
   demo: boolean;
@@ -25,11 +28,16 @@ export function ProtectionPDFPreview({
       objectUrl = "";
     async function load() {
       const packet = contracts ?? (contract ? [contract] : []);
-      if (!packet.length) throw Error("No contracts selected.");
+      if (!protectionQuote && !packet.length)
+        throw Error("No contracts selected.");
       let blob: Blob;
-      if (demo || draft) {
+      if (protectionQuote || demo || draft) {
         const [
-          { buildProtectionPdf, buildProtectionPacketPdf },
+          {
+            buildProtectionPdf,
+            buildProtectionPacketPdf,
+            buildProtectionQuotePdf,
+          },
           response,
           regular,
           bold,
@@ -48,9 +56,11 @@ export function ProtectionPDFPreview({
           regular: new Uint8Array(await regular.arrayBuffer()),
           bold: new Uint8Array(await bold.arrayBuffer()),
         };
-        const bytes = cancellation
-          ? await buildProtectionPdf(packet[0], logo, draft, true, fonts)
-          : await buildProtectionPacketPdf(packet, logo, draft, fonts);
+        const bytes = protectionQuote
+          ? await buildProtectionQuotePdf(protectionQuote, logo, fonts)
+          : cancellation
+            ? await buildProtectionPdf(packet[0], logo, draft, true, fonts)
+            : await buildProtectionPacketPdf(packet, logo, draft, fonts);
         blob = new Blob([new Uint8Array(bytes)], { type: "application/pdf" });
       } else {
         const response = await fetch(
@@ -85,23 +95,27 @@ export function ProtectionPDFPreview({
       stopped = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [contract, contracts, demo, draft, cancellation]);
+  }, [contract, contracts, protectionQuote, demo, draft, cancellation]);
   return (
     <Modal
       wide
       title={
-        draft
-          ? "Review contract before issuance"
-          : cancellation
-            ? "Cancellation statement"
-            : contracts
-              ? `Selected contracts · ${contracts.length}`
-              : (contract?.contract_number ?? "Contract PDF")
+        protectionQuote
+          ? "Protection product quote"
+          : draft
+            ? "Review contract before issuance"
+            : cancellation
+              ? "Cancellation statement"
+              : contracts
+                ? `Selected contracts · ${contracts.length}`
+                : (contract?.contract_number ?? "Contract PDF")
       }
       subtitle={
-        draft
-          ? "Draft only. Issue the contract to assign its permanent number."
-          : "Open the PDF to print, or download a copy."
+        protectionQuote
+          ? "Customer prices and coverage only. No contracts have been issued."
+          : draft
+            ? "Draft only. Issue the contract to assign its permanent number."
+            : "Open the PDF to print, or download a copy."
       }
       onClose={onClose}
     >
@@ -126,12 +140,19 @@ export function ProtectionPDFPreview({
               <a
                 className="btn"
                 href={url}
-                download={`${draft ? "Drive-Max-Protection-draft" : contracts ? "Drive-Max-Protection-Packet" : (contract?.contract_number ?? "Contract PDF")}${cancellation ? "-cancellation" : ""}.pdf`}
+                download={`${protectionQuote ? "Drive-Max-Protection-Quote" : draft ? "Drive-Max-Protection-draft" : contracts ? "Drive-Max-Protection-Packet" : (contract?.contract_number ?? "Contract PDF")}${cancellation ? "-cancellation" : ""}.pdf`}
               >
                 Download PDF
               </a>
             </div>
-            <iframe title="Drive Max Protection contract PDF" src={url} />
+            <iframe
+              title={
+                protectionQuote
+                  ? "Drive Max Protection quote PDF"
+                  : "Drive Max Protection contract PDF"
+              }
+              src={url}
+            />
           </>
         )}
       </div>

@@ -20,22 +20,9 @@ import {
   protectionDescriptions,
   type ProtectionPlan,
 } from "../lib/protection-programs";
-function programValues(
-  p: FIProduct,
-  plan?: ProtectionPlan,
-): Partial<FIProduct> {
-  if (!plan)
-    return {
-      protection_plan: undefined,
-      unlimited_miles: undefined,
-      maintenance_visits: undefined,
-      claim_limit: undefined,
-      provider: "",
-      name: productKinds[p.kind],
-      description: "",
-      contract_number: "",
-    };
+function programValues(p: FIProduct, plan: ProtectionPlan): Partial<FIProduct> {
   return {
+    kind: protectionKind(plan),
     protection_plan: plan,
     provider: protectionIssuer.name,
     name: `Drive Max Protection ${protectionPlans[plan]}`,
@@ -160,8 +147,8 @@ export function FIProducts({
       title={menuCatalog ? "Menu products" : "F&I products"}
       subtitle={
         menuCatalog
-          ? "Set coverage, provider cost and customer price, then choose which options include each product."
-          : "Retail prices flow into the quote. Provider costs remain internal."
+          ? "Choose Drive Max Protection coverage, cost and customer price, then build your menu options."
+          : "Drive Max Protection prices flow into the quote. Product costs remain internal."
       }
       wide
       onClose={onClose}
@@ -171,6 +158,10 @@ export function FIProducts({
         onSubmit={(e) => {
           e.preventDefault();
           try {
+            if (items.some((p) => !p.protection_plan))
+              throw Error(
+                "Choose a Drive Max Protection plan for each product, or remove the previously saved product before applying.",
+              );
             const parsed = items.map((p) => productSchema.parse(p));
             if (parsed.length > 30) throw Error("Up to 30 products per menu");
             if (sum(parsed.map((p) => p.price)) > 1000000)
@@ -203,28 +194,24 @@ export function FIProducts({
               <label>
                 Product
                 <select
-                  value={p.kind}
+                  value={p.protection_plan ?? ""}
+                  required
                   disabled={readOnly}
                   onChange={(e) => {
-                    const kind = e.target.value as FIProduct["kind"];
-                    const plan = [
-                      "maintenance",
-                      "tire_wheel",
-                      "pdr",
-                      "appearance",
-                      "key_replacement",
-                    ].includes(kind)
-                      ? (kind as ProtectionPlan)
-                      : undefined;
-                    update(p.id, {
-                      kind,
-                      ...programValues({ ...p, kind }, plan),
-                    });
+                    update(
+                      p.id,
+                      programValues(p, e.target.value as ProtectionPlan),
+                    );
                   }}
                 >
-                  {Object.entries(productKinds).map(([id, name]) => (
+                  {!p.protection_plan && (
+                    <option value="" disabled>
+                      {readOnly ? productName(p) : "Choose Drive Max coverage"}
+                    </option>
+                  )}
+                  {Object.entries(protectionPlans).map(([id, name]) => (
                     <option key={id} value={id}>
-                      {name}
+                      Drive Max Protection · {name}
                     </option>
                   ))}
                 </select>
@@ -274,39 +261,13 @@ export function FIProducts({
                 </div>
               )}
             </div>
+            {!readOnly && !p.protection_plan && (
+              <p className="ops-help">
+                Previously saved: {productName(p)}. Choose Drive Max coverage
+                above or remove this product before applying the updated quote.
+              </p>
+            )}
             <div className="ops-form-grid">
-              {!["gap", "other"].includes(p.kind) && (
-                <label>
-                  Contract program
-                  <select
-                    disabled={readOnly}
-                    value={p.protection_plan ?? ""}
-                    onChange={(e) =>
-                      update(
-                        p.id,
-                        programValues(
-                          p,
-                          (e.target.value || undefined) as
-                            | ProtectionPlan
-                            | undefined,
-                        ),
-                      )
-                    }
-                  >
-                    <option value="">Other / outside provider</option>
-                    {Object.entries(protectionPlans)
-                      .filter(
-                        ([key]) =>
-                          protectionKind(key as ProtectionPlan) === p.kind,
-                      )
-                      .map(([key, label]) => (
-                        <option value={key} key={key}>
-                          Drive Max Protection · {label}
-                        </option>
-                      ))}
-                  </select>
-                </label>
-              )}
               <label>
                 Product name (customer-facing)
                 <input
@@ -319,23 +280,15 @@ export function FIProducts({
               </label>
               <label>
                 Provider
-                <input
-                  disabled={readOnly || !!p.protection_plan}
-                  value={p.provider}
-                  maxLength={250}
-                  onChange={(e) => update(p.id, { provider: e.target.value })}
-                />
+                <input disabled value={p.provider} maxLength={250} />
               </label>
               <label>
                 Contract number
                 <input
-                  disabled={readOnly || !!p.protection_plan}
+                  disabled
                   placeholder={p.protection_plan ? "Assigned when issued" : ""}
                   value={p.contract_number}
                   maxLength={250}
-                  onChange={(e) =>
-                    update(p.id, { contract_number: e.target.value })
-                  }
                 />
               </label>
               <label>
@@ -456,7 +409,7 @@ export function FIProducts({
                   />
                 </label>
               )}
-              {money(p, "cost", "Provider cost")}
+              {money(p, "cost", "Product cost")}
               {money(p, "price", "Customer price")}
               <div className="ops-product-profit">
                 <small>Product gross</small>
@@ -473,7 +426,7 @@ export function FIProducts({
                 disabled={readOnly || !!p.protection_plan}
                 value={p.description ?? ""}
                 maxLength={400}
-                placeholder="Describe the actual coverage shown in the provider’s contract."
+                placeholder="Coverage is set by the selected Drive Max plan."
                 onChange={(e) => update(p.id, { description: e.target.value })}
               />
             </label>
@@ -501,7 +454,12 @@ export function FIProducts({
                 {
                   id: crypto.randomUUID(),
                   kind: "service_contract",
-                  provider: "",
+                  protection_plan: "deluxe",
+                  provider: protectionIssuer.name,
+                  name: `Drive Max Protection ${protectionPlans.deluxe}`,
+                  description:
+                    protectionDescriptions.deluxe +
+                    " See contract for terms and exclusions.",
                   contract_number: "",
                   term_months: 0,
                   mileage_limit: 0,
@@ -549,7 +507,6 @@ export function FIProducts({
               : "Save the proposal in Desking to retain these changes."}{" "}
           Drive Max programs print the selected terms. Appearance is eight years
           with unlimited mileage; maintenance requires a visit count.
-          Outside-provider products require their provider’s agreement.
         </p>
       </form>
     </Modal>

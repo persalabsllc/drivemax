@@ -915,6 +915,12 @@ export function CustomerProfile({
             opportunity={o}
             inventory={ws.inventory}
             quotes={ws.quotes}
+            canViewProfit={manager}
+            accounting={
+              manager
+                ? ws.sales?.find((s) => s.opportunity_id === o.id)?.accounting
+                : undefined
+            }
             busy={busy}
             onSave={(p) => run(p, "Desking version saved")}
             onPrint={(q) => onPrintQuote(effective, q)}

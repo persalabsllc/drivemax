@@ -1,0 +1,110 @@
+.desk-profit {
+  grid-column: 1 / -1;
+  min-width: 0;
+  border: 1px solid #d6e2e6;
+  border-radius: 9px;
+  background: #f5faf9;
+  padding: 12px 14px;
+}
+.desk-profit-heading,
+.desk-profit-total,
+.desk-profit-details dl > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.desk-profit-heading > span {
+  font-size: 12px;
+  font-weight: 650;
+  color: #334e59;
+}
+.desk-profit-heading small {
+  display: inline-block;
+  margin-left: 5px;
+  color: #637680;
+  font-size: 10px;
+  font-weight: 400;
+}
+.desk-profit-heading button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  flex-shrink: 0;
+  font-size: 12px;
+}
+.desk-profit-figures {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 13px 0;
+}
+.desk-profit-figures > div {
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #e1eae8;
+  border-radius: 7px;
+}
+.desk-profit dt,
+.desk-profit-total {
+  font-size: 11px;
+  color: #576d78;
+}
+.desk-profit dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.desk-profit-figures dd {
+  font-size: clamp(16px, 1.7vw, 23px);
+  font-weight: 650;
+  margin-top: 7px;
+  overflow-wrap: anywhere;
+}
+.desk-profit .gain {
+  color: #1c7157;
+}
+.desk-profit .loss {
+  color: #b72e43;
+}
+.desk-profit .missing {
+  color: #94601c;
+}
+.desk-profit-figures .missing {
+  font-size: 14px;
+}
+.desk-profit-total strong {
+  font-size: 14px;
+}
+.desk-profit-note,
+.desk-profit-details p {
+  font-size: 10px;
+  line-height: 1.6;
+  color: #637680;
+  margin: 9px 0 0;
+}
+.desk-profit-details {
+  border-top: 1px solid #dce7e4;
+  margin-top: 10px;
+  padding-top: 10px;
+}
+.desk-profit-details summary {
+  cursor: pointer;
+  font-size: 11px;
+  color: #405e6a;
+}
+.desk-profit-details dl {
+  margin: 10px 0 0;
+}
+.desk-profit-details dl > div {
+  padding: 4px 0;
+}
+.desk-profit-details dd {
+  font-size: 11px;
+  color: #405e6a;
+}
+@media print {
+  .desk-profit {
+    display: none !important;
+  }
+}

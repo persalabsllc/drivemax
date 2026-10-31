@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const CHAT_MODEL = "openai/gpt-6.1-terra";
+export const CHAT_ASSISTANT_PHOTO = "/chat/drive-max-ai-assistant.webp";
 export const CHAT_NOTICE = "website-chat-v1";
 export type ChatVehicle = {
   title: string;

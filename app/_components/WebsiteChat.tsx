@@ -20,17 +20,18 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import type {
-  ChatConfig,
-  ChatSnapshot,
-  ChatSlot,
+import {
+  CHAT_ASSISTANT_PHOTO,
+  type ChatConfig,
+  type ChatSnapshot,
+  type ChatSlot,
 } from "../../lib/website-chat";
 
 const fallbackConfig: ChatConfig = {
   enabled: true,
   public_name: "Kyle's AI assistant",
   greeting: "Hi! I'm Kyle's AI assistant at Drive Max. How can I help?",
-  photo: "/staff/kyle-kratoville-team.webp",
+  photo: CHAT_ASSISTANT_PHOTO,
   phone: "252-541-0040",
   booking_enabled: true,
 };
@@ -271,7 +272,7 @@ export default function WebsiteChat() {
           <header className="dm-chat-header">
             <img
               src={config.photo}
-              alt="Kyle at Drive Max"
+              alt="AI-generated Drive Max assistant portrait"
               width={48}
               height={48}
             />

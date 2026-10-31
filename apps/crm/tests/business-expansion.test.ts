@@ -1,3 +1,4 @@
+import { verifyFinancePermissions } from "../scripts/verify-finance-permissions.mjs";
 import { verifyProtectionClaims } from "../scripts/verify-protection-claims.mjs";
 import { verifyProtectionPricing } from "../scripts/verify-protection-pricing.mjs";
 import { verifyApprovedPricing } from "./fixtures/approved-protection-pricing";
@@ -464,6 +465,7 @@ test("database release checks enforce duplicate review, money and advertising hi
     await verifyProtectionPackets(pg);
     await verifyProtectionPricing(pg);
     await verifyProtectionClaims(pg);
+    await verifyFinancePermissions(pg);
     await verifyCustomerLinks(pg);
     for (const [file, name] of [
       ["website-intake", "verifyWebsiteIntake"],

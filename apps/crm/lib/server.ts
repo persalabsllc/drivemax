@@ -1,8 +1,9 @@
+import { restrictWorkspace } from "./workspace-permissions";
 import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { canManage, type Workspace } from "./model";
+import { type Workspace } from "./model";
 import { emailConnection } from "./messaging";
 import { readWorkspaceRecords } from "./workspace-records";
 import { readIdleState } from "./idle-server";
@@ -63,7 +64,8 @@ export async function session() {
     data: { user },
     error,
   } = await a.auth.getUser();
-  if (error || !user?.email_confirmed_at || idle.userId !== user.id) return null;
+  if (error || !user?.email_confirmed_at || idle.userId !== user.id)
+    return null;
   const { data, error: e } = await db()
     .from("dmcrm_members")
     .select("org_id,user_id,name,role")
@@ -76,13 +78,15 @@ export async function session() {
   if (!data) return null;
   const { data: staff, error: staffError } = await db()
     .from("dmcrm_staff")
-    .select("id,name")
+    .select("id,name,role")
     .eq("org_id", data.org_id)
     .eq("user_id", user.id)
     .eq("active", true)
     .maybeSingle();
   if (staffError) throw new Error("CRM team unavailable");
-  return staff ? { ...data, name: staff.name, staff_id: staff.id } : null;
+  return staff && staff.role === data.role
+    ? { ...data, name: staff.name, staff_id: staff.id }
+    : null;
 }
 export async function workspace(
   s: NonNullable<Awaited<ReturnType<typeof session>>>,
@@ -126,17 +130,7 @@ export async function workspace(
     throw new Error("Website inventory status unavailable");
   if (emailSettings.error || emailSignature.error)
     throw new Error("Email settings unavailable");
-  if (!canManage(s.role)) {
-    const assigned = new Set(
-      records.opportunities
-        .filter((o) => o.assigned_to === s.staff_id)
-        .map((o) => o.id),
-    );
-    records.deal_files = records.deal_files?.filter(
-      (f) => !!f.opportunity_id && assigned.has(f.opportunity_id),
-    );
-  }
-  return {
+  return restrictWorkspace({
     org,
     attention: alerts,
     website_inventory: websiteInventory.data,
@@ -155,7 +149,7 @@ export async function workspace(
       staff_id: s.staff_id,
     },
     ...records,
-  } as Workspace;
+  } as Workspace);
 }
 
 export async function attention(

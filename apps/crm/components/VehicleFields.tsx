@@ -251,10 +251,12 @@ export function VehicleFacts({
   vehicle,
   today,
   compact = false,
+  showCosts = true,
 }: {
   vehicle: VehicleDetails;
   today: string;
   compact?: boolean;
+  showCosts?: boolean;
 }) {
   const age = vehicle.acquired_on
     ? Math.max(
@@ -292,18 +294,22 @@ export function VehicleFacts({
         <span>Asking price</span>
         <strong>{dollars(vehicle.price)}</strong>
       </div>
-      <div>
-        <span>Vehicle cost · internal</span>
-        <strong>{dollars(vehicle.cost)}</strong>
-      </div>
-      <div>
-        <span>Total invested · internal</span>
-        <strong>
-          {vehicle.cost === null
-            ? "—"
-            : dollars(vehicle.cost + (vehicle.recon ?? 0))}
-        </strong>
-      </div>
+      {showCosts && (
+        <>
+          <div>
+            <span>Vehicle cost · internal</span>
+            <strong>{dollars(vehicle.cost)}</strong>
+          </div>
+          <div>
+            <span>Total invested · internal</span>
+            <strong>
+              {vehicle.cost == null
+                ? "—"
+                : dollars(vehicle.cost + (vehicle.recon ?? 0))}
+            </strong>
+          </div>
+        </>
+      )}
     </div>
   );
 }

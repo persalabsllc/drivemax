@@ -1,7 +1,7 @@
+import { canDesk, canReadDealFile } from "../../../../lib/permissions";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { db, session } from "../../../../lib/server";
-import { canManage } from "../../../../lib/model";
 export const dynamic = "force-dynamic";
 export async function GET(
   req: NextRequest,
@@ -15,12 +15,14 @@ export async function GET(
   const d = db(),
     { data: f, error } = await d
       .from("dmcrm_deal_files")
-      .select("path,name,opportunity_id")
+      .select("path,name,kind,opportunity_id")
       .eq("org_id", s.org_id)
       .eq("id", id)
       .maybeSingle();
   if (error || !f) return new Response("Not found", { status: 404 });
-  if (!canManage(s.role)) {
+  if (!canReadDealFile(s.role, f))
+    return new Response("Access denied", { status: 403 });
+  if (!canDesk(s.role)) {
     const { data: o } = await d
       .from("dmcrm_opportunities")
       .select("assigned_to")

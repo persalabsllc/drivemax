@@ -53,8 +53,8 @@ test("workspace responses limit title files, tags, documents and history to the 
       { id: "other-event", case_id: "other-case" },
     ],
     deal_files: [
-      { id: "own-file", opportunity_id: "own-op" },
-      { id: "other-file", opportunity_id: "other-op" },
+      { id: "own-file", opportunity_id: "own-op", kind: "insurance" },
+      { id: "other-file", opportunity_id: "other-op", kind: "insurance" },
     ],
   };
   const client = {

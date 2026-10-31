@@ -83,6 +83,8 @@ export function InventoryView({
   websiteConnected = false,
   onRefresh,
   busy = false,
+  canEdit = true,
+  showCosts = true,
 }: {
   inventory: InventoryVehicle[];
   onEdit: (v: InventoryVehicle) => void;
@@ -91,6 +93,8 @@ export function InventoryView({
   websiteConnected?: boolean;
   onRefresh?: () => void;
   busy?: boolean;
+  canEdit?: boolean;
+  showCosts?: boolean;
 }) {
   const [filter, setFilter] = useState("in_stock"),
     [search, setSearch] = useState("");
@@ -116,18 +120,20 @@ export function InventoryView({
           <span>In stock</span>
           <strong>{stock.length}</strong>
         </div>
-        <div>
-          <span>Total invested</span>
-          <strong>
-            {money(stock.reduce((s, v) => s + v.cost + v.recon, 0))}
-          </strong>
-        </div>
+        {showCosts && (
+          <div>
+            <span>Total invested</span>
+            <strong>
+              {money(stock.reduce((s, v) => s + v.cost + v.recon, 0))}
+            </strong>
+          </div>
+        )}
         <div>
           <span>Retail asking value</span>
           <strong>{money(stock.reduce((s, v) => s + v.price, 0))}</strong>
         </div>
       </div>
-      {websiteConnected && (
+      {websiteConnected && canEdit && (
         <section
           className="website-inventory-note"
           aria-label="Website inventory connection"
@@ -194,10 +200,10 @@ export function InventoryView({
                   <th>Vehicle / stock</th>
                   <th>Miles</th>
                   <th>Days on hand</th>
-                  <th>Cost</th>
+                  {showCosts && <th>Cost</th>}
                   <th>Asking price</th>
                   <th>Status</th>
-                  {websiteConnected && <th>Website</th>}
+                  {websiteConnected && canEdit && <th>Website</th>}
                   <th />
                 </tr>
               </thead>
@@ -205,7 +211,11 @@ export function InventoryView({
                 {selected.map((v) => (
                   <tr key={v.id}>
                     <td>
-                      <button className="name-button" onClick={() => onEdit(v)}>
+                      <button
+                        className="name-button"
+                        disabled={!canEdit}
+                        onClick={() => onEdit(v)}
+                      >
                         {vehicleName(v)}
                       </button>
                       <small className="subtext">
@@ -221,32 +231,36 @@ export function InventoryView({
                         {daysOnHand(v.acquired_on, today)} days
                       </span>
                     </td>
-                    <td>
-                      {money(v.cost)}
-                      <small className="subtext">
-                        {money(v.cost + v.recon)} invested
-                      </small>
-                    </td>
+                    {showCosts && (
+                      <td>
+                        {money(v.cost)}
+                        <small className="subtext">
+                          {money(v.cost + v.recon)} invested
+                        </small>
+                      </td>
+                    )}
                     <td>
                       <strong>{money(v.price)}</strong>
                     </td>
                     <td>
                       <Badge value={v.status} />
                     </td>
-                    {websiteConnected && (
+                    {websiteConnected && canEdit && (
                       <WebsiteInventoryCell
                         vehicle={v}
                         link={websiteById.get(v.id)}
                       />
                     )}
                     <td>
-                      <button
-                        className="icon-btn"
-                        aria-label={`Edit stock ${v.stock_number}`}
-                        onClick={() => onEdit(v)}
-                      >
-                        <ArrowUpRight size={18} />
-                      </button>
+                      {canEdit && (
+                        <button
+                          className="icon-btn"
+                          aria-label={`Edit stock ${v.stock_number}`}
+                          onClick={() => onEdit(v)}
+                        >
+                          <ArrowUpRight size={18} />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -266,10 +280,12 @@ export function InventoryView({
                 : "Add your vehicles once, then select them from any customer profile."
             }
             action={
-              <button className="btn primary" onClick={onAdd}>
-                <Plus size={16} />
-                Add vehicle
-              </button>
+              canEdit && (
+                <button className="btn primary" onClick={onAdd}>
+                  <Plus size={16} />
+                  Add vehicle
+                </button>
+              )
             }
           />
         )}

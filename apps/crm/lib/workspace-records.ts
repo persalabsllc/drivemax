@@ -1,3 +1,8 @@
+import { canDesk } from "./permissions";
+import {
+  canReadWorkspaceTable,
+  restrictRecords,
+} from "./workspace-permissions";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { canManage, type Workspace } from "./model";
 export type WorkspaceScope = {
@@ -62,28 +67,7 @@ export async function readWorkspaceRecords(
 ): Promise<WorkspaceRecords> {
   // Pages are fetched fully in batches; never silently truncate the customer book.
   async function all(table: string) {
-    if (
-      [
-        "pricing_events",
-        "protection_fund_entries",
-        "protection_contracts",
-        "protection_events",
-        "protection_claims",
-        "protection_claim_events",
-        "trades",
-        "service_orders",
-        "service_receipts",
-        "management_events",
-        "saved_reports",
-        "report_runs",
-        "money_plans",
-        "money_entries",
-        "ad_spend",
-        "business_events",
-      ].includes(table) &&
-      !canManage(s.role)
-    )
-      return [];
+    if (!canReadWorkspaceTable(s.role, table)) return [];
     const rows: unknown[] = [];
     for (let start = 0; ; start += 1000) {
       let query = d
@@ -94,7 +78,7 @@ export async function readWorkspaceRecords(
             : table === "facebook_messages"
               ? "id,org_id,customer_id,opportunity_id,body,referral,received_at"
               : table === "sales" && !canManage(s.role)
-                ? "id,org_id,opportunity_id,customer_id,sold_on,status,unwound_at,unwind_reason"
+                ? "id,org_id,opportunity_id,customer_id,sold_on,status,created_at,unwound_at,unwind_reason"
                 : table === "staff" && !canManage(s.role)
                   ? "id,org_id,user_id,name,email,role,active,created_at"
                   : table === "deal_files"
@@ -133,7 +117,7 @@ export async function readWorkspaceRecords(
     customerIds.has(p.id),
   );
   // File names and metadata follow the same scope as the private download route.
-  if (!canManage(s.role)) {
+  if (!canDesk(s.role)) {
     const assigned = new Set(
       records.opportunities
         .filter((o) => o.assigned_to === s.staff_id)
@@ -154,5 +138,5 @@ export async function readWorkspaceRecords(
       (f) => f.opportunity_id && assigned.has(f.opportunity_id),
     );
   }
-  return records;
+  return restrictRecords(records, s.role, s.staff_id);
 }

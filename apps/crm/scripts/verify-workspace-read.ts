@@ -1,3 +1,4 @@
+import { managementTables, deskingTables } from "../lib/workspace-permissions";
 import { createClient } from "@supabase/supabase-js";
 import { pricingConfigSchema, protectionCost } from "../lib/protection-pricing";
 import {
@@ -42,7 +43,7 @@ async function main() {
     console.log(
       "Verified production owner name agrees across staff and membership.",
     );
-    for (const role of ["owner", "sales"] as const) {
+    for (const role of ["owner", "finance", "sales"] as const) {
       let records: Awaited<ReturnType<typeof readWorkspaceRecords>> | undefined;
       for (let attempt = 0; attempt < 11; attempt++) {
         try {
@@ -95,6 +96,19 @@ async function main() {
           "Verified paid-claim tracking reconciles to contract payments.",
         );
       }
+      if (
+        role !== "owner" &&
+        managementTables.some((table) => records![table]?.length)
+      )
+        throw new Error("Management data escaped role restrictions");
+      if (
+        role === "sales" &&
+        (deskingTables.some((table) => records![table]?.length) ||
+          records.inventory.some((v) => "cost" in v || "recon" in v))
+      )
+        throw new Error(
+          "Desking data or vehicle costs escaped salesperson restrictions",
+        );
       const pricing = records.product_pricing?.[0];
       if (role === "owner" && pricing?.active && pricing.active_revision) {
         const config = pricingConfigSchema.parse(pricing.active);
@@ -122,7 +136,7 @@ async function main() {
       }
     }
     console.log(
-      `Verified production workspace REST reads: ${workspaceTables.length} tables with owner and salesperson filters.`,
+      `Verified production workspace REST reads: ${workspaceTables.length} tables with owner, Finance Manager and salesperson filters.`,
     );
   } catch (error) {
     console.error(

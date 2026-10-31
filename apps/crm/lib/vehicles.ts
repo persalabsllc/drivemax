@@ -72,7 +72,11 @@ export const vehicleName = (
   v: Pick<VehicleDetails, "year" | "make" | "model" | "trim">,
 ) => [v.year, v.make, v.model, v.trim].filter(Boolean).join(" ");
 export function inventorySnapshot(v: InventoryVehicle): VehicleDetails {
-  return vehicleDetailsSchema.parse(v);
+  return vehicleDetailsSchema.parse({
+    ...v,
+    cost: v.cost ?? null,
+    recon: v.recon ?? null,
+  });
 }
 export function daysOnHand(acquired: string | null | undefined, today: string) {
   return acquired

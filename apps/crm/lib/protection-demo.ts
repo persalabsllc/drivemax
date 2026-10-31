@@ -1,6 +1,7 @@
 import { paidClaimFromEvent } from "./protection-claims";
 import { protectionCost } from "./protection-pricing";
-import { canManage, dayKey, type Command, type Workspace } from "./model";
+import { dayKey, type Command, type Workspace } from "./model";
+import { canDesk } from "./permissions";
 import {
   protectionExpiry,
   protectionRefund,
@@ -30,7 +31,7 @@ export function demoProtection(
     ].includes(command.type)
   )
     return null;
-  if (!canManage(ws.member.role)) throw Error("Manager access required");
+  if (!canDesk(ws.member.role)) throw Error("Manager access required");
   const p = command as ProtectionCommand;
   const prior = ws.protection_events?.find((e) => e.id === p.request_id);
   if (prior) {

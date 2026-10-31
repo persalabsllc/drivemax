@@ -1,4 +1,5 @@
 "use client";
+import { canDesk } from "../lib/permissions";
 import { useEffect, useMemo, useState } from "react";
 import { completeDocument } from "../lib/document-upload";
 import {
@@ -134,7 +135,7 @@ export function DocumentVault({
   const customers = ws.customers
     .filter(
       (c) =>
-        manager ||
+        canDesk(ws.member.role) ||
         ws.opportunities.some(
           (o) => o.customer_id === c.id && o.assigned_to === staffId,
         ),
@@ -142,7 +143,9 @@ export function DocumentVault({
     .slice()
     .sort((a, b) => a.name.localeCompare(b.name));
   const opportunities = ws.opportunities.filter(
-    (o) => o.customer_id === customer && (manager || o.assigned_to === staffId),
+    (o) =>
+      o.customer_id === customer &&
+      (canDesk(ws.member.role) || o.assigned_to === staffId),
   );
   const vehicles = ws.inventory.filter((v) =>
     [v.stock_number, v.vin, vehicleName(v)]
@@ -620,6 +623,7 @@ export function DocumentVault({
               )}
             </fieldset>
             <DocumentUpload
+              role={ws.member.role}
               onBusy={setUploadBusy}
               metadata={{
                 customer_id: mode === "customer" ? customer || null : null,

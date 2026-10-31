@@ -1,3 +1,4 @@
+import { canRunCommand } from "../../../lib/permissions";
 import { claimErrors } from "../../../lib/protection-claims";
 import { pricingErrors } from "../../../lib/protection-pricing";
 import { protectionErrors } from "../../../lib/protection";
@@ -10,7 +11,7 @@ import { customerLinkErrors } from "../../../lib/customer-links";
 import { NextRequest, NextResponse, after } from "next/server";
 import { dispatchEmail } from "../../../lib/messaging";
 import { session, workspace, db } from "../../../lib/server";
-import { commandSchema, canManage } from "../../../lib/model";
+import { commandSchema } from "../../../lib/model";
 import { protectionDraft } from "../../../lib/protection";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -56,12 +57,15 @@ export async function POST(req: NextRequest) {
         },
         400,
       );
+    if (!canRunCommand(s.role, parsed.data))
+      return json(
+        { error: "Your role does not have access to this action." },
+        403,
+      );
     if (
       parsed.data.type === "issue_protection" ||
       parsed.data.type === "issue_protection_batch"
     ) {
-      if (!canManage(s.role))
-        return json({ error: "Manager access required." }, 403);
       const [{ buildProtectionPacketPdf }, { protectionPdfAssets }] =
         await Promise.all([
           import("../../../lib/protection-pdf"),

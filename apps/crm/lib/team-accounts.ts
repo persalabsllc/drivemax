@@ -22,8 +22,11 @@ export async function manageTeamAccount(
   let email: string;
   let staffId: string | undefined;
   if (input.action === "create") {
-    if (input.staff.role === "manager" && actor.role !== "owner")
-      throw new TeamAccountError("Only the owner can add managers.", 403);
+    if (input.staff.role !== "sales" && actor.role !== "owner")
+      throw new TeamAccountError(
+        "Only the owner can add managers or finance managers.",
+        403,
+      );
     email = input.staff.email;
     const existing = await admin
       .from("dmcrm_staff")
@@ -63,14 +66,12 @@ export async function manageTeamAccount(
           "The password could not be changed. Try a different password or retry.",
         );
       // Never log a password or an authentication response.
-      const audit = await admin
-        .from("dmcrm_audit")
-        .insert({
-          org_id: actor.org_id,
-          actor: actor.user_id,
-          action: "reset_staff_password",
-          record_id: staffId,
-        });
+      const audit = await admin.from("dmcrm_audit").insert({
+        org_id: actor.org_id,
+        actor: actor.user_id,
+        action: "reset_staff_password",
+        record_id: staffId,
+      });
       return {
         id: staffId,
         message: audit.error

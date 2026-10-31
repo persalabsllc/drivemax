@@ -1,3 +1,4 @@
+import { canReadDealFile } from "../../../lib/permissions";
 import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "node:crypto";
 import { z } from "zod";
@@ -19,7 +20,7 @@ export async function GET() {
   const d = db(),
     pending = await d
       .from("dmcrm_document_uploads")
-      .select("id,name,path,size,opportunity_id")
+      .select("id,name,path,size,opportunity_id,kind")
       .eq("org_id", s.org_id)
       .eq("created_by", s.user_id)
       .is("completed_at", null)
@@ -38,7 +39,8 @@ export async function GET() {
         }),
         d.storage.from("dmcrm-deal-files").info(u.path),
       ]);
-      return permission.data === true &&
+      return canReadDealFile(s.role, u) &&
+        permission.data === true &&
         !info.error &&
         info.data.size === u.size
         ? { id: u.id, name: u.name }
@@ -59,6 +61,11 @@ export async function POST(req: NextRequest) {
       d = db();
     if (body.action === "prepare") {
       const v = prepareDocumentSchema.parse(body);
+      if (!canReadDealFile(s.role, v))
+        return json(
+          { error: "Your role cannot file this document type." },
+          403,
+        );
       let vehicleSnapshot: Record<string, string | null> | null = null;
       const permission = await d.rpc("dmcrm_document_access", {
         p_org: s.org_id,
@@ -146,6 +153,8 @@ export async function POST(req: NextRequest) {
         .eq("id", id)
         .maybeSingle();
       if (error || !u) return json({ error: "Upload not found." }, 404);
+      if (!canReadDealFile(s.role, u))
+        return json({ error: "Access denied." }, 403);
       const allowed = await d.rpc("dmcrm_document_access", {
         p_org: s.org_id,
         p_actor: s.user_id,

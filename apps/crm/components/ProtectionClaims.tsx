@@ -1,13 +1,8 @@
 "use client";
+import { canDesk } from "../lib/permissions";
 import { useRef, useState } from "react";
 import { ArrowUpRight, Plus, Search } from "lucide-react";
-import {
-  canManage,
-  dayKey,
-  fullMoney,
-  type Command,
-  type Workspace,
-} from "../lib/model";
+import { dayKey, fullMoney, type Command, type Workspace } from "../lib/model";
 import { protectionPlans } from "../lib/protection";
 import {
   claimPayoutSummary,
@@ -47,7 +42,7 @@ export function ProtectionClaims(props: Props) {
     [status, setStatus] = useState<ProtectionClaim["status"]>("open"),
     [search, setSearch] = useState(""),
     [dialog, setDialog] = useState<{ mode: Mode; id?: string } | null>(null);
-  if (!canManage(ws.member.role)) return null;
+  if (!canDesk(ws.member.role)) return null;
   const claims = (ws.protection_claims ?? []).filter(
     (c) => !contractId || c.contract_id === contractId,
   );

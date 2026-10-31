@@ -34,11 +34,13 @@ export function OpportunityForm({
   demo,
   submit,
   section = "all",
+  showCosts = true,
 }: {
   existing: Opportunity | null;
   staff: Staff[];
   defaultAssignee: string | null;
   manager: boolean;
+  showCosts?: boolean;
   inventory: InventoryVehicle[];
   busy: boolean;
   error: string;
@@ -98,7 +100,13 @@ export function OpportunityForm({
             ...Object.fromEntries(
               Object.entries(values).map(([k, v]) => [
                 k,
-                v === "" ? (section === "trade" ? 0 : null) : Number(v),
+                !showCosts && k === "acv"
+                  ? 0
+                  : v === ""
+                    ? section === "trade"
+                      ? 0
+                      : null
+                    : Number(v),
               ]),
             ),
           });
@@ -276,7 +284,11 @@ export function OpportunityForm({
               {selected && (
                 <>
                   <p className="selected-vin">VIN {selected.vin}</p>
-                  <VehicleFacts vehicle={selected} today={dayKey()} />
+                  <VehicleFacts
+                    vehicle={selected}
+                    today={dayKey()}
+                    showCosts={showCosts}
+                  />
                 </>
               )}
               {!available.length && (
@@ -324,21 +336,25 @@ export function OpportunityForm({
                     ["cost", "Vehicle cost"],
                     ["recon", "Reconditioning cost"],
                   ] as const
-                ).map(([k, label]) => (
-                  <label key={k}>
-                    {label}
-                    <input
-                      type="number"
-                      min={0}
-                      max={k === "mileage" ? 3000000 : 1000000}
-                      step={k === "mileage" ? 1 : 0.01}
-                      value={manual[k]}
-                      onChange={(e) =>
-                        setManual({ ...manual, [k]: e.target.value })
-                      }
-                    />
-                  </label>
-                ))}
+                )
+                  .filter(
+                    ([k]) => showCosts || !["cost", "recon", "acv"].includes(k),
+                  )
+                  .map(([k, label]) => (
+                    <label key={k}>
+                      {label}
+                      <input
+                        type="number"
+                        min={0}
+                        max={k === "mileage" ? 3000000 : 1000000}
+                        step={k === "mileage" ? 1 : 0.01}
+                        value={manual[k]}
+                        onChange={(e) =>
+                          setManual({ ...manual, [k]: e.target.value })
+                        }
+                      />
+                    </label>
+                  ))}
                 <label>
                   Acquired on (optional)
                   <input
@@ -427,28 +443,34 @@ export function OpportunityForm({
                     ["acv", "Trade ACV (actual cash value)"],
                     ["payoff", "Trade payoff"],
                   ] as const
-                ).map(([k, label]) => (
-                  <label key={k}>
-                    {label}
-                    <input
-                      type="number"
-                      min={0}
-                      max={1000000}
-                      step=".01"
-                      required={section !== "trade"}
-                      placeholder={section === "trade" ? "0.00" : undefined}
-                      value={values[k]}
-                      onChange={(e) =>
-                        setValues({ ...values, [k]: e.target.value })
-                      }
-                    />
-                  </label>
-                ))}
+                )
+                  .filter(
+                    ([k]) => showCosts || !["cost", "recon", "acv"].includes(k),
+                  )
+                  .map(([k, label]) => (
+                    <label key={k}>
+                      {label}
+                      <input
+                        type="number"
+                        min={0}
+                        max={1000000}
+                        step=".01"
+                        required={section !== "trade"}
+                        placeholder={section === "trade" ? "0.00" : undefined}
+                        value={values[k]}
+                        onChange={(e) =>
+                          setValues({ ...values, [k]: e.target.value })
+                        }
+                      />
+                    </label>
+                  ))}
               </div>
               <p className="fine-print">
-                {section === "trade"
-                  ? "VIN and mileage are required. Leave working figures blank to start at $0; you can update them in Desking. ACV stays internal."
-                  : "All four figures and the VIN are required when a trade is present. Enter 0 for no payoff. ACV stays internal."}
+                {!showCosts
+                  ? "Enter the trade vehicle, mileage, allowance and payoff. "
+                  : section === "trade"
+                    ? "VIN and mileage are required. Leave working figures blank to start at $0; you can update them in Desking. ACV stays internal."
+                    : "All four figures and the VIN are required when a trade is present. Enter 0 for no payoff. ACV stays internal."}
               </p>
             </>
           )}

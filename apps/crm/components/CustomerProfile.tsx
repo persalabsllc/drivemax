@@ -1,4 +1,5 @@
 "use client";
+import { canDesk } from "../lib/permissions";
 import { pricingForDeal } from "../lib/protection-pricing";
 import { FacebookThread } from "./FacebookThread";
 import { customerActivity } from "../lib/activity";
@@ -116,7 +117,11 @@ export function CustomerProfile({
       () =>
         initialOpportunityId ?? active[0]?.id ?? opportunities[0]?.id ?? null,
     ),
-    [tab, setTab] = useState<Tab>(initialTab),
+    [tab, setTab] = useState<Tab>(
+      initialTab === "Desking" && !canDesk(ws.member.role)
+        ? "Activity"
+        : initialTab,
+    ),
     [modal, setModal] = useState<
       | "unwind"
       | "customer"
@@ -600,6 +605,7 @@ export function CustomerProfile({
             .filter(
               (t) =>
                 (!!o || (t !== "Desking" && t !== "Delivery")) &&
+                (t !== "Desking" || canDesk(ws.member.role)) &&
                 (t !== "Service" || canManage(ws.member.role)),
             )
             .map((t) => (
@@ -908,7 +914,7 @@ export function CustomerProfile({
               ))}
           </div>
         )}
-        {tab === "Desking" && o && (
+        {tab === "Desking" && o && canDesk(ws.member.role) && (
           <Desking
             dealership={ws.org.name}
             key={o.id + o.updated_at}
@@ -916,9 +922,9 @@ export function CustomerProfile({
             opportunity={o}
             inventory={ws.inventory}
             quotes={ws.quotes}
-            canViewProfit={manager}
+            canViewProfit={canDesk(ws.member.role)}
             pricing={pricingForDeal(ws, o.id)}
-            protection={manager ? { ws, run, demo } : undefined}
+            protection={canDesk(ws.member.role) ? { ws, run, demo } : undefined}
             accounting={
               manager
                 ? ws.sales?.find(
@@ -1078,7 +1084,7 @@ export function CustomerProfile({
           onClose={() => setTaskAction(null)}
         />
       )}
-      {recap && (
+      {recap && manager && (
         <DealRecap
           ws={ws}
           saleId={recap}
@@ -1218,6 +1224,7 @@ export function CustomerProfile({
           onClose={() => setModal(null)}
         >
           <OpportunityForm
+            showCosts={canDesk(ws.member.role)}
             key={`${modal}:${o?.id ?? "new"}`}
             existing={modal !== "new-opportunity" ? (o ?? null) : null}
             section={
@@ -1258,7 +1265,7 @@ export function CustomerProfile({
               if (result.ok) {
                 if (result.id) setSelected(result.id);
                 if (modal === "new-opportunity" || modal === "edit-opportunity")
-                  setTab("Desking");
+                  setTab(canDesk(ws.member.role) ? "Desking" : "Activity");
                 setModal(null);
               }
             }}

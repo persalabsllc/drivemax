@@ -55,7 +55,7 @@ export const staffSchema = z
       .string()
       .trim()
       .regex(/^\d{5}(-\d{4})?$/, "Enter a five-digit ZIP code or ZIP+4."),
-    role: z.enum(["sales", "manager"]),
+    role: z.enum(["sales", "finance", "manager"]),
   })
   .transform((v) => ({ ...v, name: `${v.first_name} ${v.last_name}` }))
   .refine(

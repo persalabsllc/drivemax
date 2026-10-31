@@ -1,3 +1,4 @@
+import { verifyFinancePermissions } from "./verify-finance-permissions.mjs";
 import { verifyProtectionClaims } from "./verify-protection-claims.mjs";
 import { verifyProtectionPricing } from "./verify-protection-pricing.mjs";
 import { verifyProtectionPackets } from "./verify-protection-packets.mjs";
@@ -146,6 +147,10 @@ if (process.env.VERCEL_ENV === "production") {
       "Verified draft approval, six-month/deductible costing, menu and standalone contract allocations, frozen historical costs and claims fund transactions; all fixtures rolled back.",
     );
     await verifyProtectionClaims(client);
+    await verifyFinancePermissions(client);
+    console.log(
+      "Verified Finance Manager permissions, restricted sales costs, quote and contract access, role downgrades and global settings denial; all fixtures rolled back.",
+    );
     console.log(
       "Verified contract-linked open claims, paid history, duplicate prevention, fund reconciliation and private access; all fixtures rolled back.",
     );

@@ -275,25 +275,32 @@ export function productsTotal(v: FinanceValues) {
     : v.serviceContract || 0;
 }
 export const productCostFor = (s: Sale, p: FIProduct) =>
-  Object.hasOwn(s.accounting?.product_costs ?? {}, p.id)
-    ? s.accounting.product_costs[p.id]
-    : p.cost;
-export function saleMath(s: Sale, commissions: Commission[] = []) {
-  const q = s.snapshot.quote,
-    v = q?.values;
-  const vehicle = q?.vehicle_details ?? s.snapshot.opportunity?.vehicle_details;
-  const a = { ...emptyAccounting, ...s.accounting };
+  recordedProductCost(s.accounting ?? {}, p);
+const recordedProductCost = (a: Partial<DealAccounting>, p: FIProduct) =>
+  Object.hasOwn(a.product_costs ?? {}, p.id)
+    ? (a.product_costs![p.id] ?? null)
+    : (p.cost ?? null);
+
+/** Shared gross basis for live desking estimates and the closed-deal ledger. */
+export function quoteGross(
+  v: FinanceValues | undefined,
+  vehicle: Pick<VehicleDetails, "cost" | "recon"> | null | undefined,
+  accounting: Partial<DealAccounting> = {},
+  trade: Pick<Trade, "allowance" | "acv"> | null = v
+    ? { allowance: v.tradeAllowance, acv: v.acv }
+    : null,
+) {
+  const a = { ...emptyAccounting, ...accounting };
   const cost = a.vehicle_cost ?? vehicle?.cost ?? null,
     recon = a.recon ?? vehicle?.recon ?? null;
-  const trade = q?.trade_snapshot ?? s.snapshot.opportunity?.trade;
   const allowance = trade ? (v?.tradeAllowance ?? trade.allowance) : 0;
   const acv = trade ? (v?.acv ?? trade.acv) : 0;
   const adjustment = roundMoney(acv - allowance);
   const productRevenue = v ? productsTotal(v) : 0;
   const productCost = v?.products
-    ? v.products.some((p) => productCostFor(s, p) === null)
+    ? v.products.some((p) => recordedProductCost(a, p) === null)
       ? null
-      : sum(v.products.map((p) => productCostFor(s, p)!))
+      : sum(v.products.map((p) => recordedProductCost(a, p)!))
     : productRevenue
       ? a.legacy_product_cost
       : 0;
@@ -316,9 +323,6 @@ export function saleMath(s: Sale, commissions: Commission[] = []) {
     productGross === null ? null : roundMoney(productGross + a.finance_reserve);
   const gross =
     front === null || back === null ? null : roundMoney(front + back);
-  const entries = commissions.filter((c) => c.sale_id === s.id);
-  const earned = s.status === "sold" ? sum(entries.map((c) => c.amount)) : 0;
-  const paid = sum(entries.map((c) => c.paid_amount));
   return {
     cost,
     recon,
@@ -331,13 +335,30 @@ export function saleMath(s: Sale, commissions: Commission[] = []) {
     front,
     back,
     gross,
+    complete: !!v && gross !== null,
+  };
+}
+export function saleMath(s: Sale, commissions: Commission[] = []) {
+  const q = s.snapshot.quote,
+    v = q?.values,
+    a = { ...emptyAccounting, ...s.accounting },
+    m = quoteGross(
+      v,
+      q?.vehicle_details ?? s.snapshot.opportunity?.vehicle_details,
+      a,
+      q?.trade_snapshot ?? s.snapshot.opportunity?.trade ?? null,
+    );
+  const entries = commissions.filter((c) => c.sale_id === s.id);
+  const earned = s.status === "sold" ? sum(entries.map((c) => c.amount)) : 0;
+  const paid = sum(entries.map((c) => c.paid_amount));
+  return {
+    ...m,
     earned,
     paid,
     payableFront:
-      front === null ? null : roundMoney(front - (v?.docFee ?? 0) - a.pack),
-    net: gross === null ? null : roundMoney(gross - earned),
+      m.front === null ? null : roundMoney(m.front - (v?.docFee ?? 0) - a.pack),
+    net: m.gross === null ? null : roundMoney(m.gross - earned),
     commissionBalance: roundMoney(earned - paid),
-    complete: !!v && gross !== null,
   };
 }
 /** Default earnings, rounded per category. Unknown costs are pending, not assumed zero. */

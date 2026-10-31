@@ -34,8 +34,9 @@ import {
 import { financePayment } from "../lib/finance";
 import { type InventoryVehicle, vehicleName } from "../lib/vehicles";
 import { VehicleFacts } from "./VehicleFields";
+import { DeskingProfit } from "./DeskingProfit";
 import { FIProducts } from "./FIProducts";
-import { productsTotal } from "../lib/operations";
+import { productsTotal, type DealAccounting } from "../lib/operations";
 import { FIMenu } from "./FIMenu";
 import { FIMenuPrint } from "./FIMenuPrint";
 import { PrintDocument } from "./PrintDocument";
@@ -49,6 +50,8 @@ type DeskingProps = {
   inventory: InventoryVehicle[];
   busy: boolean;
   dealership?: string;
+  canViewProfit?: boolean;
+  accounting?: DealAccounting;
 } & (
   | {
       quick?: undefined;
@@ -88,6 +91,8 @@ export function Desking({
   onEdit,
   quick,
   dealership = "Drive Max Used Cars",
+  canViewProfit = false,
+  accounting,
 }: DeskingProps) {
   const [productsOpen, setProductsOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -409,6 +414,19 @@ export function Desking({
             <div className="form-grid">
               {field("price", "Selling price")}
               {field("docFee", "Document fee")}
+              {canViewProfit && (
+                <DeskingProfit
+                  key={quickInventory || opportunity?.inventory_id || "manual"}
+                  values={values}
+                  vehicle={vehicle}
+                  accounting={readOnly ? accounting : undefined}
+                  trade={
+                    readOnly
+                      ? (latest?.trade_snapshot ?? opportunity?.trade ?? null)
+                      : undefined
+                  }
+                />
+              )}
               {field("addOns", "Accessories / taxable add-ons")}
               <div className="ops-product-summary">
                 <small>F&I products</small>

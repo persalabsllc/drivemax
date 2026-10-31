@@ -7,6 +7,7 @@ import type {
   QuickQuoteInput,
   Workspace,
 } from "../lib/model";
+import { canManage } from "../lib/model";
 import { printableQuickQuote } from "../lib/quick-quote";
 import { Desking } from "./Desking";
 import { CustomerForm } from "./CustomerForm";
@@ -64,6 +65,7 @@ export function QuickQuote({
       <Desking
         key={revision}
         inventory={ws.inventory}
+        canViewProfit={canManage(ws.member.role)}
         busy={busy}
         quick={{
           onPrint: (q) => onPrint(printableQuickQuote(q, ws.inventory)),

@@ -1,3 +1,4 @@
+import { verifyWebsiteActivity } from "./verify-website-activity.mjs";
 import { verifyWebsiteChat } from "./verify-website-chat.mjs";
 import { verifyFinancePermissions } from "./verify-finance-permissions.mjs";
 import { verifyProtectionClaims } from "./verify-protection-claims.mjs";
@@ -149,6 +150,10 @@ if (process.env.VERCEL_ENV === "production") {
     );
     await verifyProtectionClaims(client);
     await verifyWebsiteChat(client);
+    await verifyWebsiteActivity(client);
+    console.log(
+      "Verified website activity: private reports, assigned customer journeys, visitor deduplication, conversion attribution and retention; all fixtures rolled back.",
+    );
     await verifyFinancePermissions(client);
     console.log(
       "Verified Finance Manager permissions, restricted sales costs, quote and contract access, role downgrades and global settings denial; all fixtures rolled back.",

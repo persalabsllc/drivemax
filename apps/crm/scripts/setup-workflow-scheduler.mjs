@@ -46,6 +46,9 @@ export async function setupWorkflowScheduler(client) {
   await client.query(
     "select cron.schedule('dmcrm-sales-workflows','*/5 * * * *','select public.dmcrm_schedule_tick()')",
   );
+  await client.query(
+    "select cron.schedule('dmcrm-website-activity-retention','25 8 * * *','select public.dmcrm_web_prune()')",
+  );
   const job = (
     await client.query(
       "select active,schedule from cron.job where jobname='dmcrm-sales-workflows'",

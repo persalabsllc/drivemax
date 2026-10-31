@@ -45,6 +45,7 @@ test("Finance Manager has deal capabilities independently of administration; sal
     assert.equal(canDesk(role), ["owner", "manager", "finance"].includes(role));
     for (const view of [
       "Management reports",
+      "Website activity",
       "Sales reports",
       "Accounting",
       "Money owed",

@@ -1,4 +1,5 @@
 "use client";
+import { WebsiteActivity } from "./WebsiteActivity";
 import { canDesk } from "../lib/permissions";
 import { pricingForDeal } from "../lib/protection-pricing";
 import { FacebookThread } from "./FacebookThread";
@@ -69,6 +70,7 @@ type Tab =
   | "Texts"
   | "Emails"
   | "Facebook"
+  | "Website"
   | "Follow-up"
   | "Wish list"
   | "Delivery"
@@ -596,6 +598,7 @@ export function CustomerProfile({
               "Texts",
               "Emails",
               "Facebook",
+              "Website",
               "Follow-up",
               "Wish list",
               "Delivery",
@@ -660,6 +663,9 @@ export function CustomerProfile({
             demo={demo}
             onRefresh={onRefresh}
           />
+        )}
+        {tab === "Website" && (
+          <WebsiteActivity ws={ws} demo={demo} customerId={customer.id} />
         )}
         {tab === "Facebook" && (
           <FacebookThread

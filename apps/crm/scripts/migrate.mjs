@@ -1,5 +1,4 @@
 import { verifyProtectionPricing } from "./verify-protection-pricing.mjs";
-import { activateApprovedProtectionPricing } from "./activate-approved-protection-pricing.mjs";
 import { verifyProtectionPackets } from "./verify-protection-packets.mjs";
 import { verifyManagementService } from "./verify-management-service.mjs";
 import { verifyProtection } from "./verify-protection.mjs";
@@ -143,9 +142,8 @@ if (process.env.VERCEL_ENV === "production") {
     await client.query("rollback to savepoint legacy_release_fixtures");
     await verifyProtectionPricing(client);
     console.log(
-      "Verified draft approval, automatic product costing, frozen contract allocations and immutable claims fund transactions; all fixtures rolled back.",
+      "Verified draft approval, six-month/deductible costing, menu and standalone contract allocations, frozen historical costs and claims fund transactions; all fixtures rolled back.",
     );
-    const pricingApproval = await activateApprovedProtectionPricing(client);
     await setupWorkflowScheduler(client);
     console.log(
       "Configured existing database scheduler: five-minute CRM email and device-notification checks.",
@@ -154,11 +152,6 @@ if (process.env.VERCEL_ENV === "production") {
     // Deliver the notification at commit; the REST release check waits for it.
     await client.query("notify pgrst, 'reload schema'");
     await client.query("commit");
-    console.log(
-      pricingApproval.status === "activated"
-        ? `Approved protection pricing activated and verified: revision ${pricingApproval.revision}; committed.`
-        : "Protection pricing approval already applied; subsequent owner settings preserved.",
-    );
   } catch (e) {
     await client.query("rollback").catch(() => {});
     console.error(

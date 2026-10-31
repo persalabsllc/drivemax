@@ -6,6 +6,8 @@ import type { FIProduct } from "../lib/operations";
 import { protectionCost } from "../lib/protection-pricing";
 import type { ManagementRun } from "./ServiceWorkspace";
 import { Modal } from "./ui";
+import { ProtectionCostSummary } from "./ProtectionCostSummary";
+import { ProtectionTermChoices } from "./ProtectionTermChoices";
 import { ProtectionPDFPreview } from "./ProtectionPDFPreview";
 import {
   protectionDefaults,
@@ -90,6 +92,7 @@ export function ProtectionIssue({
             mileage_limit: Number(values.term_miles),
             unlimited_miles: unlimited,
             maintenance_visits: Number(values.maintenance_visits),
+            deductible: Number(values.deductible ?? 0),
             price: Number(values.price),
           },
           pricing.active,
@@ -248,7 +251,7 @@ export function ProtectionIssue({
       {!linked && (
         <p className="ops-help">
           {allocation
-            ? `Internal allocation: ${fullMoney(allocation.cost)} · Contribution: ${fullMoney(Number(values.price) - allocation.cost)}. These amounts are excluded from the contract PDF.`
+            ? "Coverage costs and claims funding are shown below. These amounts are excluded from the contract PDF."
             : "Automatic cost schedule is inactive or coverage is incomplete. No new cost will be assumed for this standalone contract."}
         </p>
       )}
@@ -421,6 +424,23 @@ export function ProtectionIssue({
         {!linked && (
           <fieldset disabled={blocked}>
             <legend>Product and benefits</legend>
+            {mechanical && (
+              <ProtectionTermChoices
+                months={Number(values.term_months)}
+                miles={Number(values.term_miles)}
+                annualMiles={pricing?.active?.annual_miles}
+                disabled={blocked}
+                onChange={(months, miles) => {
+                  setValues((v) => ({
+                    ...v,
+                    term_months: String(months),
+                    term_miles: String(miles),
+                  }));
+                  setReviewed(false);
+                  setError("");
+                }}
+              />
+            )}
             <div className="ops-form-grid">
               <label>
                 Coverage plan
@@ -503,6 +523,12 @@ export function ProtectionIssue({
                   "number",
                 )}
             </div>
+            {allocation && (
+              <ProtectionCostSummary
+                snapshot={allocation}
+                price={Number(values.price)}
+              />
+            )}
             <p className="ops-help">
               {protectionDescriptions[plan]} See the agreement for coverage and
               exclusions.

@@ -15,6 +15,8 @@ import {
   protectionIssuer,
 } from "../lib/protection";
 import { Modal } from "./ui";
+import { ProtectionCostSummary } from "./ProtectionCostSummary";
+import { ProtectionTermChoices } from "./ProtectionTermChoices";
 import {
   isMechanicalPlan,
   protectionKind,
@@ -274,6 +276,18 @@ export function FIProducts({
                 above or remove this product before applying the updated quote.
               </p>
             )}
+            {!readOnly &&
+              p.protection_plan &&
+              isMechanicalPlan(p.protection_plan) && (
+                <ProtectionTermChoices
+                  months={p.term_months}
+                  miles={p.mileage_limit}
+                  annualMiles={pricing?.active?.annual_miles}
+                  onChange={(term_months, mileage_limit) =>
+                    update(p.id, { term_months, mileage_limit })
+                  }
+                />
+              )}
             <div className="ops-form-grid">
               <label>
                 Product name (customer-facing)
@@ -444,30 +458,25 @@ export function FIProducts({
                     covered miles
                   </button>
                 )}
-              {money(
-                p,
-                "cost",
-                p.pricing_snapshot
-                  ? "Internal allocation (auto)"
-                  : "Product cost",
-              )}
-              {p.pricing_snapshot && (
-                <p className="ops-help">
-                  Schedule: {fullMoney(p.pricing_snapshot.scheduled_cost)} ·
-                  Funding floor: {fullMoney(p.pricing_snapshot.reserve_floor)}.
-                  The higher amount is allocated to the fund. Internal only.
-                </p>
-              )}
+              {!p.pricing_snapshot && money(p, "cost", "Product cost")}
               {money(p, "price", "Customer price")}
-              <div className="ops-product-profit">
-                <small>Product gross</small>
-                <strong>
-                  {p.cost === null
-                    ? "Cost needed"
-                    : fullMoney(p.price - p.cost)}
-                </strong>
-              </div>
+              {!p.pricing_snapshot && (
+                <div className="ops-product-profit">
+                  <small>Product gross</small>
+                  <strong>
+                    {p.cost === null
+                      ? "Cost needed"
+                      : fullMoney(p.price - p.cost)}
+                  </strong>
+                </div>
+              )}
             </div>
+            {p.pricing_snapshot && (
+              <ProtectionCostSummary
+                snapshot={p.pricing_snapshot}
+                price={p.price}
+              />
+            )}
             <label>
               Coverage description (customer-facing)
               <textarea

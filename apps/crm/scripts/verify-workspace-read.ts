@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { pricingConfigSchema, protectionCost } from "../lib/protection-pricing";
 import {
   readWorkspaceRecords,
   workspaceTables,
@@ -54,14 +55,44 @@ async function main() {
         } catch (error) {
           // Only a missing table in the API schema cache is transient after a
           // migration. Column/permission/query errors must still fail release.
-          if (!(error instanceof Error) || !error.message.includes("PGRST205") || attempt === 10) throw error;
+          if (
+            !(error instanceof Error) ||
+            !error.message.includes("PGRST205") ||
+            attempt === 10
+          )
+            throw error;
           console.log("Waiting for database API schema refresh.");
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise((resolve) => setTimeout(resolve, 2000));
         }
       }
       if (!records) throw new Error("Workspace read result incomplete");
       if (workspaceTables.some((table) => !Array.isArray(records[table])))
         throw new Error("Workspace read result incomplete");
+      const pricing = records.product_pricing?.[0];
+      if (role === "owner" && pricing?.active && pricing.active_revision) {
+        const config = pricingConfigSchema.parse(pricing.active);
+        const example = {
+          protection_plan: "deluxe" as const,
+          term_months: 6,
+          mileage_limit: 6000,
+          price: 399.5,
+        };
+        const zero = protectionCost(
+          { ...example, deductible: 0 },
+          config,
+          pricing.active_revision,
+        );
+        const fiveHundred = protectionCost(
+          { ...example, deductible: 500 },
+          config,
+          pricing.active_revision,
+        );
+        if (!zero || !fiveHundred)
+          throw new Error("Live protection pricing is incomplete");
+        console.log(
+          `Verified live protection pricing revision ${pricing.active_revision}: six-month Deluxe calculated cost $${zero.scheduled_cost.toFixed(2)} at $0 deductible; $${fiveHundred.scheduled_cost.toFixed(2)} at $500 deductible.`,
+        );
+      }
     }
     console.log(
       `Verified production workspace REST reads: ${workspaceTables.length} tables with owner and salesperson filters.`,

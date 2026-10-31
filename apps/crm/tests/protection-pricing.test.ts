@@ -21,6 +21,10 @@ import {
   protectionRefund,
 } from "../lib/protection";
 const now = new Date("2026-10-31T16:00:00Z");
+const legacyPricing = structuredClone(proposedPricing);
+legacyPricing.rates.deluxe.basis = "annual_mileage";
+legacyPricing.rates.platinum.basis = "annual_mileage";
+delete legacyPricing.deductible_discounts;
 const sample: FIProduct = {
   id: randomUUID(),
   kind: "service_contract",
@@ -34,13 +38,13 @@ const sample: FIProduct = {
   contract_number: "",
   notes: "Internal only",
 };
-test("proposed rates require separate owner activation; drafts and old snapshots stay independent", () => {
+test("legacy rates require separate owner activation; drafts and old snapshots stay independent", () => {
   let ws = demoWorkspace(now);
   const draft = {
     type: "save_product_pricing" as const,
     request_id: randomUUID(),
     revision: 0,
-    config: structuredClone(proposedPricing),
+    config: structuredClone(legacyPricing),
   };
   ws = demoCommand(ws, draft, now);
   assert.equal(ws.product_pricing?.[0].active, null);
@@ -58,7 +62,7 @@ test("proposed rates require separate owner activation; drafts and old snapshots
   ws = demoCommand(ws, activate, now);
   const priced = priceProduct(sample, ws.product_pricing?.[0]);
   assert.equal(priced.cost, 1197);
-  const next = structuredClone(proposedPricing);
+  const next = structuredClone(legacyPricing);
   next.rates.deluxe.amount = 499;
   ws = demoCommand(
     ws,
@@ -84,7 +88,7 @@ test("proposed rates require separate owner activation; drafts and old snapshots
 });
 test("term, mileage, maintenance visits, flat pricing, floor and half-cent rounding", () => {
   const calc = (p: Partial<FIProduct>) =>
-    protectionCost({ ...sample, ...p }, proposedPricing, 1)!;
+    protectionCost({ ...sample, ...p }, legacyPricing, 1)!;
   assert.equal(
     calc({ term_months: 48, mileage_limit: 12000 }).scheduled_cost,
     1596,
@@ -144,6 +148,68 @@ test("term, mileage, maintenance visits, flat pricing, floor and half-cent round
     false,
   );
 });
+test("short service contracts prorate down to six months and higher deductibles reduce calculated cost", () => {
+  const calc = (p: Partial<FIProduct>) =>
+    protectionCost(
+      { ...sample, price: 300, deductible: 0, ...p },
+      proposedPricing,
+      3,
+    )!;
+  for (const [term_months, expected] of [
+    [36, 1797],
+    [24, 1198],
+    [12, 599],
+    [6, 299.5],
+    [1, 49.92],
+  ]) {
+    assert.equal(
+      calc({ protection_plan: "platinum", term_months, mileage_limit: 36000 })
+        .scheduled_cost,
+      expected,
+    );
+  }
+  for (const [deductible, expected] of [
+    [0, 199.5],
+    [250, 179.55],
+    [500, 159.6],
+    [1000, 129.68],
+  ]) {
+    const s = calc({ term_months: 6, mileage_limit: 6000, deductible });
+    assert.equal(s.scheduled_cost, expected);
+    assert.equal(s.cost, expected);
+    assert.equal(s.base_cost, 199.5);
+    assert.equal(s.deductible, deductible);
+  }
+  assert.equal(
+    calc({ term_months: 12, mileage_limit: 6000 }).scheduled_cost,
+    199.5,
+  );
+  assert.equal(
+    calc({ term_months: 6, mileage_limit: 36000, price: 800, deductible: 500 })
+      .cost,
+    320,
+  );
+  const affordable = calc({
+    term_months: 6,
+    mileage_limit: 6000,
+    price: 399.5,
+  });
+  assert.equal(399.5 - affordable.cost, 200);
+  assert.equal(
+    calc({
+      protection_plan: "tire_wheel",
+      term_months: 6,
+      deductible: 1000,
+      price: 50,
+    }).scheduled_cost,
+    43.5,
+  );
+  assert.equal(calc({ term_months: 6, mileage_limit: 0 }), null);
+  assert.equal(calc({ deductible: 100 }), null);
+  const invalid = structuredClone(proposedPricing);
+  invalid.deductible_discounts![250] = 50;
+  assert.equal(pricingConfigSchema.safeParse(invalid).success, false);
+});
 test("customer projection excludes reserve costs, rates, profit and internal notes", () => {
   const snapshot = protectionCost(sample, proposedPricing, 2)!;
   const priced = productSchema.parse({
@@ -157,6 +223,8 @@ test("customer projection excludes reserve costs, rates, profit and internal not
     "pricing_snapshot",
     "scheduled_cost",
     "reserve_floor",
+    "base_cost",
+    "deductible_discount_percent",
     "notes",
   ])
     assert.equal(field in customer, false);

@@ -13,9 +13,11 @@ import {
   protectionCost,
   type PricingConfig,
 } from "../lib/protection-pricing";
-import { protectionPlans } from "../lib/protection";
+import { protectionPlans, protectionDeductibles } from "../lib/protection";
+import { ProtectionCostSummary } from "./ProtectionCostSummary";
 import {
   protectionPlanIds,
+  isMechanicalPlan,
   type ProtectionPlan,
 } from "../lib/protection-programs";
 import type { ManagementRun } from "./ServiceWorkspace";
@@ -54,6 +56,7 @@ function PricingEditor({
     [miles, setMiles] = useState(36000),
     [visits, setVisits] = useState(6),
     [price, setPrice] = useState(2499);
+  const [deductible, setDeductible] = useState(0);
   const request = useRef({ payload: "", id: "" });
   const changed =
     !saved || JSON.stringify(draft) !== JSON.stringify(saved.draft);
@@ -66,6 +69,7 @@ function PricingEditor({
           mileage_limit: miles,
           unlimited_miles: examplePlan === "appearance",
           maintenance_visits: visits,
+          deductible: isMechanicalPlan(examplePlan) ? deductible : 0,
           price,
         },
         valid.data,
@@ -194,17 +198,22 @@ function PricingEditor({
                               [plan]: {
                                 ...draft.rates[plan],
                                 basis: e.target.value as
-                                  "annual" | "annual_mileage",
+                                  "annual" | "annual_mileage" | "first_limit",
                               },
                             },
                           })
                         }
                       >
+                        {isMechanicalPlan(plan) && (
+                          <option value="first_limit">
+                            Time or mileage · whichever ends first
+                          </option>
+                        )}
                         <option value="annual">
                           Per year · prorated months
                         </option>
                         <option value="annual_mileage">
-                          Greater of years or mileage units
+                          Greater of years or mileage units (legacy)
                         </option>
                       </select>
                     )}
@@ -212,7 +221,15 @@ function PricingEditor({
                   {saved?.active && (
                     <td>
                       {fullMoney(saved.active.rates[plan].amount)} /{" "}
-                      {saved.active.rates[plan].basis.replaceAll("_", " ")}
+                      {
+                        {
+                          annual: "year",
+                          annual_mileage: "year or mileage unit (higher)",
+                          first_limit: "year or mileage unit (lower)",
+                          visit: "visit",
+                          flat: "contract",
+                        }[saved.active.rates[plan].basis]
+                      }
                     </td>
                   )}
                 </tr>
@@ -220,6 +237,48 @@ function PricingEditor({
             </tbody>
           </table>
         </div>
+        <fieldset className="pricing-discounts">
+          <legend>Service contract deductible discounts</legend>
+          <p className="ops-help">
+            Percentage off the prorated $0-deductible cost, for Deluxe and
+            Platinum. A higher deductible should have the same or a larger
+            discount.
+          </p>
+          <div className="pricing-fields">
+            {protectionDeductibles.map((d) => (
+              <label key={d}>
+                {fullMoney(d)} deductible · discount (%)
+                <input
+                  type="number"
+                  min="0"
+                  max="95"
+                  step="0.01"
+                  required
+                  readOnly={d === 0}
+                  value={draft.deductible_discounts?.[d] ?? 0}
+                  onChange={(e) =>
+                    change({
+                      ...draft,
+                      deductible_discounts: {
+                        "0": 0,
+                        "250": 0,
+                        "500": 0,
+                        "1000": 0,
+                        ...draft.deductible_discounts,
+                        [d]: Number(e.target.value),
+                      },
+                    })
+                  }
+                />
+                {saved?.active && (
+                  <small>
+                    Active: {saved.active.deductible_discounts?.[d] ?? 0}%
+                  </small>
+                )}
+              </label>
+            ))}
+          </div>
+        </fieldset>
         <div className="pricing-fields">
           <label>
             Miles per annual cost unit
@@ -279,18 +338,16 @@ function PricingEditor({
           </label>
         </div>
         <p className="ops-help">
-          Internal allocation = the higher of scheduled cost or the funding
-          floor. Deal contribution = selling price minus that allocation. Annual
-          mileage costs use the greater of months ÷ 12 or covered miles ÷ the
-          annual mileage unit. Deductibles do not change these draft rates.
-          Maintenance cost uses the selected visit count.
+          Time or mileage pricing uses the lower of months ÷ 12 and covered
+          miles ÷ annual miles, then applies the deductible discount. The
+          funding minimum is calculated separately; use 0% if you want only the
+          calculated cost set aside.
         </p>
         <p className="ops-help">
-          The proposed 40% floor is a funding policy for review with your
-          accountant. It is not a certification of reserve adequacy. Moving cash
-          into a reserve account does not by itself determine earned accounting
-          profit. Customer menus and contracts show only selling prices and
-          coverage.
+          Claims fund allocation is the higher of calculated cost or the funding
+          minimum. Product gross is selling price minus that allocation.
+          Maintenance cost uses the selected visit count. Customer menus and
+          contracts show only selling prices and coverage.
         </p>
         <button className="btn primary" disabled={busy || !changed}>
           Save draft schedule
@@ -346,6 +403,21 @@ function PricingEditor({
               />
             </label>
           )}
+          {isMechanicalPlan(examplePlan) && (
+            <label>
+              Preview deductible
+              <select
+                value={deductible}
+                onChange={(e) => setDeductible(Number(e.target.value))}
+              >
+                {protectionDeductibles.map((d) => (
+                  <option key={d} value={d}>
+                    {fullMoney(d)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <label>
             Customer selling price
             <input
@@ -358,24 +430,7 @@ function PricingEditor({
             />
           </label>
         </div>
-        {example && (
-          <div className="pricing-totals">
-            <span>
-              Scheduled cost
-              <strong>{fullMoney(example.scheduled_cost)}</strong>
-            </span>
-            <span>
-              Funding floor<strong>{fullMoney(example.reserve_floor)}</strong>
-            </span>
-            <span>
-              Set aside<strong>{fullMoney(example.cost)}</strong>
-            </span>
-            <span>
-              Deal contribution
-              <strong>{fullMoney(price - example.cost)}</strong>
-            </span>
-          </div>
-        )}
+        {example && <ProtectionCostSummary snapshot={example} price={price} />}
       </details>
       {ws.member.role === "owner" && (
         <div className="pricing-activation">

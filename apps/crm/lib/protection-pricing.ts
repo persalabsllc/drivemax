@@ -1,11 +1,15 @@
 import { z } from "zod";
-import { protectionPlanIds, type ProtectionPlan } from "./protection-programs";
+import {
+  isMechanicalPlan,
+  protectionPlanIds,
+  type ProtectionPlan,
+} from "./protection-programs";
 import type { FIProduct } from "./operations";
 import type { Command, Workspace } from "./model";
 
 const money = z.number().finite().min(0).max(1000000).multipleOf(0.01);
 const rate = z.object({
-  basis: z.enum(["annual", "annual_mileage", "visit", "flat"]),
+  basis: z.enum(["annual", "annual_mileage", "first_limit", "visit", "flat"]),
   amount: money,
 });
 export const pricingConfigSchema = z
@@ -23,15 +27,36 @@ export const pricingConfigSchema = z
     maintenance_interval: z.number().int().min(1000).max(20000),
     reserve_percent: z.number().finite().min(0).max(100).multipleOf(0.01),
     account_name: z.string().trim().min(1).max(100),
+    // Optional for saved legacy schedules and immutable contract snapshots.
+    deductible_discounts: z
+      .object({
+        "0": z.literal(0),
+        "250": z.number().finite().min(0).max(95).multipleOf(0.01),
+        "500": z.number().finite().min(0).max(95).multipleOf(0.01),
+        "1000": z.number().finite().min(0).max(95).multipleOf(0.01),
+      })
+      .optional(),
   })
   .superRefine((c, ctx) => {
+    const discounts = c.deductible_discounts;
+    if (
+      discounts &&
+      (discounts[250] > discounts[500] || discounts[500] > discounts[1000])
+    )
+      ctx.addIssue({
+        code: "custom",
+        message:
+          "Discounts must stay the same or increase with the deductible.",
+      });
     for (const plan of protectionPlanIds) {
       const allowed =
         plan === "maintenance"
           ? ["visit"]
           : plan === "appearance"
             ? ["flat"]
-            : ["annual", "annual_mileage"];
+            : isMechanicalPlan(plan)
+              ? ["annual", "annual_mileage", "first_limit"]
+              : ["annual", "annual_mileage"];
       if (!allowed.includes(c.rates[plan].basis))
         ctx.addIssue({
           code: "custom",
@@ -40,11 +65,11 @@ export const pricingConfigSchema = z
     }
   });
 export type PricingConfig = z.infer<typeof pricingConfigSchema>;
-// Proposed budgets only. No active schedule is created by migration or deployment.
+// Defaults for a new schedule. Saving and activating remain separate actions.
 export const proposedPricing: PricingConfig = {
   rates: {
-    deluxe: { basis: "annual_mileage", amount: 399 },
-    platinum: { basis: "annual_mileage", amount: 599 },
+    deluxe: { basis: "first_limit", amount: 399 },
+    platinum: { basis: "first_limit", amount: 599 },
     maintenance: { basis: "visit", amount: 125 },
     tire_wheel: { basis: "annual", amount: 87 },
     pdr: { basis: "annual", amount: 65 },
@@ -55,6 +80,7 @@ export const proposedPricing: PricingConfig = {
   maintenance_interval: 5000,
   reserve_percent: 40,
   account_name: "Drive Max Protection Claims Fund",
+  deductible_discounts: { "0": 0, "250": 10, "500": 20, "1000": 35 },
 };
 export const pricingSnapshotSchema = z.object({
   revision: z.number().int().positive(),
@@ -65,6 +91,9 @@ export const pricingSnapshotSchema = z.object({
   scheduled_cost: money,
   reserve_floor: money,
   cost: money,
+  base_cost: money.optional(),
+  deductible: z.number().nonnegative().optional(),
+  deductible_discount_percent: z.number().min(0).max(95).optional(),
 });
 export type PricingSnapshot = z.infer<typeof pricingSnapshotSchema>;
 export type ProductPricing = {
@@ -107,6 +136,7 @@ export type CostCoverage = {
   mileage_limit: number;
   unlimited_miles?: boolean;
   maintenance_visits?: number;
+  deductible?: number;
   price: number;
 };
 const cents = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
@@ -115,14 +145,28 @@ export function protectionCost(
   config: PricingConfig,
   revision: number,
 ): PricingSnapshot | null {
-  if (!p.protection_plan || p.term_months <= 0 || !Number.isFinite(p.price))
+  if (
+    !p.protection_plan ||
+    !Number.isInteger(p.term_months) ||
+    p.term_months <= 0 ||
+    !Number.isFinite(p.price)
+  )
     return null;
   const r = config.rates[p.protection_plan];
   if (r.basis === "visit" && !p.maintenance_visits) return null;
-  const mileageRated =
-    r.basis === "annual_mileage" &&
+  const usesMileage = r.basis === "annual_mileage" || r.basis === "first_limit";
+  if (
+    usesMileage &&
     !p.unlimited_miles &&
-    p.mileage_limit * 12 > p.term_months * config.annual_miles;
+    (!Number.isInteger(p.mileage_limit) || p.mileage_limit <= 0)
+  )
+    return null;
+  const mileageRated =
+    usesMileage &&
+    !p.unlimited_miles &&
+    (r.basis === "first_limit"
+      ? p.mileage_limit * 12 < p.term_months * config.annual_miles
+      : p.mileage_limit * 12 > p.term_months * config.annual_miles);
   const numerator =
     r.basis === "flat"
       ? 1
@@ -138,9 +182,24 @@ export function protectionCost(
         ? config.annual_miles
         : 12;
   const units = numerator / denominator;
-  // Use integer cents before prorating, matching PostgreSQL numeric rounding.
-  const scheduled_cost =
-    Math.round((Math.round(r.amount * 100) * numerator) / denominator) / 100;
+  const discounts = isMechanicalPlan(p.protection_plan)
+    ? config.deductible_discounts
+    : undefined;
+  const deductible = p.deductible ?? 0;
+  if (discounts && ![0, 250, 500, 1000].includes(deductible)) return null;
+  const discount = discounts?.[deductible as 0 | 250 | 500 | 1000] ?? 0;
+  if (!Number.isInteger(numerator) || numerator <= 0) return null;
+  // Round once, after term/mileage proration and the deductible discount.
+  // Integer arithmetic matches PostgreSQL numeric even at half-cent boundaries.
+  const prorated = (percent: number) => {
+    const divisor = BigInt(denominator) * 10000n;
+    const value =
+      BigInt(Math.round(r.amount * 100)) *
+      BigInt(numerator) *
+      BigInt(10000 - Math.round(percent * 100));
+    return Number((value + divisor / 2n) / divisor) / 100;
+  };
+  const scheduled_cost = prorated(discount);
   const reserve_floor =
     Math.round(
       (Math.round(p.price * 100) * Math.round(config.reserve_percent * 100)) /
@@ -155,6 +214,13 @@ export function protectionCost(
     scheduled_cost,
     reserve_floor,
     cost: Math.max(scheduled_cost, reserve_floor),
+    ...(discounts
+      ? {
+          base_cost: prorated(0),
+          deductible,
+          deductible_discount_percent: discount,
+        }
+      : {}),
   };
 }
 export function priceProduct(

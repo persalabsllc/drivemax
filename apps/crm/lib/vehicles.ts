@@ -137,3 +137,18 @@ export function parseVinDecode(payload: unknown, vin: string): DecodedVin {
         : null,
   };
 }
+
+// Sales responses omit costs. Supply validation placeholders only; the SQL
+// command guard restores authoritative costs/ACV before saving an ordinary edit.
+export function opportunityEditorInput<
+  T extends { vehicle_details: VehicleDetails | null; trade: Trade | null },
+>(value: T, showCosts: boolean): T {
+  if (showCosts) return value;
+  return {
+    ...value,
+    vehicle_details: value.vehicle_details
+      ? { ...value.vehicle_details, cost: null, recon: null }
+      : null,
+    trade: value.trade ? { ...value.trade, acv: 0 } : null,
+  };
+}

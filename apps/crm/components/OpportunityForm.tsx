@@ -13,6 +13,7 @@ import {
   type InventoryVehicle,
   vehicleName,
   inventorySnapshot,
+  opportunityEditorInput,
   tradeSchema,
 } from "../lib/vehicles";
 import {
@@ -114,7 +115,9 @@ export function OpportunityForm({
             setLocalError(
               section === "trade"
                 ? "Enter a valid trade VIN and mileage. Check any working figures you entered."
-                : "Complete the trade VIN, mileage, allowance, ACV, and payoff. Enter 0 where appropriate.",
+                : showCosts
+                  ? "Complete the trade VIN, mileage, allowance, ACV, and payoff. Enter 0 where appropriate."
+                  : "Complete the trade VIN, mileage, allowance and payoff. Enter 0 for no payoff.",
             );
             return;
           }
@@ -172,7 +175,9 @@ export function OpportunityForm({
                   structuredTrade.vin
                 : "",
         };
-        const checked = opportunitySchema.safeParse(data);
+        const checked = opportunitySchema.safeParse(
+          opportunityEditorInput(data, showCosts),
+        );
         if (!checked.success) {
           setLocalError(checked.error.issues[0].message);
           return;

@@ -19,6 +19,7 @@ import { readWorkspaceRecords } from "../lib/workspace-records";
 import { demoWorkspace } from "../lib/demo";
 import {
   commandSchema,
+  opportunitySchema,
   demoCommand,
   defaultQuote,
   type Workspace,
@@ -28,7 +29,7 @@ import { InventoryView } from "../components/Inventory";
 import { OpportunityForm } from "../components/OpportunityForm";
 import { ProtectionWorkspace } from "../components/ProtectionWorkspace";
 import { QuickQuote } from "../components/QuickQuote";
-import { inventorySnapshot } from "../lib/vehicles";
+import { inventorySnapshot, opportunityEditorInput } from "../lib/vehicles";
 
 const now = new Date("2026-10-31T16:00:00Z");
 const noop = () => {};
@@ -320,4 +321,37 @@ test("demo commands enforce role boundaries and restricted document downloads ar
   assert(
     !canReadDealFile("finance", { kind: "purchase", opportunity_id: null }),
   );
+});
+
+test("sales can save vehicle-only and trade-only edits with financial fields omitted", () => {
+  const owner = workspace("owner");
+  const vehicle = owner.inventory[0];
+  owner.opportunities[0].vehicle_details = { ...vehicle };
+  owner.opportunities[0].trade = {
+    vin: "1HGCM82633A004352",
+    year: 2003,
+    make: "Honda",
+    model: "Accord",
+    trim: "",
+    description: "Trade",
+    mileage: 100000,
+    allowance: 4500,
+    acv: 3500,
+    payoff: 1200,
+  };
+  const input = restrictWorkspace({
+    ...owner,
+    member: { ...owner.member, role: "sales" },
+  }).opportunities[0];
+  const parsed = opportunitySchema.parse(opportunityEditorInput(input, false));
+  assert.equal(parsed.vehicle_details?.cost, null);
+  assert.equal(parsed.vehicle_details?.recon, null);
+  assert.equal(parsed.trade?.acv, 0);
+  assert.equal(parsed.trade?.allowance, 4500);
+  assert.equal(parsed.trade?.payoff, 1200);
+  assert.equal(
+    opportunityEditorInput(owner.opportunities[0], true).trade?.acv,
+    3500,
+  );
+  assert.equal(owner.opportunities[0].vehicle_details?.cost, vehicle.cost);
 });

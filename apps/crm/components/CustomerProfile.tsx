@@ -918,7 +918,9 @@ export function CustomerProfile({
             canViewProfit={manager}
             accounting={
               manager
-                ? ws.sales?.find((s) => s.opportunity_id === o.id)?.accounting
+                ? ws.sales?.find(
+                    (s) => s.opportunity_id === o.id && s.status === "sold",
+                  )?.accounting
                 : undefined
             }
             busy={busy}

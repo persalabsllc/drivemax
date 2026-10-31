@@ -78,3 +78,13 @@ do $$ declare src text;old_text text;begin
  if strpos(src,old_text)=0 then raise exception 'Email queue permission gate missing';end if;
  execute replace(src,old_text,'if a.role=''sales'' and m.quote_id is not null then raise exception ''Desking access required'' using errcode=''42501'';end if; '||old_text);
 end $$;
+
+-- Desking packets use the dedicated license/insurance endpoints as well as the
+-- document vault. Finance must be able to assemble a customer's complete packet.
+do $$ declare signature text;src text;needle text:='m.role in(''owner'',''manager'')';begin
+ foreach signature in array array['public.dmcrm_license_access(uuid,uuid,uuid)','public.dmcrm_insurance_access(uuid,uuid,uuid,uuid)'] loop
+  select pg_get_functiondef(signature::regprocedure) into src;
+  if strpos(src,needle)=0 then raise exception 'Customer document permission gate missing: %',signature;end if;
+  execute replace(src,needle,'m.role in(''owner'',''manager'',''finance'')');
+ end loop;
+end $$;

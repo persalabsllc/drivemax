@@ -322,6 +322,37 @@ export async function verifyFinancePermissions(client) {
       ).allowed,
       "finance cannot access inventory-only documents",
     );
+    check(
+      (
+        await one("select dmcrm_license_access($1,$2,$3) allowed", [
+          org,
+          finance,
+          cid,
+        ])
+      ).allowed,
+      "finance can include a customer license in desking packets",
+    );
+    check(
+      (
+        await one("select dmcrm_insurance_access($1,$2,$3,$4) allowed", [
+          org,
+          finance,
+          cid,
+          oid,
+        ])
+      ).allowed,
+      "finance can include deal insurance in desking packets",
+    );
+    check(
+      !(
+        await one("select dmcrm_license_access($1,$2,$3) allowed", [
+          org,
+          finance,
+          randomUUID(),
+        ])
+      ).allowed,
+      "finance document access stays scoped to a dealership customer",
+    );
     // Role changes affect an existing login immediately, and inactive/mismatched membership fails closed.
     await cmd(owner.user_id, {
       type: "save_staff",

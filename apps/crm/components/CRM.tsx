@@ -1,5 +1,6 @@
 "use client";
 import { canDesk, canAccessView, roleLabel } from "../lib/permissions";
+import { WebsiteActivity } from "./WebsiteActivity";
 import { WebsiteChatInbox, WebsiteChatSettingsPanel } from "./WebsiteChatInbox";
 import { restrictWorkspace } from "../lib/workspace-permissions";
 import { ManagementReports } from "./ManagementReports";
@@ -137,6 +138,7 @@ type View =
   | "Money owed"
   | "Accounting"
   | "Conversations"
+  | "Website activity"
   | "Website chat"
   | "Workspace";
 const nav = [
@@ -148,6 +150,7 @@ const nav = [
   { name: "F&I Products", icon: ShieldCheck },
   { name: "Conversations", icon: MessageSquare },
   { name: "Website chat", icon: MessageSquare },
+  { name: "Website activity", icon: TrendingUp },
   { name: "Planner", icon: CalendarDays },
   { name: "Inventory", icon: Car },
   { name: "Trade-ins", icon: RefreshCw },
@@ -764,6 +767,8 @@ export default function CRM({
                         "Your sales day, in focus. Let’s move a few opportunities forward.",
                       "Work Today":
                         "The customers, appointments and deals that need your attention next.",
+                      "Website activity":
+                        "Vehicle interest, visitor journeys, and leads from your online showroom.",
                       "Website chat":
                         "Website visitors, real conversations, and the next appointment.",
                       "Management reports":
@@ -1465,17 +1470,59 @@ export default function CRM({
                 onCustomer={openCustomer}
               />
             )}
-            {view === "Website chat" && (
-              <WebsiteChatInbox ws={ws} demo={demo} initialId={chatId}
+            {view === "Website activity" && canManage(ws.member.role) && (
+              <WebsiteActivity
+                ws={ws}
+                demo={demo}
                 onCustomer={async (id, opportunityId) => {
                   try {
-                    const current = demo ? ws : await (await fetch("/api/workspace", {cache:"no-store"})).json();
-                    const customer = current.customers?.find((c: Customer) => c.id === id);
-                    if (!customer) throw Error("Refresh the workspace to open this customer.");
+                    const current = demo
+                      ? ws
+                      : await (
+                          await fetch("/api/workspace", { cache: "no-store" })
+                        ).json();
+                    const customer = current.customers?.find(
+                      (c: Customer) => c.id === id,
+                    );
+                    if (!customer) throw Error();
                     setWs(current);
                     openCustomer(customer, opportunityId);
-                  } catch { setError("Could not open the customer. Please refresh and try again."); }
-                }} />
+                  } catch {
+                    setError(
+                      "Could not open the customer. Please refresh and try again.",
+                    );
+                  }
+                }}
+              />
+            )}
+            {view === "Website chat" && (
+              <WebsiteChatInbox
+                ws={ws}
+                demo={demo}
+                initialId={chatId}
+                onCustomer={async (id, opportunityId) => {
+                  try {
+                    const current = demo
+                      ? ws
+                      : await (
+                          await fetch("/api/workspace", { cache: "no-store" })
+                        ).json();
+                    const customer = current.customers?.find(
+                      (c: Customer) => c.id === id,
+                    );
+                    if (!customer)
+                      throw Error(
+                        "Refresh the workspace to open this customer.",
+                      );
+                    setWs(current);
+                    openCustomer(customer, opportunityId);
+                  } catch {
+                    setError(
+                      "Could not open the customer. Please refresh and try again.",
+                    );
+                  }
+                }}
+              />
             )}
             {view === "Conversations" && (
               <ConversationsInbox
@@ -1496,7 +1543,9 @@ export default function CRM({
             {view === "Workspace" && (
               <>
                 <UserProfileSettings ws={ws} run={run} busy={busy} />
-                {canManage(ws.member.role) && <WebsiteChatSettingsPanel ws={ws} demo={demo} />}
+                {canManage(ws.member.role) && (
+                  <WebsiteChatSettingsPanel ws={ws} demo={demo} />
+                )}
                 {canManage(ws.member.role) && (
                   <ProductPricingSettings ws={ws} run={run} busy={busy} />
                 )}

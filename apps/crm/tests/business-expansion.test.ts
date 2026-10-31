@@ -1,3 +1,4 @@
+import { verifyProtectionPricing } from "../scripts/verify-protection-pricing.mjs";
 import { verifyProtectionPackets } from "../scripts/verify-protection-packets.mjs";
 import { verifyManagementService } from "../scripts/verify-management-service.mjs";
 import { verifyProtection } from "../scripts/verify-protection.mjs";
@@ -28,7 +29,11 @@ function soldWorkspace() {
   let ws = demoWorkspace(now);
   ws = demoCommand(
     ws,
-    { type: "close_opportunity", id: ws.opportunities[0].id, outcome: "sold" },
+    {
+      type: "close_opportunity",
+      id: ws.opportunities[0].id,
+      outcome: "sold",
+    },
     now,
   );
   return ws;
@@ -38,7 +43,11 @@ test("duplicate prevention normalizes shared contacts, respects license state, a
   const c = ws.customers[0];
   c.phone = "(252) 555-0123";
   c.email = "Case@Example.invalid";
-  c.person = { ...blankPerson, license_state: "NC", license_number: "A-01234" };
+  c.person = {
+    ...blankPerson,
+    license_state: "NC",
+    license_number: "A-01234",
+  };
   const input = {
     phone: "+1 2525550123",
     email: " case@example.invalid ",
@@ -448,6 +457,7 @@ test("database release checks enforce duplicate review, money and advertising hi
     await verifyManagementService(pg);
     await verifyProtection(pg);
     await verifyProtectionPackets(pg);
+    await verifyProtectionPricing(pg);
     await verifyCustomerLinks(pg);
     for (const [file, name] of [
       ["website-intake", "verifyWebsiteIntake"],

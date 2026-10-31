@@ -1,3 +1,4 @@
+import { verifyProtectionPricing } from "./verify-protection-pricing.mjs";
 import { verifyProtectionPackets } from "./verify-protection-packets.mjs";
 import { verifyManagementService } from "./verify-management-service.mjs";
 import { verifyProtection } from "./verify-protection.mjs";
@@ -79,6 +80,12 @@ if (process.env.VERCEL_ENV === "production") {
           : "Applied CRM migration: " + name,
       );
     }
+    // Legacy fixtures use explicit manual costs. Temporarily isolate them from
+    // any approved live schedule; the outer savepoint restores all settings.
+    await client.query("savepoint legacy_release_fixtures");
+    await client.query(
+      "update dmcrm_product_pricing set active=null,active_revision=null",
+    );
     await verifyWebsiteIntake(client);
     console.log(
       "Verified website-to-CRM intake with rolled-back fixtures: contact, test drive, sell-your-car, retry deduplication.",
@@ -131,6 +138,11 @@ if (process.env.VERCEL_ENV === "production") {
     );
     console.log(
       "Verified workflows with rolled-back fixtures: appointment changes, reminder cancellation, customer responses and no persistent test emails.",
+    );
+    await client.query("rollback to savepoint legacy_release_fixtures");
+    await verifyProtectionPricing(client);
+    console.log(
+      "Verified draft approval, automatic product costing, frozen contract allocations and immutable claims fund transactions; all fixtures rolled back.",
     );
     await setupWorkflowScheduler(client);
     console.log(

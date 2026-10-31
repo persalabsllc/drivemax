@@ -1,4 +1,5 @@
 "use client";
+import { priceProduct, type ProductPricing } from "../lib/protection-pricing";
 import { useState } from "react";
 import { ArrowUp, ArrowDown, Plus, Trash2 } from "lucide-react";
 import {
@@ -49,8 +50,10 @@ export function FIProducts({
   readOnly = false,
   temporary = false,
   menuCatalog = false,
+  pricing,
 }: {
   products?: FIProduct[];
+  pricing?: ProductPricing;
   legacy: number;
   onSave: (p: FIProduct[]) => void;
   onClose: () => void;
@@ -60,7 +63,7 @@ export function FIProducts({
 }) {
   const [items, setItems] = useState<FIProduct[]>(
       () =>
-        products ??
+        products?.map((p) => (readOnly ? p : priceProduct(p, pricing))) ??
         (legacy
           ? [
               {
@@ -83,7 +86,9 @@ export function FIProducts({
     [movedId, setMovedId] = useState<string | null>(null);
   const update = (id: string, p: Partial<FIProduct>) =>
     setItems((current) =>
-      current.map((x) => (x.id === id ? { ...x, ...p } : x)),
+      current.map((x) =>
+        x.id === id ? priceProduct({ ...x, ...p }, pricing) : x,
+      ),
     );
   const movedIndex = items.findIndex((p) => p.id === movedId);
   const productName = (p: FIProduct) => p.name?.trim() || productKinds[p.kind];
@@ -128,7 +133,9 @@ export function FIProducts({
         max="1000000"
         step="0.01"
         required={k !== "cost"}
-        disabled={readOnly}
+        disabled={
+          readOnly || (k === "cost" && !!pricing?.active && !!p.protection_plan)
+        }
         value={p[k] ?? ""}
         placeholder={k === "cost" ? "Cost unknown" : ""}
         onChange={(e) =>
@@ -409,7 +416,48 @@ export function FIProducts({
                   />
                 </label>
               )}
-              {money(p, "cost", "Product cost")}
+              {p.protection_plan === "maintenance" &&
+                p.mileage_limit > 0 &&
+                !readOnly && (
+                  <button
+                    type="button"
+                    className="text-btn"
+                    onClick={() =>
+                      update(p.id, {
+                        maintenance_visits: Math.min(
+                          100,
+                          Math.max(
+                            1,
+                            Math.floor(
+                              p.mileage_limit /
+                                (pricing?.active?.maintenance_interval ?? 5000),
+                            ),
+                          ),
+                        ),
+                      })
+                    }
+                  >
+                    Use one visit per{" "}
+                    {(
+                      pricing?.active?.maintenance_interval ?? 5000
+                    ).toLocaleString()}{" "}
+                    covered miles
+                  </button>
+                )}
+              {money(
+                p,
+                "cost",
+                p.pricing_snapshot
+                  ? "Internal allocation (auto)"
+                  : "Product cost",
+              )}
+              {p.pricing_snapshot && (
+                <p className="ops-help">
+                  Schedule: {fullMoney(p.pricing_snapshot.scheduled_cost)} ·
+                  Funding floor: {fullMoney(p.pricing_snapshot.reserve_floor)}.
+                  The higher amount is allocated to the fund. Internal only.
+                </p>
+              )}
               {money(p, "price", "Customer price")}
               <div className="ops-product-profit">
                 <small>Product gross</small>

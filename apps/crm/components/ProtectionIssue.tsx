@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { ShieldCheck } from "lucide-react";
 import { dayKey, fullMoney, type Workspace, type Quote } from "../lib/model";
 import type { FIProduct } from "../lib/operations";
+import { protectionCost } from "../lib/protection-pricing";
 import type { ManagementRun } from "./ServiceWorkspace";
 import { Modal } from "./ui";
 import { ProtectionPDFPreview } from "./ProtectionPDFPreview";
@@ -79,6 +80,22 @@ export function ProtectionIssue({
     setError("");
   };
   const unlimited = plan === "appearance" || values.unlimited_miles === "true";
+  const pricing = ws.product_pricing?.[0];
+  const allocation =
+    !linked && pricing?.active && pricing.active_revision
+      ? protectionCost(
+          {
+            protection_plan: plan,
+            term_months: Number(values.term_months),
+            mileage_limit: Number(values.term_miles),
+            unlimited_miles: unlimited,
+            maintenance_visits: Number(values.maintenance_visits),
+            price: Number(values.price),
+          },
+          pricing.active,
+          pricing.active_revision,
+        )
+      : null;
   function inputs(): ProtectionInput[] | null {
     const common = {
       ...values,
@@ -228,6 +245,13 @@ export function ProtectionIssue({
         if (!blocked) onClose();
       }}
     >
+      {!linked && (
+        <p className="ops-help">
+          {allocation
+            ? `Internal allocation: ${fullMoney(allocation.cost)} · Contribution: ${fullMoney(Number(values.price) - allocation.cost)}. These amounts are excluded from the contract PDF.`
+            : "Automatic cost schedule is inactive or coverage is incomplete. No new cost will be assumed for this standalone contract."}
+        </p>
+      )}
       <form
         ref={form}
         className="modal-form protection-form"
@@ -240,9 +264,8 @@ export function ProtectionIssue({
           submitting.current = true;
           setSaving(true);
           try {
-            const { buildProtectionPacketPdf } = await import(
-              "../lib/protection-pdf"
-            );
+            const { buildProtectionPacketPdf } =
+              await import("../lib/protection-pdf");
             await buildProtectionPacketPdf(draft(contracts), undefined, true);
             const payload = linked
               ? {

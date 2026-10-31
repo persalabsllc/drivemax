@@ -1,4 +1,13 @@
 import {
+  pricingCommands,
+  demoPricing,
+  validatePricedValues,
+  pricingForDeal,
+  type ProductPricing,
+  type PricingEvent,
+  type FundEntry,
+} from "./protection-pricing";
+import {
   protectionCommands,
   type ProtectionContract,
   type ProtectionEvent,
@@ -268,6 +277,9 @@ export type Staff = Partial<Omit<StaffDetails, "role" | "name" | "email">> & {
 export const canManage = (role: string) =>
   role === "owner" || role === "manager";
 export type Workspace = {
+  product_pricing?: ProductPricing[];
+  pricing_events?: PricingEvent[];
+  protection_fund_entries?: FundEntry[];
   protection_contracts?: ProtectionContract[];
   protection_events?: ProtectionEvent[];
   service_orders?: ServiceOrder[];
@@ -479,6 +491,7 @@ export const opportunitySchema = z.object({
   trade: tradeSchema.nullable(),
 });
 export const commandSchema = z.discriminatedUnion("type", [
+  ...pricingCommands,
   ...protectionCommands,
   ...serviceCommands,
   ...reportCommands,
@@ -637,6 +650,13 @@ function demoCommandInner(
     if (matches.some((m) => !c.duplicate_reviewed_ids?.includes(m.id)))
       throw Error(duplicateError);
   }
+  const pricingResult = demoPricing(ws, parsed, now);
+  if (pricingResult) return pricingResult;
+  if (parsed.type === "save_quote")
+    validatePricedValues(
+      parsed.values,
+      pricingForDeal(ws, parsed.opportunity_id),
+    );
   const protectionResult = demoProtection(ws, parsed, now);
   if (protectionResult) return protectionResult;
   const managementResult = demoManagement(ws, parsed, now);
@@ -1018,7 +1038,10 @@ function baseDemoCommand(
       ...(person !== undefined ? { person } : {}),
       ...(co_buyer !== undefined ? { co_buyer } : {}),
       ...(linked !== undefined
-        ? { co_buyer_id: linked?.id ?? null, co_buyer: linked?.person ?? null }
+        ? {
+            co_buyer_id: linked?.id ?? null,
+            co_buyer: linked?.person ?? null,
+          }
         : {}),
       updated_at: stamp,
     });

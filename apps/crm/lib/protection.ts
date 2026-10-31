@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { PricingSnapshot } from "./protection-pricing";
 import type { Workspace, Quote, Customer } from "./model";
 import { personFromCustomer } from "./people";
 import { vinSchema, vehicleName } from "./vehicles";
@@ -100,6 +101,8 @@ export type ProtectionCancellation = ReturnType<typeof protectionRefund> & {
   payment_reference: string;
 };
 export type ProtectionContract = ProtectionInput & {
+  internal_cost?: number | null;
+  pricing_snapshot?: PricingSnapshot | null;
   id: string;
   org_id: string;
   contract_number: string;
@@ -191,6 +194,7 @@ export const protectionCommands = [
   }),
   z.object({
     type: z.literal("record_protection_claim"),
+    paid_from_fund: z.boolean().optional(),
     ...key,
     revision: z.number().int().min(1),
     amount: amount.positive(),
@@ -203,6 +207,7 @@ export const protectionCommands = [
   }),
   z.object({
     type: z.literal("record_protection_refund"),
+    paid_from_fund: z.boolean().optional(),
     ...key,
     revision: z.number().int().min(1),
     paid_on: date,

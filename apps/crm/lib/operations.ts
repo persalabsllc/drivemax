@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { pricingSnapshotSchema } from "./protection-pricing";
 import {
   protectionPlanIds,
   protectionKind,
@@ -22,6 +23,7 @@ export const productKinds = {
 } as const;
 export const productSchema = z
   .object({
+    pricing_snapshot: pricingSnapshotSchema.optional(),
     protection_plan: z.enum(protectionPlanIds).optional(),
     unlimited_miles: z.boolean().optional(),
     maintenance_visits: z.number().int().min(1).max(100).optional(),
@@ -315,9 +317,11 @@ export function productsTotal(v: FinanceValues) {
 export const productCostFor = (s: Sale, p: FIProduct) =>
   recordedProductCost(s.accounting ?? {}, p);
 const recordedProductCost = (a: Partial<DealAccounting>, p: FIProduct) =>
-  Object.hasOwn(a.product_costs ?? {}, p.id)
-    ? (a.product_costs![p.id] ?? null)
-    : (p.cost ?? null);
+  p.pricing_snapshot
+    ? p.cost
+    : Object.hasOwn(a.product_costs ?? {}, p.id)
+      ? (a.product_costs![p.id] ?? null)
+      : (p.cost ?? null);
 
 /** Shared gross basis for live desking estimates and the closed-deal ledger. */
 export function quoteGross(

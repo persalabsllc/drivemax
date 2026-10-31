@@ -1,3 +1,4 @@
+import { pricingErrors } from "../../../lib/protection-pricing";
 import { protectionErrors } from "../../../lib/protection";
 import { managementErrors } from "../../../lib/service";
 import { dispatchReports } from "../../../lib/report-worker";
@@ -72,7 +73,10 @@ export async function POST(req: NextRequest) {
             ? [{ id: parsed.data.id, contract: parsed.data.contract }]
             : parsed.data.contracts;
         await buildProtectionPacketPdf(
-          contracts.map((c) => ({ ...protectionDraft(c.contract), id: c.id })),
+          contracts.map((c) => ({
+            ...protectionDraft(c.contract),
+            id: c.id,
+          })),
           logo,
           true,
           fonts,
@@ -108,6 +112,7 @@ export async function POST(req: NextRequest) {
                     : [
                           ...businessErrors,
                           ...protectionErrors,
+                          ...pricingErrors,
                           ...managementErrors,
                           duplicateError,
                           "Appraisal changed in another session. Reload before saving.",

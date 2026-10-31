@@ -6,6 +6,9 @@ export type WorkspaceScope = {
   role: Workspace["member"]["role"];
 };
 export const workspaceTables = [
+  "product_pricing",
+  "pricing_events",
+  "protection_fund_entries",
   "protection_contracts",
   "protection_events",
   "service_orders",
@@ -59,6 +62,8 @@ export async function readWorkspaceRecords(
   async function all(table: string) {
     if (
       [
+        "pricing_events",
+        "protection_fund_entries",
         "protection_contracts",
         "protection_events",
         "trades",

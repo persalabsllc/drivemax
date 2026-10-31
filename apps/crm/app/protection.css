@@ -328,3 +328,51 @@
     text-align: left;
   }
 }
+.protection-product-summary {
+  display: grid;
+  gap: 10px;
+}
+.protection-product-summary article {
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 15px;
+  background: #f8fafc;
+}
+.protection-product-summary article > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+}
+.protection-product-summary p {
+  font-size: 12px;
+  color: #526276;
+  margin: 8px 0;
+  line-height: 1.6;
+}
+.protection-product-summary small {
+  display: block;
+  font-size: 11px;
+  color: #576b80;
+  line-height: 1.65;
+}
+.protection-product-summary .protection-product-expiry {
+  font-weight: 650;
+  margin-top: 5px;
+  color: #224e75;
+}
+.protection-issued-links {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+}
+.protection-issued-links .text-btn {
+  font-size: 11px;
+  text-align: left;
+}
+.protection-from-quote > small {
+  color: #5b6f83;
+}
+.protection-from-quote > .form-error {
+  width: 100%;
+}

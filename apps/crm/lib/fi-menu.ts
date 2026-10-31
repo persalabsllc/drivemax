@@ -64,7 +64,12 @@ export const fiCoverage = (p: FIProduct) =>
     p.term_months ? `${p.term_months} months` : "Term not specified",
     p.mileage_limit
       ? `${p.mileage_limit.toLocaleString("en-US")} ${p.protection_plan ? "additional miles" : "miles"}`
-      : "Mileage not specified",
+      : p.unlimited_miles
+        ? "Unlimited miles"
+        : "Mileage not specified",
+    ...(p.protection_plan === "maintenance" && p.maintenance_visits
+      ? [`${p.maintenance_visits} visits · $125 per visit`]
+      : []),
   ].join(" / ");
 
 export function newFIMenu(products: FIProduct[] = [], legacy = 0): FIMenu {
@@ -194,6 +199,7 @@ export function customerFIProduct(p: FIProduct) {
   return {
     id: p.id,
     ...(p.protection_plan ? { protection_plan: p.protection_plan } : {}),
+    ...(p.claim_limit ? { claim_limit: p.claim_limit } : {}),
     name: fiProductName(p),
     provider: p.provider,
     description: p.description || "",

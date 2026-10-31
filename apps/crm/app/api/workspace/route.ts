@@ -54,21 +54,27 @@ export async function POST(req: NextRequest) {
         },
         400,
       );
-    if (parsed.data.type === "issue_protection") {
+    if (
+      parsed.data.type === "issue_protection" ||
+      parsed.data.type === "issue_protection_batch"
+    ) {
       if (!canManage(s.role))
         return json({ error: "Manager access required." }, 403);
-      const [{ buildProtectionPdf }, { protectionPdfAssets }] =
+      const [{ buildProtectionPacketPdf }, { protectionPdfAssets }] =
         await Promise.all([
           import("../../../lib/protection-pdf"),
           import("../../../lib/protection-pdf-server"),
         ]);
       const { logo, fonts } = await protectionPdfAssets();
       try {
-        await buildProtectionPdf(
-          protectionDraft(parsed.data.contract),
+        const contracts =
+          parsed.data.type === "issue_protection"
+            ? [{ id: parsed.data.id, contract: parsed.data.contract }]
+            : parsed.data.contracts;
+        await buildProtectionPacketPdf(
+          contracts.map((c) => ({ ...protectionDraft(c.contract), id: c.id })),
           logo,
           true,
-          false,
           fonts,
         );
       } catch {

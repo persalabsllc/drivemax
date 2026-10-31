@@ -3,7 +3,9 @@ import {
   protectionExpiry,
   protectionRefund,
   protectionIssuer,
-  protectionVersion,
+  protectionEdition,
+  validateProtectionBatch,
+  validateProtectionClaim,
   protectionMoney,
   validateProtectionSource,
   type ProtectionCommand,
@@ -13,10 +15,12 @@ export function demoProtection(
   ws: Workspace,
   command: Command,
   now: Date,
+  batchId?: string,
 ): Workspace | null {
   if (
     ![
       "issue_protection",
+      "issue_protection_batch",
       "cancel_protection",
       "record_protection_claim",
       "record_protection_refund",
@@ -27,9 +31,42 @@ export function demoProtection(
   const p = command as ProtectionCommand;
   const prior = ws.protection_events?.find((e) => e.id === p.request_id);
   if (prior) {
-    if (JSON.stringify(prior.command) !== JSON.stringify(p))
+    if (
+      prior.org_id !== ws.org.id ||
+      prior.created_by !== ws.member.id ||
+      JSON.stringify(prior.command) !== JSON.stringify(p)
+    )
       throw Error("Use a new request key for changed details.");
     return ws;
+  }
+  if (p.type === "issue_protection_batch") {
+    if (ws.protection_contracts?.some((c) => c.batch_id === p.id))
+      throw Error("This product already has a contract.");
+    validateProtectionBatch(ws, p);
+    let state = structuredClone(ws);
+    for (const item of p.contracts)
+      state = demoProtection(
+        state,
+        {
+          type: "issue_protection",
+          id: item.id,
+          request_id: item.id,
+          contract: item.contract,
+        },
+        now,
+        p.id,
+      )!;
+    state.protection_events!.unshift({
+      id: p.request_id,
+      org_id: state.org.id,
+      contract_id: p.contracts[0].id,
+      action: p.type,
+      command: p,
+      result: { batch_id: p.id, contract_ids: p.contracts.map((c) => c.id) },
+      created_by: state.member.id,
+      created_at: now.toISOString(),
+    });
+    return state;
   }
   const s = structuredClone(ws),
     today = dayKey(now),
@@ -51,9 +88,13 @@ export function demoProtection(
         p.contract.issued_on,
         p.contract.term_months,
       ),
-      expires_miles: p.contract.start_miles + p.contract.term_miles,
+      expires_miles:
+        p.contract.term_miles === null
+          ? null
+          : p.contract.start_miles + p.contract.term_miles,
+      batch_id: batchId ?? null,
       status: "active",
-      terms_version: protectionVersion,
+      terms_version: protectionEdition(p.contract.plan),
       issuer: protectionIssuer,
       claims_paid: 0,
       cancellation: null,
@@ -80,10 +121,7 @@ export function demoProtection(
     } else {
       if (c.status === "canceled") throw Error("Contract is already canceled.");
       if (p.type === "record_protection_claim") {
-        if (p.paid_on < c.issued_on || p.paid_on > today)
-          throw Error("Contract dates or mileage are invalid.");
-        if (c.claims_paid + p.amount > c.claim_limit)
-          throw Error("Paid claims exceed the contract benefit limit.");
+        validateProtectionClaim(c, p, s.protection_events, today);
         c.claims_paid = protectionMoney(c.claims_paid + p.amount);
       } else {
         if (p.canceled_on > today)

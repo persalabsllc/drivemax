@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  protectionPlanIds,
+  protectionKind,
+  isMechanicalPlan,
+} from "./protection-programs";
 import type { Customer, Opportunity, Quote, Task, Workspace } from "./model";
 import type { InventoryVehicle, Trade, VehicleDetails } from "./vehicles";
 import { calculateQuote, type FinanceValues } from "./finance";
@@ -17,7 +22,10 @@ export const productKinds = {
 } as const;
 export const productSchema = z
   .object({
-    protection_plan: z.enum(["deluxe", "platinum"]).optional(),
+    protection_plan: z.enum(protectionPlanIds).optional(),
+    unlimited_miles: z.boolean().optional(),
+    maintenance_visits: z.number().int().min(1).max(100).optional(),
+    claim_limit: amount.positive().multipleOf(0.01).optional(),
     id: z.uuid(),
     kind: z.enum([
       "service_contract",
@@ -41,20 +49,31 @@ export const productSchema = z
     notes: z.string().max(2000),
   })
   .superRefine((p, ctx) => {
-    if (
-      p.protection_plan &&
-      (p.kind !== "service_contract" ||
-        p.term_months < 1 ||
-        p.term_months > 120 ||
-        p.mileage_limit < 1 ||
-        p.price <= 0 ||
-        Math.abs(p.price * 100 - Math.round(p.price * 100)) > 0.00001 ||
-        ![0, 250, 500, 1000].includes(p.deductible))
-    )
+    if (!p.protection_plan) return;
+    const mechanical = isMechanicalPlan(p.protection_plan);
+    const invalid =
+      p.kind !== protectionKind(p.protection_plan) ||
+      p.term_months < 1 ||
+      p.term_months > 120 ||
+      p.price <= 0 ||
+      Math.abs(p.price * 100 - Math.round(p.price * 100)) > 0.00001 ||
+      (p.unlimited_miles
+        ? mechanical || p.mileage_limit !== 0
+        : p.mileage_limit < 1) ||
+      (mechanical
+        ? ![0, 250, 500, 1000].includes(p.deductible)
+        : p.deductible !== 0) ||
+      (p.protection_plan === "appearance" &&
+        (p.term_months !== 96 || !p.unlimited_miles)) ||
+      (p.protection_plan === "maintenance" && !p.maintenance_visits) ||
+      (p.protection_plan !== "maintenance" &&
+        p.maintenance_visits !== undefined) ||
+      (!mechanical && p.claim_limit !== undefined);
+    if (invalid)
       ctx.addIssue({
         code: "custom",
         message:
-          "Drive Max Protection requires a service contract, 1–120 months, additional covered miles, a positive price, and a $0, $250, $500 or $1,000 deductible.",
+          "Review Drive Max program, price, term, mileage and benefit limits. Maintenance requires an included visit count; appearance is 96 months with unlimited mileage.",
       });
   });
 export type FIProduct = z.infer<typeof productSchema>;

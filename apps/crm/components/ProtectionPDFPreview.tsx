@@ -5,12 +5,14 @@ import { Modal } from "./ui";
 
 export function ProtectionPDFPreview({
   contract,
+  contracts,
   demo,
   draft = false,
   cancellation = false,
   onClose,
 }: {
-  contract: ProtectionContract;
+  contract?: ProtectionContract;
+  contracts?: ProtectionContract[];
   demo: boolean;
   draft?: boolean;
   cancellation?: boolean;
@@ -22,34 +24,47 @@ export function ProtectionPDFPreview({
     let stopped = false,
       objectUrl = "";
     async function load() {
+      const packet = contracts ?? (contract ? [contract] : []);
+      if (!packet.length) throw Error("No contracts selected.");
       let blob: Blob;
       if (demo || draft) {
-        const [{ buildProtectionPdf }, response, regular, bold] =
-          await Promise.all([
-            import("../lib/protection-pdf"),
-            fetch("/print-materials/drive-max-logo.png"),
-            fetch("/pdf-standard-fonts/LiberationSans-Regular.ttf"),
-            fetch("/pdf-standard-fonts/LiberationSans-Bold.ttf"),
-          ]);
+        const [
+          { buildProtectionPdf, buildProtectionPacketPdf },
+          response,
+          regular,
+          bold,
+        ] = await Promise.all([
+          import("../lib/protection-pdf"),
+          fetch("/print-materials/drive-max-logo.png"),
+          fetch("/pdf-standard-fonts/LiberationSans-Regular.ttf"),
+          fetch("/pdf-standard-fonts/LiberationSans-Bold.ttf"),
+        ]);
         if (!response.ok || !regular.ok || !bold.ok)
           throw Error(
             "The contract logo could not be loaded. Please try again.",
           );
-        const bytes = await buildProtectionPdf(
-          contract,
-          new Uint8Array(await response.arrayBuffer()),
-          draft,
-          cancellation,
-          {
-            regular: new Uint8Array(await regular.arrayBuffer()),
-            bold: new Uint8Array(await bold.arrayBuffer()),
-          },
-        );
+        const logo = new Uint8Array(await response.arrayBuffer());
+        const fonts = {
+          regular: new Uint8Array(await regular.arrayBuffer()),
+          bold: new Uint8Array(await bold.arrayBuffer()),
+        };
+        const bytes = cancellation
+          ? await buildProtectionPdf(packet[0], logo, draft, true, fonts)
+          : await buildProtectionPacketPdf(packet, logo, draft, fonts);
         blob = new Blob([new Uint8Array(bytes)], { type: "application/pdf" });
       } else {
         const response = await fetch(
-          `/api/protection/${contract.id}/document${cancellation ? "?cancellation=1" : ""}`,
-          { cache: "no-store" },
+          contracts
+            ? "/api/protection/packet"
+            : `/api/protection/${contract!.id}/document${cancellation ? "?cancellation=1" : ""}`,
+          contracts
+            ? {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ids: contracts.map((c) => c.id) }),
+                cache: "no-store",
+              }
+            : { cache: "no-store" },
         );
         if (!response.ok)
           throw Error(
@@ -70,7 +85,7 @@ export function ProtectionPDFPreview({
       stopped = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [contract, demo, draft, cancellation]);
+  }, [contract, contracts, demo, draft, cancellation]);
   return (
     <Modal
       wide
@@ -79,7 +94,9 @@ export function ProtectionPDFPreview({
           ? "Review contract before issuance"
           : cancellation
             ? "Cancellation statement"
-            : contract.contract_number
+            : contracts
+              ? `Selected contracts · ${contracts.length}`
+              : (contract?.contract_number ?? "Contract PDF")
       }
       subtitle={
         draft
@@ -109,7 +126,7 @@ export function ProtectionPDFPreview({
               <a
                 className="btn"
                 href={url}
-                download={`${draft ? "Drive-Max-Protection-draft" : contract.contract_number}${cancellation ? "-cancellation" : ""}.pdf`}
+                download={`${draft ? "Drive-Max-Protection-draft" : contracts ? "Drive-Max-Protection-Packet" : (contract?.contract_number ?? "Contract PDF")}${cancellation ? "-cancellation" : ""}.pdf`}
               >
                 Download PDF
               </a>

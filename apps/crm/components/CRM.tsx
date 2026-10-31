@@ -12,6 +12,7 @@ import { DocumentVault } from "./DocumentVault";
 import { Appraisals } from "./Appraisals";
 import { OverviewFunnel } from "./OverviewFunnel";
 import { UserProfileSettings } from "./UserProfileSettings";
+import { ProductPricingSettings } from "./ProductPricingSettings";
 import { WorkflowSettings } from "./WorkflowSettings";
 import { BuyerMatches } from "./BuyerMatches";
 import { InventoryPreparation } from "./InventoryPreparation";
@@ -1469,6 +1470,7 @@ export default function CRM({
             {view === "Workspace" && (
               <>
                 <UserProfileSettings ws={ws} run={run} busy={busy} />
+                <ProductPricingSettings ws={ws} run={run} busy={busy} />
                 <WorkflowSettings ws={ws} run={run} busy={busy} demo={demo} />
                 <IntegrationSettings ws={ws} demo={demo} />
                 <PushSettings demo={demo} />

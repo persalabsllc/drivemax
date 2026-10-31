@@ -65,6 +65,7 @@ export function QuickQuote({
       <Desking
         key={revision}
         inventory={ws.inventory}
+        pricing={ws.product_pricing?.[0]}
         canViewProfit={canManage(ws.member.role)}
         busy={busy}
         quick={{

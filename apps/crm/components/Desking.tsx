@@ -1,4 +1,5 @@
 "use client";
+import type { ProductPricing } from "../lib/protection-pricing";
 import { useRef, useState } from "react";
 import {
   Printer,
@@ -51,6 +52,7 @@ import {
 } from "../lib/fi-menu";
 type DeskingProps = {
   inventory: InventoryVehicle[];
+  pricing?: ProductPricing;
   busy: boolean;
   dealership?: string;
   canViewProfit?: boolean;
@@ -98,6 +100,7 @@ export function Desking({
   canViewProfit = false,
   accounting,
   protection,
+  pricing,
 }: DeskingProps) {
   const [productsOpen, setProductsOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -207,6 +210,7 @@ export function Desking({
     <div className="profile-body desking">
       {productsOpen && (
         <FIProducts
+          pricing={pricing}
           products={draft.products}
           legacy={draft.serviceContract ?? 0}
           readOnly={readOnly}
@@ -225,6 +229,7 @@ export function Desking({
       )}
       {menuOpen && customer && (
         <FIMenu
+          pricing={pricing}
           quote={readOnly && latest ? latest : currentQuote}
           customer={customer}
           dealership={dealership}
@@ -679,7 +684,10 @@ export function Desking({
                                     ...draft,
                                     financeOptions: terms.map((x, j) =>
                                       i === j
-                                        ? { ...x, apr: Number(e.target.value) }
+                                        ? {
+                                            ...x,
+                                            apr: Number(e.target.value),
+                                          }
                                         : x,
                                     ),
                                   })

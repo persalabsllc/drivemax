@@ -1,4 +1,5 @@
 "use client";
+import { priceProduct, type ProductPricing } from "../lib/protection-pricing";
 import { useState, type ReactNode } from "react";
 import { Printer, SlidersHorizontal, Check, Save } from "lucide-react";
 import {
@@ -34,6 +35,7 @@ export function FIMenu({
   onClose,
   onSave,
   contracting,
+  pricing,
 }: {
   quote: PrintableQuote;
   customer: Customer;
@@ -44,13 +46,20 @@ export function FIMenu({
   onClose: () => void;
   onSave: (menu: Menu, choice: FIChoice | null) => Promise<{ ok: boolean }>;
   contracting?: ReactNode;
+  pricing?: ProductPricing;
 }) {
-  const [menu, setMenu] = useState<Menu>(() =>
+  const [menuDraft, setMenu] = useState<Menu>(() =>
     structuredClone(
       quote.values.fiMenu ??
         newFIMenu(quote.values.products, quote.values.serviceContract),
     ),
   );
+  const menu = readOnly
+    ? menuDraft
+    : {
+        ...menuDraft,
+        products: menuDraft.products.map((p) => priceProduct(p, pricing)),
+      };
   const [editing, setEditing] = useState(false),
     [printing, setPrinting] = useState(false),
     [error, setError] = useState("");
@@ -68,7 +77,12 @@ export function FIMenu({
       );
       return null;
     }
-    const parsed = fiMenuSchema.safeParse(menu);
+    const parsed = fiMenuSchema.safeParse({
+      ...menu,
+      products: menu.products.map((p) =>
+        readOnly ? p : priceProduct(p, pricing),
+      ),
+    });
     if (!parsed.success) {
       setError(
         parsed.error.issues[0]?.message ||
@@ -333,6 +347,7 @@ export function FIMenu({
       </div>
       {editing && (
         <FIProducts
+          pricing={pricing}
           menuCatalog
           products={menu.products}
           legacy={0}

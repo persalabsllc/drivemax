@@ -649,6 +649,7 @@ function ProtectionTransaction({
     [serviceOn, setServiceOn] = useState(dayKey()),
     [units, setUnits] = useState("1"),
     [reference, setReference] = useState(""),
+    [paidFromFund, setPaidFromFund] = useState(false),
     [error, setError] = useState(""),
     [confirmed, setConfirmed] = useState(false),
     keyFor = useRequestKey();
@@ -708,6 +709,7 @@ function ProtectionTransaction({
             payload = {
               ...base,
               type: "record_protection_claim",
+              paid_from_fund: paidFromFund,
               paid_on: date,
               amount: Number(amount),
               reference,
@@ -720,6 +722,7 @@ function ProtectionTransaction({
             payload = {
               ...base,
               type: "record_protection_refund",
+              paid_from_fund: paidFromFund,
               paid_on: date,
               reference,
             };
@@ -908,6 +911,15 @@ function ProtectionTransaction({
                 payment made outside the CRM.
               </p>
             )}
+            <label className="protection-check">
+              <input
+                type="checkbox"
+                checked={paidFromFund}
+                onChange={(e) => setPaidFromFund(e.target.checked)}
+              />
+              Paid from the protection claims fund. Record this withdrawal in
+              Accounting.
+            </label>
             <label>
               Check, transaction or claim reference
               <input

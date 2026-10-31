@@ -1,3 +1,4 @@
+import { protectionCost } from "./protection-pricing";
 import { canManage, dayKey, type Command, type Workspace } from "./model";
 import {
   protectionExpiry,
@@ -102,6 +103,27 @@ export function demoProtection(
       created_at: at,
       created_by: s.member.id,
     };
+    const source = s.quotes
+      .find((q) => q.id === c!.quote_id)
+      ?.values.products?.find((x) => x.id === c!.product_id);
+    const pricing = s.product_pricing?.[0];
+    c.pricing_snapshot =
+      source?.pricing_snapshot ??
+      (!c.quote_id && pricing?.active && pricing.active_revision
+        ? protectionCost(
+            {
+              protection_plan: c.plan,
+              term_months: c.term_months,
+              mileage_limit: c.term_miles ?? 0,
+              unlimited_miles: c.term_miles === null,
+              maintenance_visits: c.maintenance_visits ?? undefined,
+              price: c.price,
+            },
+            pricing.active,
+            pricing.active_revision,
+          )
+        : null);
+    c.internal_cost = source?.cost ?? c.pricing_snapshot?.cost ?? null;
     s.protection_contracts.unshift(c);
   } else {
     if (!c) throw Error("Contract unavailable.");
@@ -139,6 +161,32 @@ export function demoProtection(
       }
     }
     c.revision++;
+  }
+  if (
+    (p.type === "record_protection_claim" ||
+      p.type === "record_protection_refund") &&
+    p.paid_from_fund
+  ) {
+    s.protection_fund_entries ??= [];
+    s.protection_fund_entries.unshift({
+      id: p.request_id,
+      org_id: s.org.id,
+      direction: "out",
+      amount:
+        p.type === "record_protection_claim"
+          ? p.amount
+          : c!.cancellation!.refund,
+      posted_on: p.paid_on,
+      reference: p.reference,
+      notes:
+        p.type === "record_protection_claim"
+          ? "Paid protection claim"
+          : "Paid cancellation refund",
+      contract_id: c!.id,
+      reversal_of: null,
+      created_by: s.member.id,
+      created_at: at,
+    });
   }
   s.protection_events.unshift({
     id: p.request_id,

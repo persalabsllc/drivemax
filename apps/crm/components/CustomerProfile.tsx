@@ -1,4 +1,5 @@
 "use client";
+import { pricingForDeal } from "../lib/protection-pricing";
 import { FacebookThread } from "./FacebookThread";
 import { customerActivity } from "../lib/activity";
 import { CustomerWorkflows } from "./WorkflowSettings";
@@ -916,6 +917,7 @@ export function CustomerProfile({
             inventory={ws.inventory}
             quotes={ws.quotes}
             canViewProfit={manager}
+            pricing={pricingForDeal(ws, o.id)}
             protection={manager ? { ws, run, demo } : undefined}
             accounting={
               manager
@@ -1237,7 +1239,11 @@ export function CustomerProfile({
             submit={async (data) => {
               const result = await run(
                 modal !== "new-opportunity" && o
-                  ? { type: "update_opportunity", id: o.id, opportunity: data }
+                  ? {
+                      type: "update_opportunity",
+                      id: o.id,
+                      opportunity: data,
+                    }
                   : {
                       type: "create_opportunity",
                       customer_id: customer.id,

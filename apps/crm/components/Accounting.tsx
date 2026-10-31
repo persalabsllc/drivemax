@@ -1,4 +1,5 @@
 "use client";
+import { ProtectionFund } from "./ProtectionFund";
 import { useState } from "react";
 import { Download, Printer, BarChart3 } from "lucide-react";
 import { type Workspace, dayKey, fullMoney, canManage } from "../lib/model";
@@ -486,6 +487,7 @@ export function Accounting({
   );
   return (
     <>
+      {manager && <ProtectionFund ws={ws} run={run} busy={busy} />}
       <section className="panel ops-accounting">
         <div className="section-heading">
           <div>

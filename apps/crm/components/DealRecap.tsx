@@ -461,10 +461,10 @@ function AccountingEditor({
       </div>
       {sale.snapshot.quote?.values.products?.length ? (
         <>
-          <h3>Actual F&I provider costs</h3>
+          <h3>F&I product costs and allocations</h3>
           <p className="ops-help">
-            Cost adjustments update accounting without changing the original
-            customer proposal.
+            Scheduled Drive Max allocations are frozen with the deal. Manual
+            cost adjustments apply to products without a saved pricing schedule.
           </p>
           <div className="ops-form-grid">
             {sale.snapshot.quote.values.products.map((p) => (
@@ -476,6 +476,7 @@ function AccountingEditor({
                   max="1000000"
                   step="0.01"
                   value={productCostFor(currentSale, p) ?? ""}
+                  disabled={!!p.pricing_snapshot}
                   placeholder="Not recorded"
                   onChange={(e) =>
                     setA({

@@ -1,5 +1,7 @@
 import "./globals.css";
 import "./reviews.css";
+import "./website-chat.css";
+import WebsiteChat from "./_components/WebsiteChat";
 import type { Metadata, Viewport } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -206,6 +208,7 @@ export default function RootLayout({
             </nav>
           </div>
         </footer>
+        <WebsiteChat />
       </body>
     </html>
   );

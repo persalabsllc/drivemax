@@ -22,7 +22,7 @@ export default function PrivacyPolicy() {
       <section className="page-section">
         <article className="container policy-copy">
           <p className="policy-updated">
-            Effective and last updated: October 20, 2026
+            Effective and last updated: October 31, 2026
           </p>
           <p>
             This policy covers drivemaxusedcars.com, inquiries submitted
@@ -59,6 +59,21 @@ export default function PrivacyPolicy() {
             customer records. We also use it to operate and protect the website,
             prevent spam and fraud, resolve disputes, and meet legal
             obligations.
+          </p>
+
+          <h2>Website chat</h2>
+          <p>
+            Our chat begins with a clearly labeled AI assistant. Chat messages
+            are saved in our CRM and processed through Vercel AI Gateway and
+            OpenAI to answer your questions. Authorized dealership staff can
+            review the conversation and take over. A secure browser cookie
+            lets you return to your conversation for up to seven days. Please
+            do not send Social Security numbers, payment card details, passwords,
+            or credit application documents in chat. You can ask for a staff
+            member or call us instead. Contact details are saved for follow-up
+            when you confirm the contact form; appointments are booked only
+            after you confirm a time. Chat permission does not enroll you in
+            text messaging.
           </p>
 
           <h2>Calls, texts, email, and your choices</h2>

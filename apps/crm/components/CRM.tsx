@@ -320,7 +320,11 @@ export default function CRM({
       if (demo) {
         const next = demoCommand(ws, command);
         setWs(next);
-        if (command.type === "issue_protection") id = command.id;
+        if (
+          command.type === "issue_protection" ||
+          command.type === "issue_protection_batch"
+        )
+          id = command.id;
         if (command.type === "create_customer") id = next.customers[0].id;
         if (command.type === "merge_customers") id = command.target_id;
         if (command.type === "set_co_buyer") id = command.opportunity_id;

@@ -14,6 +14,46 @@ import {
   protectionIssuer,
 } from "../lib/protection";
 import { Modal } from "./ui";
+import {
+  isMechanicalPlan,
+  protectionKind,
+  protectionDescriptions,
+  type ProtectionPlan,
+} from "../lib/protection-programs";
+function programValues(
+  p: FIProduct,
+  plan?: ProtectionPlan,
+): Partial<FIProduct> {
+  if (!plan)
+    return {
+      protection_plan: undefined,
+      unlimited_miles: undefined,
+      maintenance_visits: undefined,
+      claim_limit: undefined,
+      provider: "",
+      name: productKinds[p.kind],
+      description: "",
+      contract_number: "",
+    };
+  return {
+    protection_plan: plan,
+    provider: protectionIssuer.name,
+    name: `Drive Max Protection ${protectionPlans[plan]}`,
+    contract_number: "",
+    deductible:
+      isMechanicalPlan(plan) &&
+      protectionDeductibles.includes(p.deductible as 0)
+        ? p.deductible
+        : 0,
+    term_months: plan === "appearance" ? 96 : p.term_months,
+    unlimited_miles: plan === "appearance",
+    mileage_limit: plan === "appearance" ? 0 : p.mileage_limit,
+    maintenance_visits: undefined,
+    claim_limit: undefined,
+    description:
+      protectionDescriptions[plan] + " See contract for terms and exclusions.",
+  };
+}
 export function FIProducts({
   products,
   legacy,
@@ -137,8 +177,12 @@ export function FIProducts({
               throw Error("Combined product prices exceed the quote limit");
             onSave(parsed);
             onClose();
-          } catch {
-            setError("Review product details and amounts before applying.");
+          } catch (e) {
+            setError(
+              e instanceof Error
+                ? e.message
+                : "Review product details and amounts before applying.",
+            );
           }
         }}
       >
@@ -161,12 +205,22 @@ export function FIProducts({
                 <select
                   value={p.kind}
                   disabled={readOnly}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const kind = e.target.value as FIProduct["kind"];
+                    const plan = [
+                      "maintenance",
+                      "tire_wheel",
+                      "pdr",
+                      "appearance",
+                      "key_replacement",
+                    ].includes(kind)
+                      ? (kind as ProtectionPlan)
+                      : undefined;
                     update(p.id, {
-                      kind: e.target.value as FIProduct["kind"],
-                      protection_plan: undefined,
-                    })
-                  }
+                      kind,
+                      ...programValues({ ...p, kind }, plan),
+                    });
+                  }}
                 >
                   {Object.entries(productKinds).map(([id, name]) => (
                     <option key={id} value={id}>
@@ -221,43 +275,35 @@ export function FIProducts({
               )}
             </div>
             <div className="ops-form-grid">
-              {p.kind === "service_contract" && (
+              {!["gap", "other"].includes(p.kind) && (
                 <label>
                   Contract program
                   <select
                     disabled={readOnly}
                     value={p.protection_plan ?? ""}
-                    onChange={(e) => {
-                      const plan = e.target
-                        .value as FIProduct["protection_plan"];
-                      update(p.id, {
-                        protection_plan: plan || undefined,
-                        ...(plan
-                          ? {
-                              provider: protectionIssuer.name,
-                              name: `Drive Max Protection ${protectionPlans[plan]}`,
-                              contract_number: "",
-                              deductible: protectionDeductibles.includes(
-                                p.deductible as 0,
-                              )
-                                ? p.deductible
-                                : 0,
-                              description:
-                                plan === "deluxe"
-                                  ? "Listed engine, transmission and drive axle powertrain components. See contract for terms and exclusions."
-                                  : "Listed powertrain components plus alternator, water pump, thermostat, listed sensors and engine accessories. See contract for terms and exclusions.",
-                            }
-                          : {}),
-                      });
-                    }}
+                    onChange={(e) =>
+                      update(
+                        p.id,
+                        programValues(
+                          p,
+                          (e.target.value || undefined) as
+                            | ProtectionPlan
+                            | undefined,
+                        ),
+                      )
+                    }
                   >
                     <option value="">Other / outside provider</option>
-                    <option value="deluxe">
-                      Drive Max Protection · Deluxe
-                    </option>
-                    <option value="platinum">
-                      Drive Max Protection · Platinum
-                    </option>
+                    {Object.entries(protectionPlans)
+                      .filter(
+                        ([key]) =>
+                          protectionKind(key as ProtectionPlan) === p.kind,
+                      )
+                      .map(([key, label]) => (
+                        <option value={key} key={key}>
+                          Drive Max Protection · {label}
+                        </option>
+                      ))}
                   </select>
                 </label>
               )}
@@ -274,7 +320,7 @@ export function FIProducts({
               <label>
                 Provider
                 <input
-                  disabled={readOnly}
+                  disabled={readOnly || !!p.protection_plan}
                   value={p.provider}
                   maxLength={250}
                   onChange={(e) => update(p.id, { provider: e.target.value })}
@@ -298,8 +344,9 @@ export function FIProducts({
                   type="number"
                   min={p.protection_plan ? 1 : 0}
                   max={p.protection_plan ? 120 : 240}
-                  disabled={readOnly}
-                  value={p.term_months}
+                  required={!!p.protection_plan}
+                  disabled={readOnly || p.protection_plan === "appearance"}
+                  value={p.term_months || ""}
                   onChange={(e) =>
                     update(p.id, { term_months: Number(e.target.value) })
                   }
@@ -311,10 +358,12 @@ export function FIProducts({
                   : "Coverage mileage limit"}
                 <input
                   type="number"
-                  min={p.protection_plan ? 1 : 0}
+                  min={p.protection_plan && !p.unlimited_miles ? 1 : 0}
                   max="3000000"
-                  disabled={readOnly}
-                  value={p.mileage_limit}
+                  required={!!p.protection_plan && !p.unlimited_miles}
+                  disabled={readOnly || !!p.unlimited_miles}
+                  placeholder={p.unlimited_miles ? "Unlimited mileage" : ""}
+                  value={p.mileage_limit || ""}
                   onChange={(e) =>
                     update(p.id, { mileage_limit: Number(e.target.value) })
                   }
@@ -324,13 +373,16 @@ export function FIProducts({
                 <label>
                   Deductible
                   <select
-                    disabled={readOnly}
+                    disabled={readOnly || !isMechanicalPlan(p.protection_plan)}
                     value={p.deductible}
                     onChange={(e) =>
                       update(p.id, { deductible: Number(e.target.value) })
                     }
                   >
-                    {protectionDeductibles.map((d) => (
+                    {(isMechanicalPlan(p.protection_plan)
+                      ? protectionDeductibles
+                      : [0]
+                    ).map((d) => (
                       <option key={d} value={d}>
                         {fullMoney(d)}
                       </option>
@@ -339,6 +391,70 @@ export function FIProducts({
                 </label>
               ) : (
                 money(p, "deductible", "Deductible")
+              )}
+              {p.protection_plan && !isMechanicalPlan(p.protection_plan) && (
+                <label>
+                  Coverage mileage
+                  <select
+                    disabled={readOnly || p.protection_plan === "appearance"}
+                    value={p.unlimited_miles ? "unlimited" : "limited"}
+                    onChange={(e) =>
+                      update(p.id, {
+                        unlimited_miles: e.target.value === "unlimited",
+                        mileage_limit: 0,
+                      })
+                    }
+                  >
+                    <option value="limited">Additional mile allowance</option>
+                    <option value="unlimited">Unlimited mileage</option>
+                  </select>
+                </label>
+              )}
+              {p.protection_plan === "maintenance" && (
+                <label>
+                  Included maintenance visits
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    step="1"
+                    required
+                    disabled={readOnly}
+                    value={p.maintenance_visits ?? ""}
+                    onChange={(e) =>
+                      update(p.id, {
+                        maintenance_visits: e.target.value
+                          ? Number(e.target.value)
+                          : undefined,
+                      })
+                    }
+                  />
+                  <small>
+                    Up to $125 combined per visit for oil/filter change and tire
+                    rotation.
+                  </small>
+                </label>
+              )}
+              {p.protection_plan && isMechanicalPlan(p.protection_plan) && (
+                <label>
+                  Aggregate repair benefit limit
+                  <input
+                    type="number"
+                    min="0.01"
+                    max="1000000"
+                    step="0.01"
+                    disabled={readOnly}
+                    placeholder="Set at contracting if blank"
+                    value={p.claim_limit ?? ""}
+                    onChange={(e) =>
+                      update(p.id, {
+                        claim_limit: e.target.value
+                          ? Number(e.target.value)
+                          : undefined,
+                      })
+                    }
+                  />
+                </label>
               )}
               {money(p, "cost", "Provider cost")}
               {money(p, "price", "Customer price")}
@@ -354,7 +470,7 @@ export function FIProducts({
             <label>
               Coverage description (customer-facing)
               <textarea
-                disabled={readOnly}
+                disabled={readOnly || !!p.protection_plan}
                 value={p.description ?? ""}
                 maxLength={400}
                 placeholder="Describe the actual coverage shown in the provider’s contract."
@@ -431,9 +547,9 @@ export function FIProducts({
             : temporary
               ? "Create a customer from Quick quote to retain these changes."
               : "Save the proposal in Desking to retain these changes."}{" "}
-          Drive Max Protection requires both months and additional covered
-          miles. For outside products, a zero term or mileage means not
-          specified.
+          Drive Max programs print the selected terms. Appearance is eight years
+          with unlimited mileage; maintenance requires a visit count.
+          Outside-provider products require their provider’s agreement.
         </p>
       </form>
     </Modal>

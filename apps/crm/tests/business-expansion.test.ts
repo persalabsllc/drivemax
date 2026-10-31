@@ -1,3 +1,4 @@
+import { verifyProtectionPackets } from "../scripts/verify-protection-packets.mjs";
 import { verifyManagementService } from "../scripts/verify-management-service.mjs";
 import { verifyProtection } from "../scripts/verify-protection.mjs";
 import test from "node:test";
@@ -446,6 +447,7 @@ test("database release checks enforce duplicate review, money and advertising hi
     await verifyBusinessExpansion(pg);
     await verifyManagementService(pg);
     await verifyProtection(pg);
+    await verifyProtectionPackets(pg);
     await verifyCustomerLinks(pg);
     for (const [file, name] of [
       ["website-intake", "verifyWebsiteIntake"],

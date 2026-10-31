@@ -1,3 +1,4 @@
+import { verifyProtectionPackets } from "./verify-protection-packets.mjs";
 import { verifyManagementService } from "./verify-management-service.mjs";
 import { verifyProtection } from "./verify-protection.mjs";
 import fs from "node:fs/promises";
@@ -112,6 +113,10 @@ if (process.env.VERCEL_ENV === "production") {
     await verifyBusinessExpansion(client);
     await verifyManagementService(client);
     await verifyProtection(client);
+    await verifyProtectionPackets(client);
+    console.log(
+      "Verified multi-product contract packets: atomic menu issuance, separate cancellation, unlimited mileage, key and maintenance limits; all fixtures rolled back.",
+    );
     console.log(
       "Verified protection contracts: issuance, selected menu, immutable terms, mileage/time refunds, claims, NC fee cap and private access; all fixtures rolled back.",
     );

@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ArrowLeft, Plus, ShieldCheck, FileText, Search } from "lucide-react";
 import {
   canManage,
@@ -9,24 +9,23 @@ import {
   type Quote,
   type Command,
 } from "../lib/model";
-import type { FIProduct } from "../lib/operations";
 import {
-  protectionDefaults,
-  protectionDeductibles,
-  protectionExpiry,
-  protectionInputSchema,
-  protectionIssuer,
   protectionLabel,
   protectionPlans,
   protectionRefund,
-  protectionVersion,
   selectedProtectionProducts,
   type ProtectionContract,
-  type ProtectionInput,
 } from "../lib/protection";
 import { Modal, Empty, SectionTitle } from "./ui";
 import type { ManagementRun } from "./ServiceWorkspace";
 import { ProtectionPDFPreview } from "./ProtectionPDFPreview";
+import { ProtectionIssue } from "./ProtectionIssue";
+import { protectionDescriptions } from "../lib/protection-programs";
+import {
+  protectionProductMatches,
+  protectionTermLabel,
+  protectionUsage,
+} from "../lib/protection";
 
 type Context = {
   ws: Workspace;
@@ -42,6 +41,7 @@ const stamp = (s: string) =>
   });
 const actions: Record<string, string> = {
   issue_protection: "Contract issued",
+  issue_protection_batch: "Contract packet issued",
   cancel_protection: "Contract canceled",
   record_protection_claim: "Paid claim recorded",
   record_protection_refund: "Refund payment recorded",
@@ -98,7 +98,7 @@ export function ProtectionWorkspace(props: Context) {
             action={
               <button className="btn primary" onClick={() => setIssuing(true)}>
                 <Plus size={16} />
-                Issue service contract
+                Issue protection contract
               </button>
             }
           />
@@ -158,7 +158,7 @@ export function ProtectionWorkspace(props: Context) {
               body={
                 contracts.length
                   ? "Try a VIN or contract number, or change the status filter."
-                  : "Issue Deluxe or Platinum coverage here, or from the customer's selected F&I menu in Desking."
+                  : "Issue Drive Max products here, or contract all selected F&I menu products together in Desking."
               }
             />
           ) : (
@@ -180,10 +180,7 @@ export function ProtectionWorkspace(props: Context) {
                   </span>
                   <span>
                     <strong>{protectionPlans[c.plan]}</strong>
-                    <small>
-                      {c.term_months} months / {c.term_miles.toLocaleString()}{" "}
-                      miles
-                    </small>
+                    <small>{protectionTermLabel(c)}</small>
                   </span>
                   <span>
                     <strong>{fullMoney(c.price)}</strong>
@@ -199,9 +196,9 @@ export function ProtectionWorkspace(props: Context) {
         <ProtectionIssue
           {...props}
           onClose={() => setIssuing(false)}
-          onIssued={(id) => {
+          onIssued={(ids) => {
             setIssuing(false);
-            setSelected(id);
+            setSelected(ids[0]);
           }}
         />
       )}
@@ -214,466 +211,122 @@ export function ProtectionFromQuote({
   current,
   ...props
 }: Context & { quote: Quote; current: boolean }) {
-  const [product, setProduct] = useState<FIProduct | null>(null),
+  const [issuing, setIssuing] = useState(false),
+    [printing, setPrinting] = useState(false),
     [viewId, setViewId] = useState("");
-  if (!canManage(props.ws.member.role)) return null;
-  const products = selectedProtectionProducts(quote),
-    contract = props.ws.protection_contracts?.find((c) => c.id === viewId);
-  if (!products.length) return null;
+  const products = selectedProtectionProducts(quote);
+  const contracts = useMemo(
+    () =>
+      selectedProtectionProducts(quote).flatMap((p) => {
+        const c = props.ws.protection_contracts?.find(
+          (c) =>
+            c.opportunity_id === quote.opportunity_id && c.product_id === p.id,
+        );
+        return c ? [c] : [];
+      }),
+    [quote, props.ws.protection_contracts],
+  );
+  if (!canManage(props.ws.member.role) || !products.length) return null;
+  const pending = products.filter(
+    (p) => !contracts.some((c) => c.product_id === p.id),
+  );
+  const changed = products.some((p) => {
+    const c = contracts.find((c) => c.product_id === p.id);
+    return c && !protectionProductMatches(p, c);
+  });
+  const viewed = contracts.find((c) => c.id === viewId);
+  const outside = (quote.values.products ?? []).filter(
+    (p) => !p.protection_plan,
+  );
   return (
     <div className="protection-from-quote">
       <div>
         <ShieldCheck size={18} />
-        <strong>Issue selected coverage</strong>
+        <strong>Contract selected products</strong>
       </div>
-      {!current && (
-        <small>
-          Save and select the current F&I menu before issuing coverage.
-        </small>
+      <small>
+        {products.length} Drive Max{" "}
+        {products.length === 1 ? "product" : "products"} · {contracts.length}{" "}
+        already issued · one printable packet
+      </small>
+      {(!current || changed) && (
+        <p className="form-error">
+          {changed
+            ? "Selected coverage differs from an issued contract. Restore the menu to the issued terms or use a new product for replacement coverage."
+            : "Save and select the current F&I menu before issuing coverage."}
+        </p>
       )}
-      {products.map((p) => {
-        const existing = props.ws.protection_contracts?.find(
-          (c) =>
-            c.opportunity_id === quote.opportunity_id && c.product_id === p.id,
-        );
-        return (
+      {pending.length > 0 && (
+        <button
+          type="button"
+          className="btn primary small"
+          disabled={props.busy || !current || changed}
+          onClick={() => setIssuing(true)}
+        >
+          Contract {pending.length} selected{" "}
+          {pending.length === 1 ? "product" : "products"}
+        </button>
+      )}
+      {contracts.length > 0 && (
+        <button
+          type="button"
+          className="btn small"
+          onClick={() => setPrinting(true)}
+        >
+          <FileText size={15} />
+          Print{" "}
+          {contracts.length === 1 ? "issued contract" : "all issued contracts"}
+        </button>
+      )}
+      <div className="protection-issued-links">
+        {contracts.map((c) => (
           <button
             type="button"
-            key={p.id}
-            className="btn small"
-            disabled={props.busy || (!existing && !current)}
-            onClick={() => (existing ? setViewId(existing.id) : setProduct(p))}
+            className="text-btn"
+            key={c.id}
+            onClick={() => setViewId(c.id)}
           >
-            <FileText size={15} />
-            {existing
-              ? `${existing.contract_number} · ${protectionLabel(existing, dayKey())}`
-              : `Issue ${protectionPlans[p.protection_plan!]} contract`}
+            {protectionPlans[c.plan]} · {c.contract_number} ·{" "}
+            {protectionLabel(c, dayKey())}
           </button>
-        );
-      })}
-      {product && (
+        ))}
+      </div>
+      {outside.length > 0 && (
+        <small>
+          Outside-provider products (
+          {outside.map((p) => p.name || p.kind.replaceAll("_", " ")).join(", ")}
+          ) require their provider’s contracts and are not in this packet.
+        </small>
+      )}
+      {issuing && (
         <ProtectionIssue
           {...props}
           quote={quote}
-          product={product}
-          onClose={() => setProduct(null)}
-          onIssued={(id) => {
-            setProduct(null);
-            setViewId(id);
+          products={pending}
+          onClose={() => setIssuing(false)}
+          onIssued={() => {
+            setIssuing(false);
+            setPrinting(true);
           }}
         />
       )}
-      {contract && (
+      {printing && contracts.length > 0 && (
+        <ProtectionPDFPreview
+          contracts={contracts}
+          demo={props.demo}
+          onClose={() => setPrinting(false)}
+        />
+      )}
+      {viewed && (
         <Modal
           wide
-          title={contract.contract_number}
+          title={viewed.contract_number}
           onClose={() => setViewId("")}
         >
-          <ProtectionDetail {...props} contract={contract} />
+          <ProtectionDetail {...props} contract={viewed} />
         </Modal>
       )}
     </div>
-  );
-}
-
-function ProtectionIssue({
-  ws,
-  run,
-  busy,
-  demo,
-  quote,
-  product,
-  onClose,
-  onIssued,
-}: Context & {
-  quote?: Quote;
-  product?: FIProduct;
-  onClose: () => void;
-  onIssued: (id: string) => void;
-}) {
-  const [id] = useState(() => crypto.randomUUID()),
-    keyFor = useRequestKey();
-  const [values, setValues] = useState<Record<string, string>>(() => {
-    const customer = ws.customers.find((c) => c.id === quote?.customer_id),
-      d = protectionDefaults(customer, quote);
-    if (product)
-      Object.assign(d, {
-        quote_id: quote!.id,
-        product_id: product.id,
-        plan: product.protection_plan,
-        deductible: product.deductible,
-        price: product.price,
-        term_months: product.term_months,
-        term_miles: product.mileage_limit,
-      });
-    return {
-      ...Object.fromEntries(
-        Object.entries(d).map(([k, v]) => [
-          k,
-          v === null || v === undefined ? "" : String(v),
-        ]),
-      ),
-      issued_on: dayKey(),
-    };
-  });
-  const [confirmed, setConfirmed] = useState(false),
-    [reviewed, setReviewed] = useState(false),
-    [error, setError] = useState(""),
-    [preview, setPreview] = useState<ProtectionContract | null>(null);
-  const form = useRef<HTMLFormElement>(null);
-  const update = (key: string, value: string) => {
-    setValues((v) => ({ ...v, [key]: value }));
-    setReviewed(false);
-    setError("");
-  };
-  const linked = !!quote;
-  function input() {
-    const raw: Record<string, unknown> = {
-      ...values,
-      opportunity_id: quote?.opportunity_id ?? null,
-      quote_id: quote?.id ?? null,
-      product_id: product?.id ?? null,
-      dealer_sold: confirmed,
-    };
-    for (const k of [
-      "year",
-      "deductible",
-      "price",
-      "start_miles",
-      "term_months",
-      "term_miles",
-      "claim_limit",
-    ])
-      raw[k] = values[k]?.trim() ? Number(values[k]) : undefined;
-    const result = protectionInputSchema.safeParse(raw);
-    if (!result.success) {
-      setError(
-        result.error.issues
-          .map((x) => `${x.path.join(" ").replaceAll("_", " ")}: ${x.message}`)
-          .slice(0, 3)
-          .join(" · "),
-      );
-      return null;
-    }
-    if (result.data.issued_on > dayKey()) {
-      setError("Issue date cannot be in the future.");
-      return null;
-    }
-    return result.data;
-  }
-  function draft(c: ProtectionInput): ProtectionContract {
-    return {
-      ...c,
-      id,
-      org_id: ws.org.id,
-      contract_number: "DRAFT",
-      expires_on: protectionExpiry(c.issued_on, c.term_months),
-      expires_miles: c.start_miles + c.term_miles,
-      status: "active",
-      terms_version: protectionVersion,
-      issuer: protectionIssuer,
-      claims_paid: 0,
-      cancellation: null,
-      revision: 1,
-      created_at: new Date().toISOString(),
-      created_by: ws.member.id,
-    };
-  }
-  const field = (
-    key: string,
-    label: string,
-    type = "text",
-    required = true,
-    locked = false,
-  ) => (
-    <label key={key}>
-      {label}
-      <input
-        type={type}
-        value={values[key] ?? ""}
-        required={required}
-        readOnly={locked}
-        maxLength={key === "vin" ? 17 : 250}
-        min={
-          type === "number"
-            ? ["year"].includes(key)
-              ? 1900
-              : ["price", "claim_limit"].includes(key)
-                ? 0.01
-                : ["term_months", "term_miles"].includes(key)
-                  ? 1
-                  : 0
-            : undefined
-        }
-        max={
-          type === "date" ? dayKey() : key === "term_months" ? 120 : undefined
-        }
-        step={
-          type === "number"
-            ? ["price", "claim_limit"].includes(key)
-              ? "0.01"
-              : "1"
-            : undefined
-        }
-        onChange={(e) =>
-          update(
-            key,
-            key === "vin" ? e.target.value.toUpperCase() : e.target.value,
-          )
-        }
-      />
-    </label>
-  );
-  let expiry = "",
-    miles = "";
-  if (
-    /^\d{4}-\d{2}-\d{2}$/.test(values.issued_on ?? "") &&
-    Number(values.term_months) > 0 &&
-    Number(values.term_months) <= 120
-  )
-    try {
-      expiry = protectionExpiry(values.issued_on, Number(values.term_months));
-    } catch {}
-  if (values.start_miles?.trim() && Number(values.term_miles) > 0)
-    miles = (
-      Number(values.start_miles) + Number(values.term_miles)
-    ).toLocaleString();
-  return (
-    <Modal
-      wide
-      title={linked ? "Contract selected coverage" : "Issue service contract"}
-      subtitle="Drive Max Protection · North Carolina · Required fields must be completed before issuance."
-      onClose={() => {
-        if (!busy) onClose();
-      }}
-    >
-      <form
-        ref={form}
-        className="modal-form protection-form"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setError("");
-          const c = input();
-          if (!c || !reviewed) return;
-          // Build once before saving so an unprintable registration cannot be issued.
-          try {
-            const { buildProtectionPdf } =
-              await import("../lib/protection-pdf");
-            await buildProtectionPdf(draft(c), undefined, true);
-          } catch (e) {
-            setError(
-              e instanceof Error
-                ? e.message
-                : "Could not validate contract PDF.",
-            );
-            return;
-          }
-          const payload = {
-            type: "issue_protection" as const,
-            id,
-            contract: c,
-          };
-          const result = await run(
-            { ...payload, request_id: keyFor(payload) },
-            "Service contract issued",
-          );
-          if (result.ok) onIssued(result.id ?? id);
-          else setError(result.error ?? "Unable to issue contract.");
-        }}
-      >
-        <fieldset disabled={busy}>
-          <legend>Contract holder</legend>
-          <label>
-            CRM customer
-            <select
-              required
-              disabled={linked}
-              value={values.customer_id ?? ""}
-              onChange={(e) => {
-                const c = ws.customers.find((c) => c.id === e.target.value);
-                const d = protectionDefaults(c);
-                setValues((v) => ({
-                  ...v,
-                  ...Object.fromEntries(
-                    Object.entries(d)
-                      .filter(
-                        ([k]) =>
-                          !["plan", "deductible", "claim_limit"].includes(k),
-                      )
-                      .map(([k, v]) => [
-                        k,
-                        v === null || v === undefined ? "" : String(v),
-                      ]),
-                  ),
-                }));
-                setConfirmed(false);
-                setReviewed(false);
-              }}
-            >
-              <option value="">Choose customer</option>
-              {ws.customers
-                .filter((c) => !c.merged_into)
-                .map((c) => (
-                  <option value={c.id} key={c.id}>
-                    {c.name} · {c.phone || c.email}
-                  </option>
-                ))}
-            </select>
-          </label>
-          <div className="ops-form-grid">
-            {field("holder_name", "Contract holder")}
-            {field("co_holder", "Co-holder (optional)", "text", false)}
-            {field("address", "Street address")}
-            {field("city", "City")}
-            <label>
-              State
-              <input value="North Carolina" readOnly />
-            </label>
-            {field("zip", "ZIP code")}
-            {field("phone", "Phone")}
-            {field("email", "Email (optional)", "email", false)}
-          </div>
-        </fieldset>
-        <fieldset disabled={busy}>
-          <legend>Vehicle & coverage</legend>
-          <div className="ops-form-grid">
-            {field("vin", "VIN")}
-            {field("year", "Year", "number")}
-            {field("make", "Make")}
-            {field("model", "Model")}
-            {field("stock_number", "Stock # (optional)", "text", false)}
-            <label>
-              Coverage plan
-              <select
-                value={values.plan ?? "deluxe"}
-                disabled={linked}
-                onChange={(e) => update("plan", e.target.value)}
-              >
-                {Object.entries(protectionPlans).map(([k, v]) => (
-                  <option key={k} value={k}>
-                    {v}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Deductible per repair visit
-              <select
-                value={values.deductible ?? "0"}
-                disabled={linked}
-                onChange={(e) => update("deductible", e.target.value)}
-              >
-                {protectionDeductibles.map((d) => (
-                  <option key={d} value={d}>
-                    {fullMoney(d)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {field("price", "Contract price", "number", true, linked)}
-            {field("issued_on", "Issue / coverage start date", "date")}
-            {field("start_miles", "Starting odometer (miles)", "number")}
-            {field("term_months", "Term (months)", "number", true, linked)}
-            {field(
-              "term_miles",
-              "Additional covered miles",
-              "number",
-              true,
-              linked,
-            )}
-            {field("claim_limit", "Aggregate repair benefit limit", "number")}
-          </div>
-          <p className="ops-help">
-            {values.plan === "platinum"
-              ? "Platinum: listed powertrain components plus alternator, water pump, thermostat, listed sensors and engine accessories."
-              : "Deluxe: listed engine, transmission, transfer case and drive axle powertrain components."}{" "}
-            Review the full component list and exclusions in the contract.
-          </p>
-          <div className="protection-expiry">
-            <ShieldCheck size={21} />
-            <div>
-              <small>COVERAGE EXPIRES — WHICHEVER OCCURS FIRST</small>
-              <strong>
-                {expiry || "Enter date and term"} <span>or</span>{" "}
-                {miles ? `${miles} miles` : "Enter odometer and miles"}
-              </strong>
-            </div>
-          </div>
-          {linked && (
-            <p className="ops-help">
-              Plan, deductible, price and term come from the selected F&I menu.
-              Change and apply the menu first to revise them.
-            </p>
-          )}
-        </fieldset>
-        <fieldset disabled={busy}>
-          <legend>Lienholder</legend>
-          <div className="ops-form-grid">
-            {field("lender", "Lender (optional)", "text", false)}
-            {field(
-              "lender_address",
-              "Lender address (optional)",
-              "text",
-              false,
-            )}
-          </div>
-        </fieldset>
-        <label className="protection-check">
-          <input
-            type="checkbox"
-            required
-            checked={confirmed}
-            onChange={(e) => {
-              setConfirmed(e.target.checked);
-              setReviewed(false);
-            }}
-          />
-          This vehicle was sold by Drive Max to this North Carolina customer.
-        </label>
-        <label className="protection-check">
-          <input
-            type="checkbox"
-            checked={reviewed}
-            onChange={(e) => setReviewed(e.target.checked)}
-          />
-          I have verified the customer, coverage, price and repair-benefit
-          limit. Issued terms cannot be edited.
-        </label>
-        {error && (
-          <p className="form-error" role="alert">
-            {error}
-          </p>
-        )}
-        <div className="ops-actions">
-          <button
-            className="btn"
-            type="button"
-            disabled={busy}
-            onClick={() => {
-              if (!form.current?.reportValidity()) return;
-              const c = input();
-              if (c) setPreview(draft(c));
-            }}
-          >
-            Preview 5-page contract
-          </button>
-          <button
-            className="btn primary"
-            disabled={busy || !reviewed || !confirmed}
-          >
-            Issue contract
-          </button>
-        </div>
-      </form>
-      {preview && (
-        <ProtectionPDFPreview
-          contract={preview}
-          demo={demo}
-          draft
-          onClose={() => setPreview(null)}
-        />
-      )}
-    </Modal>
   );
 }
 
@@ -685,9 +338,29 @@ function ProtectionDetail({
   const [action, setAction] = useState<"cancel" | "claim" | "refund" | null>(
       null,
     ),
-    [pdf, setPdf] = useState<"contract" | "cancellation" | null>(null);
+    [pdf, setPdf] = useState<"contract" | "cancellation" | "packet" | null>(
+      null,
+    );
   const { ws, busy } = props,
     x = c.cancellation;
+  const packet = useMemo(
+    () =>
+      c.batch_id
+        ? (ws.protection_contracts ?? [])
+            .filter(
+              (x) =>
+                x.batch_id === c.batch_id &&
+                x.customer_id === c.customer_id &&
+                x.vin === c.vin,
+            )
+            .sort((a, b) => a.contract_number.localeCompare(b.contract_number))
+        : [c],
+    [c, ws.protection_contracts],
+  );
+  const usage = protectionUsage(c, ws.protection_events ?? []).reduce(
+    (n, u) => n + u.units,
+    0,
+  );
   const events = (ws.protection_events ?? [])
     .filter((e) => e.contract_id === c.id)
     .sort((a, b) => b.created_at.localeCompare(a.created_at));
@@ -720,12 +393,20 @@ function ProtectionDetail({
             {protectionLabel(c, dayKey()).toUpperCase()} · VIN {c.vin}
           </small>
           <strong>
-            Expires {c.expires_on} <span>or</span>{" "}
-            {c.expires_miles.toLocaleString()} miles
+            Expires {c.expires_on}{" "}
+            {c.expires_miles === null ? (
+              <span>· Unlimited mileage</span>
+            ) : (
+              <>
+                <span>or</span> {c.expires_miles.toLocaleString()} miles
+              </>
+            )}
           </strong>
           <small>
-            Whichever occurs first. Verify current mileage before authorizing
-            repairs.
+            {c.expires_miles === null
+              ? "Time limit only."
+              : "Whichever occurs first."}{" "}
+            Verify eligibility before authorizing service.
           </small>
         </div>
       </div>
@@ -738,10 +419,7 @@ function ProtectionDetail({
         </div>
         <div>
           <dt>Purchased term</dt>
-          <dd>
-            {c.term_months} months / {c.term_miles.toLocaleString()} additional
-            miles
-          </dd>
+          <dd>{protectionTermLabel(c)}</dd>
         </div>
         <div>
           <dt>Contract price</dt>
@@ -752,14 +430,28 @@ function ProtectionDetail({
           <dd>{fullMoney(c.deductible)}</dd>
         </div>
         <div>
-          <dt>Repair benefit limit</dt>
-          <dd>{fullMoney(c.claim_limit)}</dd>
+          <dt>Benefit limit</dt>
+          <dd>
+            {c.plan === "key_replacement"
+              ? "3 keys total · 2 per rolling 12 months"
+              : c.plan === "maintenance"
+                ? `${c.maintenance_visits} visits · $125 per visit`
+                : c.claim_limit === null
+                  ? "No aggregate dollar limit"
+                  : fullMoney(c.claim_limit)}
+          </dd>
         </div>
         <div>
           <dt>Paid claims / benefit remaining</dt>
           <dd>
             {fullMoney(c.claims_paid)} /{" "}
-            {fullMoney(c.claim_limit - c.claims_paid)}
+            {c.plan === "key_replacement"
+              ? `${3 - usage} keys remaining (rolling limit also applies)`
+              : c.plan === "maintenance"
+                ? `${(c.maintenance_visits ?? 0) - usage} visits remaining`
+                : c.claim_limit === null
+                  ? "No aggregate dollar limit"
+                  : fullMoney(c.claim_limit - c.claims_paid)}
           </dd>
         </div>
         <div>
@@ -773,12 +465,13 @@ function ProtectionDetail({
           <dd>{c.lender || "None recorded"}</dd>
         </div>
       </dl>
+      <p className="ops-help">{protectionDescriptions[c.plan]}</p>
       {x && (
         <section className="protection-cancellation">
           <h3>
             Canceled {x.canceled_on} · {x.mileage.toLocaleString()} miles
           </h3>
-          <RefundBreakdown value={x} />
+          <RefundBreakdown value={x} unlimited={c.term_miles === null} />
           <p>
             {x.reason} · Payee: {x.payee}
           </p>
@@ -792,6 +485,16 @@ function ProtectionDetail({
         </section>
       )}
       <div className="ops-actions">
+        {packet.length > 1 && (
+          <button
+            type="button"
+            className="btn"
+            onClick={() => setPdf("packet")}
+          >
+            <FileText size={16} />
+            Print all {packet.length} contracts from this packet
+          </button>
+        )}
         {c.status !== "canceled" ? (
           <>
             <button
@@ -852,6 +555,14 @@ function ProtectionDetail({
                   : ""}
               </span>
             )}
+            {!!e.command.service_on && (
+              <span>
+                Service: {String(e.command.service_on)} ·{" "}
+                {Number(e.command.mileage).toLocaleString()} miles ·{" "}
+                {String(e.command.units)}{" "}
+                {c.plan === "key_replacement" ? "key(s)" : "visit"}
+              </span>
+            )}
             {!!e.command.description && (
               <span>{String(e.command.description)}</span>
             )}
@@ -869,7 +580,8 @@ function ProtectionDetail({
       )}
       {pdf && (
         <ProtectionPDFPreview
-          contract={c}
+          contract={pdf === "packet" ? undefined : c}
+          contracts={pdf === "packet" ? packet : undefined}
           demo={props.demo}
           cancellation={pdf === "cancellation"}
           onClose={() => setPdf(null)}
@@ -880,7 +592,9 @@ function ProtectionDetail({
 }
 function RefundBreakdown({
   value: x,
+  unlimited = false,
 }: {
+  unlimited?: boolean;
   value: ReturnType<typeof protectionRefund>;
 }) {
   return (
@@ -891,7 +605,11 @@ function RefundBreakdown({
       </div>
       <div>
         <dt>Mileage used</dt>
-        <dd>{(x.mileage_used * 100).toFixed(2)}%</dd>
+        <dd>
+          {unlimited
+            ? "Unlimited · time only"
+            : `${(x.mileage_used * 100).toFixed(2)}%`}
+        </dd>
       </div>
       <div>
         <dt>Prorated amount</dt>
@@ -928,6 +646,8 @@ function ProtectionTransaction({
     [reason, setReason] = useState(""),
     [payee, setPayee] = useState(c.lender || c.holder_name),
     [amount, setAmount] = useState(""),
+    [serviceOn, setServiceOn] = useState(dayKey()),
+    [units, setUnits] = useState("1"),
     [reference, setReference] = useState(""),
     [error, setError] = useState(""),
     [confirmed, setConfirmed] = useState(false),
@@ -945,9 +665,9 @@ function ProtectionTransaction({
     <Modal
       title={
         action === "cancel"
-          ? "Cancel service contract"
+          ? "Cancel protection contract"
           : action === "claim"
-            ? "Record a paid repair claim"
+            ? "Record a paid claim / service"
             : "Record refund payment"
       }
       subtitle={c.contract_number}
@@ -992,6 +712,9 @@ function ProtectionTransaction({
               amount: Number(amount),
               reference,
               description: reason,
+              service_on: serviceOn,
+              mileage: Number(miles),
+              units: Number(units),
             };
           else
             payload = {
@@ -1062,12 +785,19 @@ function ProtectionTransaction({
                 onChange={(e) => setPayee(e.target.value)}
               />
             </label>
-            {calculation && <RefundBreakdown value={calculation} />}
+            {calculation && (
+              <RefundBreakdown
+                value={calculation}
+                unlimited={c.term_miles === null}
+              />
+            )}
             <p className="ops-help">
-              Uses the greater of time or mileage consumed. Administration fee:
-              $100, capped at 10% of the prorated amount under NC rules. Paid
-              claims reduce the refund. Recording cancellation does not send
-              payment.
+              {c.term_miles === null
+                ? "Uses time consumed; mileage is unlimited."
+                : "Uses the greater of time or mileage consumed."}{" "}
+              Administration fee: $100, capped at 10% of the prorated amount
+              under NC rules. Paid claims reduce the refund. Recording
+              cancellation does not send payment.
             </p>
             <label className="protection-check">
               <input
@@ -1085,13 +815,73 @@ function ProtectionTransaction({
             {action === "claim" ? (
               <>
                 <label>
+                  Service / replacement date
+                  <input
+                    type="date"
+                    required
+                    min={c.issued_on}
+                    max={
+                      date < c.expires_on
+                        ? date
+                        : new Date(
+                            Date.parse(c.expires_on + "T12:00:00Z") - 86400000,
+                          )
+                            .toISOString()
+                            .slice(0, 10)
+                    }
+                    value={serviceOn}
+                    onChange={(e) => setServiceOn(e.target.value)}
+                  />
+                </label>
+                <label>
+                  Odometer at service
+                  <input
+                    type="number"
+                    required
+                    min={c.start_miles}
+                    max={
+                      c.expires_miles === null ? 6000000 : c.expires_miles - 1
+                    }
+                    step="1"
+                    value={miles}
+                    onChange={(e) => setMiles(e.target.value)}
+                  />
+                </label>
+                {c.plan === "key_replacement" && (
+                  <label>
+                    Keys replaced
+                    <select
+                      value={units}
+                      onChange={(e) => setUnits(e.target.value)}
+                    >
+                      <option value="1">1 key</option>
+                      <option value="2">2 keys</option>
+                    </select>
+                    <small>
+                      3 total; no more than 2 in any rolling 12 months.
+                    </small>
+                  </label>
+                )}
+                {c.plan === "maintenance" && (
+                  <p className="ops-help">
+                    One visit includes oil/filter change and tire rotation, up
+                    to $125 combined. Recording a claim uses one included visit.
+                  </p>
+                )}
+                <label>
                   Amount actually paid
                   <input
                     required
                     type="number"
                     min="0.01"
                     step="0.01"
-                    max={c.claim_limit - c.claims_paid}
+                    max={
+                      c.plan === "maintenance"
+                        ? 125
+                        : c.claim_limit === null
+                          ? 1000000
+                          : c.claim_limit - c.claims_paid
+                    }
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                   />

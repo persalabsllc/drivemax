@@ -1,4 +1,5 @@
 "use client";
+import { roleLabel } from "../lib/permissions";
 import { useId, useState } from "react";
 import { Users, Plus, Copy, KeyRound, Eye, EyeOff } from "lucide-react";
 import {
@@ -110,8 +111,10 @@ export function TeamSettings({
         )}
       </div>
       <p className="team-access-note">
-        Owners and managers can see all tasks. Salespeople see only their
-        assigned tasks. Customer profiles remain shared across the dealership.
+        Finance Managers can use desking, quotes and F&I products. Reports and
+        dealership settings are reserved for owners and managers. Salespeople
+        cannot access desking or internal vehicle costs. Customer profiles
+        remain shared.
       </p>
       {notice && (
         <p className="history-notice" role="status">
@@ -138,13 +141,7 @@ export function TeamSettings({
                   <span className="subtext">{m.email || "Owner account"}</span>
                 </td>
                 {manager && <td>{m.phone || "Not recorded"}</td>}
-                <td>
-                  {m.role === "sales"
-                    ? "Salesperson"
-                    : m.role === "manager"
-                      ? "Manager"
-                      : "Owner"}
-                </td>
+                <td>{roleLabel(m.role)}</td>
                 <td>
                   <span
                     className={`badge ${m.active ? "badge-live" : "badge-left"}`}
@@ -240,8 +237,9 @@ export function TeamSettings({
       {manager && (
         <p className="fine-print">
           Create a login with an initial password, or share a private setup
-          link. Phone and address details are visible to managers only.
-          Enable browser or home-screen notifications in Device notifications. Phone numbers remain available for future text alerts.
+          link. Phone and address details are visible to managers only. Enable
+          browser or home-screen notifications in Device notifications. Phone
+          numbers remain available for future text alerts.
         </p>
       )}
       <div className="team-commission-defaults">
@@ -617,6 +615,11 @@ function TeamMemberForm({
           Role
           <select name="role" defaultValue={m?.role ?? "sales"}>
             <option value="sales">Salesperson · own tasks</option>
+            {owner && (
+              <option value="finance">
+                Finance Manager · desking, quotes &amp; F&amp;I
+              </option>
+            )}
             {owner && <option value="manager">Manager · all tasks</option>}
           </select>
         </label>

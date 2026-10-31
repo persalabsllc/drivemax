@@ -1,8 +1,8 @@
 "use client";
+import { canDesk } from "../lib/permissions";
 import { useMemo, useRef, useState } from "react";
 import { ArrowLeft, Plus, ShieldCheck, FileText, Search } from "lucide-react";
 import {
-  canManage,
   dayKey,
   fullMoney,
   type Workspace,
@@ -71,7 +71,7 @@ export function ProtectionWorkspace(props: Context) {
       }),
     [printingIds, ws.protection_contracts],
   );
-  if (!canManage(ws.member.role)) return null;
+  if (!canDesk(ws.member.role)) return null;
   const contracts = ws.protection_contracts ?? [],
     today = dayKey(),
     contract = contracts.find((c) => c.id === selected);
@@ -246,7 +246,7 @@ export function ProtectionFromQuote({
       }),
     [quote, props.ws.protection_contracts],
   );
-  if (!canManage(props.ws.member.role) || !products.length) return null;
+  if (!canDesk(props.ws.member.role) || !products.length) return null;
   const pending = products.filter(
     (p) => !contracts.some((c) => c.product_id === p.id),
   );

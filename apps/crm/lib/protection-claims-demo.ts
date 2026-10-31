@@ -1,4 +1,5 @@
-import { canManage, dayKey, type Command, type Workspace } from "./model";
+import { dayKey, type Command, type Workspace } from "./model";
+import { canDesk } from "./permissions";
 import { demoProtection } from "./protection-demo";
 import { validateClaimDetails, type ClaimCommand } from "./protection-claims";
 export function demoClaims(
@@ -15,7 +16,7 @@ export function demoClaims(
     ].includes(command.type)
   )
     return null;
-  if (!canManage(ws.member.role)) throw Error("Manager access required");
+  if (!canDesk(ws.member.role)) throw Error("Manager access required");
   const p = command as ClaimCommand;
   const prior = ws.protection_claim_events?.find((e) => e.id === p.request_id);
   if (prior) {

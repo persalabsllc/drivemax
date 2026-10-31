@@ -213,6 +213,7 @@ export function DealDelivery({
           subtitle="Signed paperwork, insurance, and finalized packets. Also searchable in Document Vault."
         />
         <DocumentUpload
+          role={ws.member.role}
           metadata={{
             customer_id: o.customer_id,
             opportunity_id: o.id,

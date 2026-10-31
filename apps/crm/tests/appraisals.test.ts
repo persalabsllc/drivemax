@@ -317,16 +317,17 @@ test("real SQL appraisal lifecycle: revisions, permissions, closed deals, ACV is
       data: data(),
     };
     await t.test(
-      "assigned salesperson can research; unrelated sales and cross-tenant requests cannot",
+      "only management can research internal valuations; sales and cross-tenant requests cannot",
       async () => {
-        await assert.rejects(command(save, outsider), /assigned salesperson/);
+        await assert.rejects(command(save, outsider), /Manager access/);
+        await assert.rejects(command(save, sales), /Manager access/);
         await assert.rejects(
           command(save, sales, randomUUID()),
           /Active team membership/,
         );
-        await command(commandSchema.parse(save), sales);
+        await command(commandSchema.parse(save));
         await assert.rejects(
-          command({ ...save, id: randomUUID() }, sales),
+          command({ ...save, id: randomUUID() }),
           /already has an appraisal/,
         );
         await assert.rejects(
@@ -437,18 +438,18 @@ test("real SQL appraisal lifecycle: revisions, permissions, closed deals, ACV is
         for (const source of ["street", "auction"]) {
           const id = randomUUID(),
             p = { ...save, id, opportunity_id: null, source };
-          await command(p, sales);
+          await command(p);
           await assert.rejects(
             command({ ...p, revision: 1 }, outsider),
-            /assigned salesperson/,
+            /Manager access/,
           );
-          await command({ type: "archive_appraisal", id, revision: 1 }, sales);
+          await command({ type: "archive_appraisal", id, revision: 1 });
           assert.equal(
             (await one("select status from dmcrm_appraisals where id=$1", [id]))
               .status,
             "archived",
           );
-          await command({ ...p, revision: 2 }, sales);
+          await command({ ...p, revision: 2 });
           assert.equal(
             (
               await one("select revision from dmcrm_appraisals where id=$1", [

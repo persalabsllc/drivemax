@@ -1,3 +1,4 @@
+import { canDesk } from "../../../../../lib/permissions";
 import { NextResponse } from "next/server";
 import { db, session } from "../../../../../lib/server";
 import { buildCustomerQuotePdf } from "../../../../../lib/quote-export";
@@ -13,6 +14,8 @@ export async function GET(
       { error: "Sign in to access this quote." },
       { status: 401 },
     );
+  if (!canDesk(s.role))
+    return new Response("Desking access required", { status: 403 });
   const { id } = await params;
   if (!z.uuid().safeParse(id).success)
     return new NextResponse(null, { status: 404 });

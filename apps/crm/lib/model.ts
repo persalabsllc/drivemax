@@ -1,3 +1,5 @@
+import { canManage, canRunCommand, type StaffRole } from "./permissions";
+export { canManage } from "./permissions";
 import {
   claimCommands,
   type ProtectionClaim,
@@ -276,12 +278,10 @@ export type Staff = Partial<Omit<StaffDetails, "role" | "name" | "email">> & {
   user_id: string | null;
   name: string;
   email: string;
-  role: "owner" | "manager" | "sales";
+  role: StaffRole;
   active: boolean;
   created_at: string;
 };
-export const canManage = (role: string) =>
-  role === "owner" || role === "manager";
 export type Workspace = {
   product_pricing?: ProductPricing[];
   pricing_events?: PricingEvent[];
@@ -644,6 +644,8 @@ function demoCommandInner(
   now = new Date(),
 ): Workspace {
   const parsed = commandSchema.parse(command);
+  if (!canRunCommand(ws.member.role, parsed))
+    throw Error("Manager access required for this action.");
   if (
     parsed.type === "create_customer" ||
     (parsed.type === "convert_quick_quote" &&
@@ -809,7 +811,7 @@ function baseDemoCommand(
         "Owner access is protected; only the owner can manage managers",
       );
     if (p.type === "save_staff") {
-      if (p.staff.role === "manager" && s.member.role !== "owner")
+      if (p.staff.role !== "sales" && s.member.role !== "owner")
         throw Error("Only the owner can add managers");
       if (
         s.staff.some(

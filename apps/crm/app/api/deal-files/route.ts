@@ -1,8 +1,8 @@
+import { canDesk, canReadDealFile } from "../../../lib/permissions";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createHash } from "node:crypto";
 import { db, session } from "../../../lib/server";
-import { canManage } from "../../../lib/model";
 export const dynamic = "force-dynamic";
 const json = (data: unknown, status = 200) =>
   NextResponse.json(data, {
@@ -44,8 +44,10 @@ export async function POST(req: NextRequest) {
         .eq("id", oid)
         .eq("customer_id", cid)
         .maybeSingle();
-    if (error || !o || (!canManage(s.role) && o.assigned_to !== s.staff_id))
+    if (error || !o || (!canDesk(s.role) && o.assigned_to !== s.staff_id))
       return json({ error: "Assigned salesperson or manager required." }, 403);
+    if (!canReadDealFile(s.role, { kind, opportunity_id: oid }))
+      return json({ error: "Your role cannot file this document type." }, 403);
     const bytes = new Uint8Array(await file.arrayBuffer());
     const magic = Buffer.from(bytes.subarray(0, 8));
     const type =

@@ -1,4 +1,5 @@
 "use client";
+import { canDesk, salesDocumentKinds } from "../lib/permissions";
 import { useRef, useState } from "react";
 import { Upload, FileCheck2, AlertCircle, RotateCcw } from "lucide-react";
 import {
@@ -14,11 +15,13 @@ import {
 import { dayKey } from "../lib/model";
 export function DocumentUpload({
   metadata,
+  role = "sales",
   demo = false,
   disabled = false,
   onRefresh,
   onBusy,
 }: {
+  role?: string;
   metadata: Pick<
     DocumentMetadata,
     "customer_id" | "opportunity_id" | "inventory_id"
@@ -29,7 +32,9 @@ export function DocumentUpload({
   onBusy?: (busy: boolean) => void;
 }) {
   const [files, setFiles] = useState<File[]>([]),
-    [kind, setKind] = useState<keyof typeof documentKinds>("signed"),
+    [kind, setKind] = useState<keyof typeof documentKinds>(
+      canDesk(role) ? "signed" : "insurance",
+    ),
     [date, setDate] = useState(dayKey()),
     [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false),
@@ -120,11 +125,15 @@ export function DocumentUpload({
               value={kind}
               onChange={(e) => setKind(e.target.value as typeof kind)}
             >
-              {Object.entries(documentKinds).map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
+              {Object.entries(documentKinds)
+                .filter(
+                  ([key]) => canDesk(role) || salesDocumentKinds.includes(key),
+                )
+                .map(([key, label]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ))}
             </select>
           </label>
           <label>

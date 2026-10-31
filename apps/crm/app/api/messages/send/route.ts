@@ -1,3 +1,4 @@
+import { canDesk } from "../../../../lib/permissions";
 import { NextRequest, NextResponse, after } from "next/server";
 import { session, db } from "../../../../lib/server";
 import { emailConnection, dispatchEmail } from "../../../../lib/messaging";
@@ -37,6 +38,8 @@ export async function POST(req: NextRequest) {
       (!canManage(s.role) && m.created_by !== s.user_id)
     )
       return json({ error: "Email draft unavailable." }, 403);
+    if (!canDesk(s.role) && m.quote_id)
+      return json({ error: "Desking access required." }, 403);
     if (["queued", "sent", "delivered"].includes(m.status))
       return json({ ok: true, id, status: m.status });
     if (m.status !== "draft" || m.revision !== revision)

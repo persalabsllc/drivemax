@@ -1,4 +1,6 @@
 "use client";
+import { canDesk, canAccessView, roleLabel } from "../lib/permissions";
+import { restrictWorkspace } from "../lib/workspace-permissions";
 import { ManagementReports } from "./ManagementReports";
 import { ServiceWorkspace } from "./ServiceWorkspace";
 import { ProtectionWorkspace } from "./ProtectionWorkspace";
@@ -176,7 +178,9 @@ export default function CRM({
 }) {
   const [ws, setWs] = useState(() =>
       demo
-        ? seedTitleClerk(seedSalesWorkspace(seedOperations(initial)))
+        ? restrictWorkspace(
+            seedTitleClerk(seedSalesWorkspace(seedOperations(initial))),
+          )
         : initial,
     ),
     [serviceId, setServiceId] = useState<string | undefined>(undefined),
@@ -296,6 +300,7 @@ export default function CRM({
   const findCustomer = (id: string | null) =>
     ws.customers.find((c) => c.id === id);
   function navigate(v: View) {
+    if (!canAccessView(ws.member.role, v)) return;
     setQuickQuoteOpen(false);
     setPrintData(null);
     setStage("all");
@@ -319,7 +324,7 @@ export default function CRM({
       let id: string | undefined;
       let revision: number | undefined;
       if (demo) {
-        const next = demoCommand(ws, command);
+        const next = restrictWorkspace(demoCommand(ws, command));
         setWs(next);
         if (
           command.type === "issue_protection" ||
@@ -596,16 +601,7 @@ export default function CRM({
           <div className="nav-label">YOUR SALES DAY</div>
           <nav aria-label="Main navigation">
             {nav
-              .filter(
-                (n) =>
-                  ![
-                    "Trade-ins",
-                    "Money owed",
-                    "Management reports",
-                    "Service",
-                    "F&I Products",
-                  ].includes(n.name) || canManage(ws.member.role),
-              )
+              .filter((n) => canAccessView(ws.member.role, n.name))
               .map(({ name, icon: Icon }) => (
                 <button
                   key={name}
@@ -648,15 +644,7 @@ export default function CRM({
               <Avatar name={ws.member.name} size="small" />
               <div>
                 <strong>{ws.member.name}</strong>
-                <small>
-                  {demo
-                    ? "Demo workspace"
-                    : ws.member.role === "sales"
-                      ? "Salesperson"
-                      : ws.member.role === "manager"
-                        ? "Manager"
-                        : "Dealership owner"}
-                </small>
+                <small>{roleLabel(ws.member.role)}</small>
               </div>
               {demo ? (
                 <a href="/login" aria-label="Sign in">
@@ -798,32 +786,36 @@ export default function CRM({
                         "Your inventory investment, deal profit, and team earnings.",
                       Conversations:
                         "One place for the conversation, from first hello to follow-up.",
-                      Workspace:
-                        "Manage team access, dealership details and data exports.",
+                      Workspace: canManage(ws.member.role)
+                        ? "Manage team access, dealership details and data exports."
+                        : "Your profile, email signature and personal preferences.",
                     }[view]
                   }
                 </p>
               </div>
               <div className="ops-actions">
-                {view === "Desking" && !quickQuoteOpen && (
-                  <button
-                    className="btn primary"
-                    onClick={() => {
-                      setError("");
-                      setQuickQuoteOpen(true);
-                    }}
-                  >
-                    <Calculator size={17} />
-                    Quick quote
-                  </button>
-                )}
+                {view === "Desking" &&
+                  canDesk(ws.member.role) &&
+                  !quickQuoteOpen && (
+                    <button
+                      className="btn primary"
+                      onClick={() => {
+                        setError("");
+                        setQuickQuoteOpen(true);
+                      }}
+                    >
+                      <Calculator size={17} />
+                      Quick quote
+                    </button>
+                  )}
                 {!quickQuoteOpen &&
                   view !== "Workspace" &&
                   view !== "Document Vault" &&
                   view !== "Title Clerk" &&
                   view !== "Management reports" &&
                   view !== "F&I Products" &&
-                  view !== "Service" && (
+                  view !== "Service" &&
+                  (view !== "Inventory" || canManage(ws.member.role)) && (
                     <button
                       className={view === "Desking" ? "btn" : "btn primary"}
                       onClick={() => {
@@ -918,7 +910,7 @@ export default function CRM({
                 />
               </>
             )}
-            {view === "Management reports" && (
+            {view === "Management reports" && canManage(ws.member.role) && (
               <ManagementReports
                 ws={ws}
                 run={run}
@@ -947,7 +939,7 @@ export default function CRM({
                 }}
               />
             )}
-            {view === "Service" && (
+            {view === "Service" && canManage(ws.member.role) && (
               <ServiceWorkspace
                 key={serviceId ?? "service"}
                 ws={ws}
@@ -960,13 +952,13 @@ export default function CRM({
                 }}
               />
             )}
-            {view === "F&I Products" && (
+            {view === "F&I Products" && canDesk(ws.member.role) && (
               <ProtectionWorkspace ws={ws} run={run} busy={busy} demo={demo} />
             )}
-            {view === "Sales reports" && (
+            {view === "Sales reports" && canManage(ws.member.role) && (
               <SalesReports ws={ws} run={run} busy={busy} error={error} />
             )}
-            {view === "Money owed" && (
+            {view === "Money owed" && canManage(ws.member.role) && (
               <MoneyOwed
                 ws={ws}
                 run={run}
@@ -975,7 +967,7 @@ export default function CRM({
                 onOpen={openCustomer}
               />
             )}
-            {view === "Inventory" && (
+            {view === "Inventory" && canManage(ws.member.role) && (
               <InventoryPreparation ws={ws} run={run} busy={busy} />
             )}
             {view === "Overview" && (
@@ -1113,7 +1105,9 @@ export default function CRM({
                         />
                       )}
                     </section>
-                    <OverviewFunnel ws={ws} onCustomer={openCustomer} />
+                    {canManage(ws.member.role) && (
+                      <OverviewFunnel ws={ws} onCustomer={openCustomer} />
+                    )}
                     <section className="panel overview-recent">
                       <SectionTitle
                         title="Recent activity"
@@ -1172,10 +1166,10 @@ export default function CRM({
                 onOpen={openCustomer}
               />
             )}
-            {view === "Accounting" && (
+            {view === "Accounting" && canManage(ws.member.role) && (
               <Accounting ws={ws} run={run} busy={busy} />
             )}
-            {view === "Trade-ins" && (
+            {view === "Trade-ins" && canManage(ws.member.role) && (
               <TradeIntake
                 ws={ws}
                 run={run}
@@ -1188,6 +1182,8 @@ export default function CRM({
             )}
             {view === "Inventory" && (
               <InventoryView
+                canEdit={canManage(ws.member.role)}
+                showCosts={canDesk(ws.member.role)}
                 inventory={ws.inventory}
                 websiteInventory={ws.website_inventory}
                 websiteConnected={alerts.feed.websiteInventory?.connected}
@@ -1308,122 +1304,128 @@ export default function CRM({
                 />
               </>
             )}
-            {view === "Desking" && quickQuoteOpen && (
-              <QuickQuote
-                ws={ws}
-                demo={demo}
-                busy={busy}
-                error={error}
-                onClearError={() => {
-                  setError("");
-                  setPrintData(null);
-                }}
-                onClose={() => {
-                  setQuickQuoteOpen(false);
-                  setPrintData(null);
-                  setError("");
-                }}
-                onPrint={(quote) => print(null, quote)}
-                onCreate={async (command) => {
-                  const result = await run(
-                    command,
-                    "Customer created · quick quote saved",
-                  );
-                  return result;
-                }}
-                onComplete={(id) => {
-                  setQuickQuoteOpen(false);
-                  setPrintData(null);
-                  setSelectedOpp(null);
-                  setSelected(id);
-                  setProfileTab("Desking");
-                  setNote("");
-                }}
-              />
-            )}
-            {view === "Desking" && !quickQuoteOpen && (
-              <section className="panel">
-                <SectionTitle
-                  title="Saved proposals"
-                  subtitle="Each saved quote keeps its own version of the numbers."
+            {view === "Desking" &&
+              canDesk(ws.member.role) &&
+              quickQuoteOpen && (
+                <QuickQuote
+                  ws={ws}
+                  demo={demo}
+                  busy={busy}
+                  error={error}
+                  onClearError={() => {
+                    setError("");
+                    setPrintData(null);
+                  }}
+                  onClose={() => {
+                    setQuickQuoteOpen(false);
+                    setPrintData(null);
+                    setError("");
+                  }}
+                  onPrint={(quote) => print(null, quote)}
+                  onCreate={async (command) => {
+                    const result = await run(
+                      command,
+                      "Customer created · quick quote saved",
+                    );
+                    return result;
+                  }}
+                  onComplete={(id) => {
+                    setQuickQuoteOpen(false);
+                    setPrintData(null);
+                    setSelectedOpp(null);
+                    setSelected(id);
+                    setProfileTab("Desking");
+                    setNote("");
+                  }}
                 />
-                {ws.quotes.length ? (
-                  <div className="table-scroll">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Customer / vehicle</th>
-                          <th>Sale price</th>
-                          <th>Estimated balance</th>
-                          <th>Created</th>
-                          <th />
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {ws.quotes
-                          .slice()
-                          .sort((a, b) =>
-                            b.created_at.localeCompare(a.created_at),
-                          )
-                          .map((q) => {
-                            const c = findCustomer(q.customer_id);
-                            return (
-                              <tr key={q.id}>
-                                <td>
-                                  <button
-                                    className="name-button"
-                                    onClick={() => {
-                                      if (c) {
-                                        openCustomer(
-                                          c,
-                                          q.opportunity_id ?? null,
-                                        );
-                                        setProfileTab("Desking");
-                                      }
-                                    }}
-                                  >
-                                    {c?.name}
-                                  </button>
-                                  <small className="subtext">{q.vehicle}</small>
-                                </td>
-                                <td>{money(q.values.price)}</td>
-                                <td>{money(quoteMath(q.values).balance)}</td>
-                                <td>{dateLabel(dayKey(q.created_at))}</td>
-                                <td>
-                                  <button
-                                    className="btn small"
-                                    onClick={() => c && print(c, q)}
-                                  >
-                                    <Printer size={14} />
-                                    Print quote
-                                  </button>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <Empty
-                    title="No saved proposals yet."
-                    body="Use Quick quote for a temporary estimate, or open a customer profile to save a proposal."
-                    action={
-                      <button
-                        className="btn"
-                        onClick={() => navigate("Customers")}
-                      >
-                        Open customers
-                      </button>
-                    }
+              )}
+            {view === "Desking" &&
+              canDesk(ws.member.role) &&
+              !quickQuoteOpen && (
+                <section className="panel">
+                  <SectionTitle
+                    title="Saved proposals"
+                    subtitle="Each saved quote keeps its own version of the numbers."
                   />
-                )}
-                <div className="panel-foot">
-                  NC highway-use tax is calculated in Desking. Review the
-                  selected payment option, taxes, and fees before delivery.
-                </div>
-              </section>
-            )}
+                  {ws.quotes.length ? (
+                    <div className="table-scroll">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Customer / vehicle</th>
+                            <th>Sale price</th>
+                            <th>Estimated balance</th>
+                            <th>Created</th>
+                            <th />
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {ws.quotes
+                            .slice()
+                            .sort((a, b) =>
+                              b.created_at.localeCompare(a.created_at),
+                            )
+                            .map((q) => {
+                              const c = findCustomer(q.customer_id);
+                              return (
+                                <tr key={q.id}>
+                                  <td>
+                                    <button
+                                      className="name-button"
+                                      onClick={() => {
+                                        if (c) {
+                                          openCustomer(
+                                            c,
+                                            q.opportunity_id ?? null,
+                                          );
+                                          setProfileTab("Desking");
+                                        }
+                                      }}
+                                    >
+                                      {c?.name}
+                                    </button>
+                                    <small className="subtext">
+                                      {q.vehicle}
+                                    </small>
+                                  </td>
+                                  <td>{money(q.values.price)}</td>
+                                  <td>{money(quoteMath(q.values).balance)}</td>
+                                  <td>{dateLabel(dayKey(q.created_at))}</td>
+                                  <td>
+                                    <button
+                                      className="btn small"
+                                      onClick={() => c && print(c, q)}
+                                    >
+                                      <Printer size={14} />
+                                      Print quote
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <Empty
+                      title="No saved proposals yet."
+                      body="Use Quick quote for a temporary estimate, or open a customer profile to save a proposal."
+                      action={
+                        <button
+                          className="btn"
+                          onClick={() => navigate("Customers")}
+                        >
+                          Open customers
+                        </button>
+                      }
+                    />
+                  )}
+                  <div className="panel-foot">
+                    NC highway-use tax is calculated in Desking. Review the
+                    selected payment option, taxes, and fees before delivery.
+                  </div>
+                </section>
+              )}
             {view === "Title Clerk" && (
               <TitleClerk
                 ws={ws}
@@ -1442,7 +1444,7 @@ export default function CRM({
                 onCustomer={openCustomer}
               />
             )}
-            {view === "Appraisals" && (
+            {view === "Appraisals" && canManage(ws.member.role) && (
               <Appraisals
                 ws={ws}
                 run={run}
@@ -1470,9 +1472,15 @@ export default function CRM({
             {view === "Workspace" && (
               <>
                 <UserProfileSettings ws={ws} run={run} busy={busy} />
-                <ProductPricingSettings ws={ws} run={run} busy={busy} />
-                <WorkflowSettings ws={ws} run={run} busy={busy} demo={demo} />
-                <IntegrationSettings ws={ws} demo={demo} />
+                {canManage(ws.member.role) && (
+                  <ProductPricingSettings ws={ws} run={run} busy={busy} />
+                )}
+                {canManage(ws.member.role) && (
+                  <WorkflowSettings ws={ws} run={run} busy={busy} demo={demo} />
+                )}
+                {canManage(ws.member.role) && (
+                  <IntegrationSettings ws={ws} demo={demo} />
+                )}
                 <PushSettings demo={demo} />
                 <EmailSettingsPanel
                   ws={ws}
@@ -1501,7 +1509,7 @@ export default function CRM({
                       <dt>Account</dt>
                       <dd>{ws.member.name}</dd>
                       <dt>Role</dt>
-                      <dd className="capitalize">{ws.member.role}</dd>
+                      <dd>{roleLabel(ws.member.role)}</dd>
                       <dt>Timezone</dt>
                       <dd>Eastern Time</dd>
                       <dt>Environment</dt>
@@ -1739,7 +1747,7 @@ export default function CRM({
           }}
         />
       )}
-      {modal === "inventory" && (
+      {modal === "inventory" && canManage(ws.member.role) && (
         <Modal
           title={
             inventoryEdit

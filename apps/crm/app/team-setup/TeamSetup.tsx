@@ -1,4 +1,5 @@
 "use client";
+import { roleLabel } from "../../lib/permissions";
 import { useEffect, useState } from "react";
 export default function TeamSetup() {
   const [token, setToken] = useState(""),
@@ -38,8 +39,8 @@ export default function TeamSetup() {
         {staff && (
           <>
             <p>
-              Join as {staff.role === "sales" ? "a salesperson" : "a manager"}.
-              Your assigned follow-ups will be waiting in your planner.
+              Your role is {roleLabel(staff.role)}. Your assigned follow-ups
+              will be waiting in your planner.
             </p>
             <div className="segmented">
               <button

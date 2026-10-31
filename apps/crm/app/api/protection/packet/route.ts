@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { db, session } from "../../../../lib/server";
-import { canManage } from "../../../../lib/model";
+import { canDesk } from "../../../../lib/permissions";
 import { protectionPdfAssets } from "../../../../lib/protection-pdf-server";
 import { buildProtectionPacketPdf } from "../../../../lib/protection-pdf";
 import type { ProtectionContract } from "../../../../lib/protection";
@@ -12,7 +12,7 @@ export async function POST(request: Request) {
       { error: "Sign in again to view these contracts." },
       { status: 401 },
     );
-  if (!canManage(s.role))
+  if (!canDesk(s.role))
     return Response.json(
       { error: "Manager access required." },
       { status: 403 },

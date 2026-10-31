@@ -25,10 +25,9 @@ export default function PrivacyPolicy() {
             Effective and last updated: October 31, 2026
           </p>
           <p>
-            This policy covers drivemaxusedcars.com, inquiries submitted
-            through this website, and our customer care messaging program.
-            “We,” “us,” and “our” mean Drive Max Used Cars LLC in New Bern,
-            North Carolina.
+            This policy covers drivemaxusedcars.com, inquiries submitted through
+            this website, and our customer care messaging program. “We,” “us,”
+            and “our” mean Drive Max Used Cars LLC in New Bern, North Carolina.
           </p>
 
           <h2>Information we collect</h2>
@@ -61,19 +60,50 @@ export default function PrivacyPolicy() {
             obligations.
           </p>
 
+          <h2 id="website-analytics">Optional website analytics</h2>
+          <p>
+            With your permission, we use first-party analytics cookies to
+            understand visits, vehicle interest, photo interactions,
+            contact-button clicks, and inquiry starts. We record page paths and
+            approximate active time, a general traffic source (such as Google or
+            Facebook), and device type. We do not record form contents, full
+            referring URLs, query strings, keystrokes, or screen recordings in
+            analytics. We do not use device fingerprinting.
+          </p>
+          <p>
+            A random browser identifier can recognize return visits for up to 90
+            days. Visits are separated after 30 minutes without recorded
+            activity. If you submit an inquiry or share your details through
+            chat during a tracked visit, that visit can be linked to your CRM
+            inquiry and its appointment or sale. A browser identifier is not
+            proof of a person’s identity, and activity on different browsers is
+            not automatically combined.
+          </p>
+          <p>
+            Choose No thanks to use the website without optional analytics, or
+            change your choice using Privacy choices at the bottom of the
+            website. We also honor Global Privacy Control and Do Not Track
+            signals for this analytics feature. Withdrawing permission stops new
+            analytics and removes the browser identifier; previously recorded
+            visits are retained for up to 180 days. You can contact us about
+            deletion using the privacy request details below. Analytics is
+            stored in our existing dealership database and accessible only to
+            authorized staff.
+          </p>
+
           <h2>Website chat</h2>
           <p>
             Our chat begins with a clearly labeled AI assistant. Chat messages
             are saved in our CRM and processed through Vercel AI Gateway and
             OpenAI to answer your questions. Authorized dealership staff can
-            review the conversation and take over. A secure browser cookie
-            lets you return to your conversation for up to seven days. Please
-            do not send Social Security numbers, payment card details, passwords,
-            or credit application documents in chat. You can ask for a staff
-            member or call us instead. Contact details are saved for follow-up
-            when you confirm the contact form; appointments are booked only
-            after you confirm a time. Chat permission does not enroll you in
-            text messaging.
+            review the conversation and take over. A secure browser cookie lets
+            you return to your conversation for up to seven days. Please do not
+            send Social Security numbers, payment card details, passwords, or
+            credit application documents in chat. You can ask for a staff member
+            or call us instead. Contact details are saved for follow-up when you
+            confirm the contact form; appointments are booked only after you
+            confirm a time. Chat permission does not enroll you in text
+            messaging.
           </p>
 
           <h2>Calls, texts, email, and your choices</h2>
@@ -145,11 +175,14 @@ export default function PrivacyPolicy() {
                 get help directly at{" "}
                 <a href="mailto:sales@drivemaxusedcars.com">
                   sales@drivemaxusedcars.com
-                </a>.
+                </a>
+                .
               </p>
             </li>
             <li>
-              <p>Carriers are not liable for delayed or undelivered messages.</p>
+              <p>
+                Carriers are not liable for delayed or undelivered messages.
+              </p>
             </li>
             <li>
               <p>

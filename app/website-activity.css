@@ -1,0 +1,55 @@
+.activity-privacy-button {
+  display: block;
+  margin: 0 auto 24px;
+  padding: 8px 12px;
+  border: 0;
+  background: transparent;
+  color: #53627b;
+  text-decoration: underline;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.activity-consent {
+  position: fixed;
+  z-index: 80;
+  bottom: 20px;
+  left: 20px;
+  width: min(520px, calc(100vw - 40px));
+  padding: 22px;
+  border: 1px solid #d9e2ee;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 16px 60px #07172f30;
+  color: #16283f;
+}
+.activity-consent strong {
+  font-size: 17px;
+}
+.activity-consent p {
+  font-size: 13px;
+  line-height: 1.65;
+  margin: 8px 0 14px;
+  color: #526077;
+}
+.activity-consent p a {
+  text-decoration: underline;
+  color: #174c80;
+}
+.activity-consent-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+@media (max-width: 600px) {
+  .activity-consent {
+    bottom: 94px;
+    left: 12px;
+    width: calc(100vw - 24px);
+    padding: 17px;
+  }
+  .activity-consent-actions .button {
+    flex: 1;
+    justify-content: center;
+  }
+}

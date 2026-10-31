@@ -1,4 +1,5 @@
 import { verifyManagementService } from "../scripts/verify-management-service.mjs";
+import { verifyProtection } from "../scripts/verify-protection.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
@@ -444,6 +445,7 @@ test("database release checks enforce duplicate review, money and advertising hi
     await pg.exec("begin");
     await verifyBusinessExpansion(pg);
     await verifyManagementService(pg);
+    await verifyProtection(pg);
     await verifyCustomerLinks(pg);
     for (const [file, name] of [
       ["website-intake", "verifyWebsiteIntake"],

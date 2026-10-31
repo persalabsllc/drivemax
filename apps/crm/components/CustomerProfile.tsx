@@ -916,6 +916,7 @@ export function CustomerProfile({
             inventory={ws.inventory}
             quotes={ws.quotes}
             canViewProfit={manager}
+            protection={manager ? { ws, run, demo } : undefined}
             accounting={
               manager
                 ? ws.sales?.find(

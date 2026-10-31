@@ -36,6 +36,9 @@ import { type InventoryVehicle, vehicleName } from "../lib/vehicles";
 import { VehicleFacts } from "./VehicleFields";
 import { DeskingProfit } from "./DeskingProfit";
 import { FIProducts } from "./FIProducts";
+import { ProtectionFromQuote } from "./ProtectionWorkspace";
+import type { Workspace } from "../lib/model";
+import type { ManagementRun } from "./ServiceWorkspace";
 import { productsTotal, type DealAccounting } from "../lib/operations";
 import { FIMenu } from "./FIMenu";
 import { FIMenuPrint } from "./FIMenuPrint";
@@ -52,6 +55,7 @@ type DeskingProps = {
   dealership?: string;
   canViewProfit?: boolean;
   accounting?: DealAccounting;
+  protection?: { ws: Workspace; run: ManagementRun; demo: boolean };
 } & (
   | {
       quick?: undefined;
@@ -93,6 +97,7 @@ export function Desking({
   dealership = "Drive Max Used Cars",
   canViewProfit = false,
   accounting,
+  protection,
 }: DeskingProps) {
   const [productsOpen, setProductsOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -226,6 +231,16 @@ export function Desking({
           quotes={quotes}
           busy={busy}
           readOnly={readOnly}
+          contracting={
+            protection && latest && acceptanceCurrent ? (
+              <ProtectionFromQuote
+                {...protection}
+                busy={busy}
+                quote={latest}
+                current
+              />
+            ) : undefined
+          }
           onClose={() => setMenuOpen(false)}
           onSave={async (menu, choice) => {
             if (!onSave || !opportunity) return { ok: false };
@@ -246,6 +261,14 @@ export function Desking({
             if (result.ok) setDraft(next);
             return result;
           }}
+        />
+      )}
+      {!menuOpen && protection && latest && (
+        <ProtectionFromQuote
+          {...protection}
+          busy={busy}
+          quote={latest}
+          current={!!acceptanceCurrent}
         />
       )}
       {menuPrint && (

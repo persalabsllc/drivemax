@@ -8,6 +8,11 @@ import {
   sum,
 } from "../lib/operations";
 import { fullMoney } from "../lib/model";
+import {
+  protectionDeductibles,
+  protectionPlans,
+  protectionIssuer,
+} from "../lib/protection";
 import { Modal } from "./ui";
 export function FIProducts({
   products,
@@ -157,7 +162,10 @@ export function FIProducts({
                   value={p.kind}
                   disabled={readOnly}
                   onChange={(e) =>
-                    update(p.id, { kind: e.target.value as FIProduct["kind"] })
+                    update(p.id, {
+                      kind: e.target.value as FIProduct["kind"],
+                      protection_plan: undefined,
+                    })
                   }
                 >
                   {Object.entries(productKinds).map(([id, name]) => (
@@ -213,6 +221,46 @@ export function FIProducts({
               )}
             </div>
             <div className="ops-form-grid">
+              {p.kind === "service_contract" && (
+                <label>
+                  Contract program
+                  <select
+                    disabled={readOnly}
+                    value={p.protection_plan ?? ""}
+                    onChange={(e) => {
+                      const plan = e.target
+                        .value as FIProduct["protection_plan"];
+                      update(p.id, {
+                        protection_plan: plan || undefined,
+                        ...(plan
+                          ? {
+                              provider: protectionIssuer.name,
+                              name: `Drive Max Protection ${protectionPlans[plan]}`,
+                              contract_number: "",
+                              deductible: protectionDeductibles.includes(
+                                p.deductible as 0,
+                              )
+                                ? p.deductible
+                                : 0,
+                              description:
+                                plan === "deluxe"
+                                  ? "Listed engine, transmission and drive axle powertrain components. See contract for terms and exclusions."
+                                  : "Listed powertrain components plus alternator, water pump, thermostat, listed sensors and engine accessories. See contract for terms and exclusions.",
+                            }
+                          : {}),
+                      });
+                    }}
+                  >
+                    <option value="">Other / outside provider</option>
+                    <option value="deluxe">
+                      Drive Max Protection · Deluxe
+                    </option>
+                    <option value="platinum">
+                      Drive Max Protection · Platinum
+                    </option>
+                  </select>
+                </label>
+              )}
               <label>
                 Product name (customer-facing)
                 <input
@@ -235,7 +283,8 @@ export function FIProducts({
               <label>
                 Contract number
                 <input
-                  disabled={readOnly}
+                  disabled={readOnly || !!p.protection_plan}
+                  placeholder={p.protection_plan ? "Assigned when issued" : ""}
                   value={p.contract_number}
                   maxLength={250}
                   onChange={(e) =>
@@ -247,8 +296,8 @@ export function FIProducts({
                 Term (months)
                 <input
                   type="number"
-                  min="0"
-                  max="240"
+                  min={p.protection_plan ? 1 : 0}
+                  max={p.protection_plan ? 120 : 240}
                   disabled={readOnly}
                   value={p.term_months}
                   onChange={(e) =>
@@ -257,10 +306,12 @@ export function FIProducts({
                 />
               </label>
               <label>
-                Coverage mileage limit
+                {p.protection_plan
+                  ? "Additional covered miles"
+                  : "Coverage mileage limit"}
                 <input
                   type="number"
-                  min="0"
+                  min={p.protection_plan ? 1 : 0}
                   max="3000000"
                   disabled={readOnly}
                   value={p.mileage_limit}
@@ -269,7 +320,26 @@ export function FIProducts({
                   }
                 />
               </label>
-              {money(p, "deductible", "Deductible")}
+              {p.protection_plan ? (
+                <label>
+                  Deductible
+                  <select
+                    disabled={readOnly}
+                    value={p.deductible}
+                    onChange={(e) =>
+                      update(p.id, { deductible: Number(e.target.value) })
+                    }
+                  >
+                    {protectionDeductibles.map((d) => (
+                      <option key={d} value={d}>
+                        {fullMoney(d)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                money(p, "deductible", "Deductible")
+              )}
               {money(p, "cost", "Provider cost")}
               {money(p, "price", "Customer price")}
               <div className="ops-product-profit">
@@ -361,8 +431,9 @@ export function FIProducts({
             : temporary
               ? "Create a customer from Quick quote to retain these changes."
               : "Save the proposal in Desking to retain these changes."}{" "}
-          A zero term or mileage means not specified; use the customer-facing
-          coverage description for unlimited coverage.
+          Drive Max Protection requires both months and additional covered
+          miles. For outside products, a zero term or mileage means not
+          specified.
         </p>
       </form>
     </Modal>

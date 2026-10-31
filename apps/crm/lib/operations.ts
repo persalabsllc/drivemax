@@ -15,29 +15,48 @@ export const productKinds = {
   key_replacement: "Key replacement",
   other: "Other protection",
 } as const;
-export const productSchema = z.object({
-  id: z.uuid(),
-  kind: z.enum([
-    "service_contract",
-    "tire_wheel",
-    "gap",
-    "pdr",
-    "appearance",
-    "maintenance",
-    "key_replacement",
-    "other",
-  ]),
-  provider: short,
-  name: z.string().trim().max(80).optional(),
-  description: z.string().trim().max(400).optional(),
-  contract_number: short,
-  term_months: z.number().int().min(0).max(240),
-  mileage_limit: z.number().int().min(0).max(3000000),
-  deductible: amount,
-  cost: amount.nullable(),
-  price: amount,
-  notes: z.string().max(2000),
-});
+export const productSchema = z
+  .object({
+    protection_plan: z.enum(["deluxe", "platinum"]).optional(),
+    id: z.uuid(),
+    kind: z.enum([
+      "service_contract",
+      "tire_wheel",
+      "gap",
+      "pdr",
+      "appearance",
+      "maintenance",
+      "key_replacement",
+      "other",
+    ]),
+    provider: short,
+    name: z.string().trim().max(80).optional(),
+    description: z.string().trim().max(400).optional(),
+    contract_number: short,
+    term_months: z.number().int().min(0).max(240),
+    mileage_limit: z.number().int().min(0).max(3000000),
+    deductible: amount,
+    cost: amount.nullable(),
+    price: amount,
+    notes: z.string().max(2000),
+  })
+  .superRefine((p, ctx) => {
+    if (
+      p.protection_plan &&
+      (p.kind !== "service_contract" ||
+        p.term_months < 1 ||
+        p.term_months > 120 ||
+        p.mileage_limit < 1 ||
+        p.price <= 0 ||
+        Math.abs(p.price * 100 - Math.round(p.price * 100)) > 0.00001 ||
+        ![0, 250, 500, 1000].includes(p.deductible))
+    )
+      ctx.addIssue({
+        code: "custom",
+        message:
+          "Drive Max Protection requires a service contract, 1–120 months, additional covered miles, a positive price, and a $0, $250, $500 or $1,000 deductible.",
+      });
+  });
 export type FIProduct = z.infer<typeof productSchema>;
 export const accountingSchema = z.object({
   vehicle_cost: amount.nullable(),

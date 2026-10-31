@@ -63,7 +63,7 @@ export const fiCoverage = (p: FIProduct) =>
   [
     p.term_months ? `${p.term_months} months` : "Term not specified",
     p.mileage_limit
-      ? `${p.mileage_limit.toLocaleString("en-US")} miles`
+      ? `${p.mileage_limit.toLocaleString("en-US")} ${p.protection_plan ? "additional miles" : "miles"}`
       : "Mileage not specified",
   ].join(" / ");
 
@@ -193,6 +193,7 @@ export function fiPresentationKey(values: FinanceValues) {
 export function customerFIProduct(p: FIProduct) {
   return {
     id: p.id,
+    ...(p.protection_plan ? { protection_plan: p.protection_plan } : {}),
     name: fiProductName(p),
     provider: p.provider,
     description: p.description || "",

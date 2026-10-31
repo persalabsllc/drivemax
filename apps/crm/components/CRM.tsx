@@ -1,6 +1,7 @@
 "use client";
 import { ManagementReports } from "./ManagementReports";
 import { ServiceWorkspace } from "./ServiceWorkspace";
+import { ProtectionWorkspace } from "./ProtectionWorkspace";
 import { serviceOpen } from "../lib/service";
 import { MoneyOwed } from "./MoneyOwed";
 import { useState, useMemo, useEffect } from "react";
@@ -124,6 +125,7 @@ type View =
   | "Showroom"
   | "Planner"
   | "Desking"
+  | "F&I Products"
   | "Title Clerk"
   | "Document Vault"
   | "Appraisals"
@@ -138,6 +140,7 @@ const nav = [
   { name: "Work Today", icon: CheckCircle2 },
   { name: "Customers", icon: Users },
   { name: "Desking", icon: FileText },
+  { name: "F&I Products", icon: ShieldCheck },
   { name: "Conversations", icon: MessageSquare },
   { name: "Planner", icon: CalendarDays },
   { name: "Inventory", icon: Car },
@@ -317,6 +320,7 @@ export default function CRM({
       if (demo) {
         const next = demoCommand(ws, command);
         setWs(next);
+        if (command.type === "issue_protection") id = command.id;
         if (command.type === "create_customer") id = next.customers[0].id;
         if (command.type === "merge_customers") id = command.target_id;
         if (command.type === "set_co_buyer") id = command.opportunity_id;
@@ -594,6 +598,7 @@ export default function CRM({
                     "Money owed",
                     "Management reports",
                     "Service",
+                    "F&I Products",
                   ].includes(n.name) || canManage(ws.member.role),
               )
               .map(({ name, icon: Icon }) => (
@@ -760,6 +765,8 @@ export default function CRM({
                         "Saved dashboards, comparisons, and scheduled snapshots.",
                       Service:
                         "Repair orders, customer promises, and service history.",
+                      "F&I Products":
+                        "Service contracts, coverage records, and cancellations.",
                       "Sales reports":
                         "See where opportunities progress and where the process needs attention.",
                       Inventory:
@@ -810,6 +817,7 @@ export default function CRM({
                   view !== "Document Vault" &&
                   view !== "Title Clerk" &&
                   view !== "Management reports" &&
+                  view !== "F&I Products" &&
                   view !== "Service" && (
                     <button
                       className={view === "Desking" ? "btn" : "btn primary"}
@@ -946,6 +954,9 @@ export default function CRM({
                   if (c) openCustomer(c, opp ?? null);
                 }}
               />
+            )}
+            {view === "F&I Products" && (
+              <ProtectionWorkspace ws={ws} run={run} busy={busy} demo={demo} />
             )}
             {view === "Sales reports" && (
               <SalesReports ws={ws} run={run} busy={busy} error={error} />

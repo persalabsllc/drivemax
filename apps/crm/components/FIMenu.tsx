@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Printer, SlidersHorizontal, Check, Save } from "lucide-react";
 import {
   type Customer,
@@ -14,6 +14,7 @@ import {
   fiProductName,
   newFIMenu,
   cloneFIMenu,
+  fiPresentationKey,
   type FIMenu as Menu,
   type FIChoice,
 } from "../lib/fi-menu";
@@ -32,6 +33,7 @@ export function FIMenu({
   readOnly,
   onClose,
   onSave,
+  contracting,
 }: {
   quote: PrintableQuote;
   customer: Customer;
@@ -41,6 +43,7 @@ export function FIMenu({
   readOnly: boolean;
   onClose: () => void;
   onSave: (menu: Menu, choice: FIChoice | null) => Promise<{ ok: boolean }>;
+  contracting?: ReactNode;
 }) {
   const [menu, setMenu] = useState<Menu>(() =>
     structuredClone(
@@ -96,6 +99,8 @@ export function FIMenu({
       }}
     >
       <div className="fi-menu-builder">
+        {fiPresentationKey({ ...quote.values, fiMenu: menu }) ===
+          fiPresentationKey(quote.values) && contracting}
         <div className="fi-builder-toolbar">
           <div>
             <span className="eyebrow">WITHOUT OPTIONAL PRODUCTS</span>

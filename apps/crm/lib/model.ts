@@ -1,5 +1,20 @@
-import { serviceCommands, type ServiceOrder, type ServiceReceipt, type OperationsEvent } from "./service";
-import { reportCommands, type SavedReport, type ReportRun } from "./management-reports";
+import {
+  protectionCommands,
+  type ProtectionContract,
+  type ProtectionEvent,
+} from "./protection";
+import { demoProtection } from "./protection-demo";
+import {
+  serviceCommands,
+  type ServiceOrder,
+  type ServiceReceipt,
+  type OperationsEvent,
+} from "./service";
+import {
+  reportCommands,
+  type SavedReport,
+  type ReportRun,
+} from "./management-reports";
 import { demoManagement } from "./management-demo";
 import {
   businessCommands,
@@ -253,6 +268,8 @@ export type Staff = Partial<Omit<StaffDetails, "role" | "name" | "email">> & {
 export const canManage = (role: string) =>
   role === "owner" || role === "manager";
 export type Workspace = {
+  protection_contracts?: ProtectionContract[];
+  protection_events?: ProtectionEvent[];
   service_orders?: ServiceOrder[];
   service_receipts?: ServiceReceipt[];
   management_events?: OperationsEvent[];
@@ -462,6 +479,7 @@ export const opportunitySchema = z.object({
   trade: tradeSchema.nullable(),
 });
 export const commandSchema = z.discriminatedUnion("type", [
+  ...protectionCommands,
   ...serviceCommands,
   ...reportCommands,
   ...businessCommands,
@@ -619,6 +637,8 @@ function demoCommandInner(
     if (matches.some((m) => !c.duplicate_reviewed_ids?.includes(m.id)))
       throw Error(duplicateError);
   }
+  const protectionResult = demoProtection(ws, parsed, now);
+  if (protectionResult) return protectionResult;
   const managementResult = demoManagement(ws, parsed, now);
   if (managementResult) return managementResult;
   const businessResult = demoBusiness(ws, parsed, now);

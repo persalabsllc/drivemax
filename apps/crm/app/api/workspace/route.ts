@@ -1,3 +1,4 @@
+import { protectionErrors } from "../../../lib/protection";
 import { managementErrors } from "../../../lib/service";
 import { dispatchReports } from "../../../lib/report-worker";
 import { businessErrors } from "../../../lib/business";
@@ -7,7 +8,8 @@ import { customerLinkErrors } from "../../../lib/customer-links";
 import { NextRequest, NextResponse, after } from "next/server";
 import { dispatchEmail } from "../../../lib/messaging";
 import { session, workspace, db } from "../../../lib/server";
-import { commandSchema } from "../../../lib/model";
+import { commandSchema, canManage } from "../../../lib/model";
+import { protectionDraft } from "../../../lib/protection";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 const json = (value: unknown, status = 200) =>
@@ -52,6 +54,33 @@ export async function POST(req: NextRequest) {
         },
         400,
       );
+    if (parsed.data.type === "issue_protection") {
+      if (!canManage(s.role))
+        return json({ error: "Manager access required." }, 403);
+      const [{ buildProtectionPdf }, { protectionPdfAssets }] =
+        await Promise.all([
+          import("../../../lib/protection-pdf"),
+          import("../../../lib/protection-pdf-server"),
+        ]);
+      const { logo, fonts } = await protectionPdfAssets();
+      try {
+        await buildProtectionPdf(
+          protectionDraft(parsed.data.contract),
+          logo,
+          true,
+          false,
+          fonts,
+        );
+      } catch {
+        return json(
+          {
+            error:
+              "Contract details are too long to print. Shorten the holder, vehicle, address or lender fields and preview again.",
+          },
+          400,
+        );
+      }
+    }
     const { data: id, error } = await db().rpc("dmcrm_command", {
       p_org: s.org_id,
       p_actor: s.user_id,
@@ -72,6 +101,7 @@ export async function POST(req: NextRequest) {
                     ? "That vehicle is no longer in stock. Refresh and select another vehicle."
                     : [
                           ...businessErrors,
+                          ...protectionErrors,
                           ...managementErrors,
                           duplicateError,
                           "Appraisal changed in another session. Reload before saving.",

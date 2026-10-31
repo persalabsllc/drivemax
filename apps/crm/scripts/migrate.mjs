@@ -1,4 +1,5 @@
 import { verifyManagementService } from "./verify-management-service.mjs";
+import { verifyProtection } from "./verify-protection.mjs";
 import fs from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
@@ -110,6 +111,10 @@ if (process.env.VERCEL_ENV === "production") {
     );
     await verifyBusinessExpansion(client);
     await verifyManagementService(client);
+    await verifyProtection(client);
+    console.log(
+      "Verified protection contracts: issuance, selected menu, immutable terms, mileage/time refunds, claims, NC fee cap and private access; all fixtures rolled back.",
+    );
     console.log(
       "Verified duplicate review, existing-customer quotes, money receipts and corrections, advertising history and private insurance archives; all fixtures rolled back.",
     );

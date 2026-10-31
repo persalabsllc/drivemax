@@ -182,6 +182,11 @@ export function demoCustomerMerge(
     for (const row of records ?? [])
       if (row.customer_id === src.id) row.customer_id = dst.id;
   }
+  for (const contract of s.protection_contracts ?? [])
+    if (contract.customer_id === src.id) {
+      contract.customer_id = dst.id;
+      contract.revision++;
+    }
   for (const order of s.service_orders ?? [])
     if (order.customer_id === src.id) {
       order.customer_id = dst.id;

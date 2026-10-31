@@ -19,6 +19,7 @@ import {
 import { Modal, Empty, SectionTitle } from "./ui";
 import type { ManagementRun } from "./ServiceWorkspace";
 import { ProtectionPDFPreview } from "./ProtectionPDFPreview";
+import { ProtectionClaims } from "./ProtectionClaims";
 import { ProtectionIssue } from "./ProtectionIssue";
 import { protectionDescriptions } from "../lib/protection-programs";
 import {
@@ -199,6 +200,7 @@ export function ProtectionWorkspace(props: Context) {
               ))}
             </div>
           )}
+          <ProtectionClaims {...props} onOpenContract={setSelected} />
         </>
       )}
       {issuing && (
@@ -587,6 +589,7 @@ function ProtectionDetail({
           </li>
         ))}
       </ol>
+      <ProtectionClaims {...props} contractId={c.id} />
       {action && (
         <ProtectionTransaction
           key={`${c.id}-${c.revision}-${action}`}

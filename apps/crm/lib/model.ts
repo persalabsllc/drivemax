@@ -1,4 +1,10 @@
 import {
+  claimCommands,
+  type ProtectionClaim,
+  type ClaimEvent,
+} from "./protection-claims";
+import { demoClaims } from "./protection-claims-demo";
+import {
   pricingCommands,
   demoPricing,
   validatePricedValues,
@@ -282,6 +288,8 @@ export type Workspace = {
   protection_fund_entries?: FundEntry[];
   protection_contracts?: ProtectionContract[];
   protection_events?: ProtectionEvent[];
+  protection_claims?: ProtectionClaim[];
+  protection_claim_events?: ClaimEvent[];
   service_orders?: ServiceOrder[];
   service_receipts?: ServiceReceipt[];
   management_events?: OperationsEvent[];
@@ -493,6 +501,7 @@ export const opportunitySchema = z.object({
 export const commandSchema = z.discriminatedUnion("type", [
   ...pricingCommands,
   ...protectionCommands,
+  ...claimCommands,
   ...serviceCommands,
   ...reportCommands,
   ...businessCommands,
@@ -657,6 +666,8 @@ function demoCommandInner(
       parsed.values,
       pricingForDeal(ws, parsed.opportunity_id),
     );
+  const claimResult = demoClaims(ws, parsed, now);
+  if (claimResult) return claimResult;
   const protectionResult = demoProtection(ws, parsed, now);
   if (protectionResult) return protectionResult;
   const managementResult = demoManagement(ws, parsed, now);

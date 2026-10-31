@@ -1,3 +1,4 @@
+import { paidClaimFromEvent } from "./protection-claims";
 import { protectionCost } from "./protection-pricing";
 import { canManage, dayKey, type Command, type Workspace } from "./model";
 import {
@@ -17,6 +18,7 @@ export function demoProtection(
   command: Command,
   now: Date,
   batchId?: string,
+  trackPaid = true,
 ): Workspace | null {
   if (
     ![
@@ -199,5 +201,14 @@ export function demoProtection(
     created_by: s.member.id,
     created_at: at,
   });
+  if (p.type === "record_protection_claim" && trackPaid) {
+    s.protection_claims ??= [];
+    s.protection_claims.unshift(
+      paidClaimFromEvent(
+        s.protection_events[0],
+        `DMC-${String(s.protection_claims.length + 1).padStart(7, "0")}`,
+      ),
+    );
+  }
   return s;
 }

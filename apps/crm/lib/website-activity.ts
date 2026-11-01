@@ -118,13 +118,13 @@ export const activeTime = (seconds: number) =>
   seconds >= 60
     ? `${Math.floor(seconds / 60)}m ${seconds % 60}s`
     : `${seconds}s`;
-export function activityRange(days = 30) {
+export function activityRange(days = 30, now = new Date()) {
   const to = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/New_York",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).format(new Date());
+  }).format(now);
   const from = new Date(Date.parse(to + "T12:00:00Z") - (days - 1) * 86400000)
     .toISOString()
     .slice(0, 10);

@@ -14,7 +14,9 @@ The manager-only Website activity view reports consenting website visits, vehicl
 
 ## Privacy and operation
 
-Collection starts only after Allow analytics. No thanks and browser GPC/DNT signals disable analytics. Privacy choices remains in the public website footer. No form values, full referrers, query strings, keystrokes, or session replay are collected. Attribution uses the current visit's opaque browser credential; it does not identify anonymous browsers by email or IP. No cross-device matching is attempted.
+Collection defaults on for new browsers. Saved opt-outs and browser GPC/DNT signals disable analytics. Privacy choices remains in the public website footer. No form values, full referrers, query strings, keystrokes, or session replay are collected. Attribution uses the current visit's opaque browser credential; it does not identify anonymous browsers by email or IP. No cross-device matching is attempted.
+
+The report and an open visit timeline refresh every 15 seconds while visible, and when staff return to the tab or reconnect. The Last 7/30/90 days presets advance with the Eastern calendar date; manually chosen date ranges remain fixed. The report shows its last successful update time. Failed loads are labeled unavailable or stale, rather than displayed as zero visits.
 
 Preview deployments, recognized bots, and signed-in website staff are excluded. Other staff browsing while signed out may appear as ordinary visitors. Analytics is best effort and never prevents a customer inquiry, chat, or booking if recording fails.
 

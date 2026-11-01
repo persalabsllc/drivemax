@@ -74,6 +74,17 @@
   gap: 6px;
   margin-right: auto;
 }
+.web-activity-presets button[aria-pressed="true"] {
+  border-color: #91bada;
+  background: #edf4fb;
+  color: #275d85;
+}
+.web-activity-update {
+  margin: -10px 0 0;
+  color: #64758e;
+  font-size: 11px;
+  line-height: 1.6;
+}
 .web-activity-metrics {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

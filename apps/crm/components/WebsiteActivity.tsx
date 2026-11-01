@@ -22,6 +22,7 @@ import {
   type WebVisit,
 } from "../lib/website-activity";
 import { canManage, myStaffId, type Workspace } from "../lib/model";
+import { observeActivityRefresh } from "../lib/website-activity-refresh";
 const stamp = (s: string) =>
   new Date(s).toLocaleString("en-US", {
     timeZone: "America/New_York",
@@ -140,6 +141,10 @@ export function WebsiteActivity({
   onCustomer?: (id: string, opportunityId: string | null) => void;
 }) {
   const [range, setRange] = useState(() => activityRange(customerId ? 90 : 30)),
+    [rollingDays, setRollingDays] = useState<number | null>(
+      customerId ? 90 : 30,
+    ),
+    [updatedAt, setUpdatedAt] = useState<string | null>(null),
     [source, setSource] = useState(""),
     [vehicle, setVehicle] = useState(""),
     [offset, setOffset] = useState(0),
@@ -151,7 +156,8 @@ export function WebsiteActivity({
     [journeyError, setJourneyError] = useState(""),
     [journeyBusy, setJourneyBusy] = useState(false);
   const sequence = useRef(0),
-    detailSeq = useRef(0);
+    detailSeq = useRef(0),
+    pending = useRef(0);
   const manager = canManage(ws.member.role),
     staffId = myStaffId(ws);
   const allowed =
@@ -176,7 +182,16 @@ export function WebsiteActivity({
   );
   const load = useCallback(async () => {
     if (!allowed) return;
+    if (rollingDays !== null) {
+      const latest = activityRange(rollingDays);
+      if (latest.from !== range.from || latest.to !== range.to) {
+        setRange(latest);
+        setOffset(0);
+        return;
+      }
+    }
     const seq = ++sequence.current;
+    pending.current++;
     setBusy(true);
     setError("");
     try {
@@ -188,6 +203,7 @@ export function WebsiteActivity({
           sample.sources = [];
         }
         setData(sample);
+        setUpdatedAt(new Date().toISOString());
         return;
       }
       const r = await fetch("/api/website-activity?" + query(), {
@@ -195,60 +211,81 @@ export function WebsiteActivity({
       });
       const d = await r.json();
       if (!r.ok) throw Error(d.error);
-      if (seq === sequence.current) setData(d);
+      if (seq === sequence.current) {
+        setData(d);
+        setUpdatedAt(new Date().toISOString());
+      }
     } catch (e) {
       if (seq === sequence.current) {
-        setData(null);
         setError(e instanceof Error ? e.message : "Please refresh.");
       }
     } finally {
+      pending.current--;
       if (seq === sequence.current) setBusy(false);
     }
-  }, [allowed, demo, customerId, query]);
+  }, [allowed, demo, customerId, query, range, rollingDays]);
   useEffect(() => {
+    setData(null);
+    setUpdatedAt(null);
     void load();
     return () => {
       sequence.current++;
     };
   }, [load]);
   useEffect(() => {
+    if (!allowed || demo) return;
+    return observeActivityRefresh(() => {
+      if (!pending.current) void load();
+    });
+  }, [allowed, demo, load]);
+  useEffect(() => {
     setSelected(null);
     setJourney(null);
     detailSeq.current++;
   }, [range, source, vehicle, customerId, offset]);
-  async function openVisit(visit: WebVisit) {
+  function openVisit(visit: WebVisit) {
     setSelected(visit);
     setJourney(null);
+  }
+  useEffect(() => {
+    if (!selected) return;
+    const visit = selected;
     setJourneyError("");
     setJourneyBusy(true);
     const seq = ++detailSeq.current;
-    try {
-      if (demo) {
-        const events = (visit.path || []).map((path, i) => ({
-          id: String(i),
-          kind: "page_view",
-          path,
-          seconds: 0,
-          created_at: visit.started_at,
-        }));
-        setJourney({ events, event_count: events.length, page_time: [] });
-        return;
+    async function loadJourney() {
+      try {
+        if (demo) {
+          const events = (visit.path || []).map((path, i) => ({
+            id: String(i),
+            kind: "page_view",
+            path,
+            seconds: 0,
+            created_at: visit.started_at,
+          }));
+          setJourney({ events, event_count: events.length, page_time: [] });
+          return;
+        }
+        const q = query();
+        q.set("session", visit.id);
+        const r = await fetch("/api/website-activity?" + q, {
+          cache: "no-store",
+        });
+        const d = await r.json();
+        if (!r.ok) throw Error(d.error);
+        if (seq === detailSeq.current) setJourney(d);
+      } catch (e) {
+        if (seq === detailSeq.current)
+          setJourneyError(e instanceof Error ? e.message : "Please try again.");
+      } finally {
+        if (seq === detailSeq.current) setJourneyBusy(false);
       }
-      const q = query();
-      q.set("session", visit.id);
-      const r = await fetch("/api/website-activity?" + q, {
-        cache: "no-store",
-      });
-      const d = await r.json();
-      if (!r.ok) throw Error(d.error);
-      if (seq === detailSeq.current) setJourney(d);
-    } catch (e) {
-      if (seq === detailSeq.current)
-        setJourneyError(e instanceof Error ? e.message : "Please try again.");
-    } finally {
-      if (seq === detailSeq.current) setJourneyBusy(false);
     }
-  }
+    void loadJourney();
+    return () => {
+      detailSeq.current++;
+    };
+  }, [selected, demo, query, updatedAt]);
   if (!allowed)
     return (
       <p className="muted">
@@ -286,7 +323,9 @@ export function WebsiteActivity({
             <button
               className="btn small"
               key={days}
+              aria-pressed={rollingDays === days}
               onClick={() => {
+                setRollingDays(days);
                 setRange(activityRange(days));
                 setOffset(0);
               }}
@@ -302,6 +341,7 @@ export function WebsiteActivity({
             type="date"
             value={range.from}
             onChange={(e) => {
+              setRollingDays(null);
               setRange({ ...range, from: e.target.value });
               setOffset(0);
             }}
@@ -314,6 +354,7 @@ export function WebsiteActivity({
             type="date"
             value={range.to}
             onChange={(e) => {
+              setRollingDays(null);
               setRange({ ...range, to: e.target.value });
               setOffset(0);
             }}
@@ -353,6 +394,28 @@ export function WebsiteActivity({
           {busy ? "Loading…" : "Refresh"}
         </button>
       </div>
+      <p className="web-activity-update" role="status">
+        {demo
+          ? "Demo data"
+          : "Updates every 15 seconds while this page is open"}
+        {updatedAt && (
+          <>
+            {" "}
+            · Last updated{" "}
+            {new Date(updatedAt).toLocaleTimeString("en-US", {
+              timeZone: "America/New_York",
+              hour: "numeric",
+              minute: "2-digit",
+              second: "2-digit",
+            })}{" "}
+            Eastern
+            {error
+              ? " · Update failed; showing the last successful result"
+              : ""}
+          </>
+        )}
+        {rollingDays === null && " · Custom date range"}
+      </p>
       {vehicle && (
         <div className="notice">
           Showing visits that included the selected vehicle.{" "}
@@ -596,14 +659,14 @@ export function WebsiteActivity({
                 </small>
               </button>
             ))}
-            {!busy && !data?.sessions.length && (
+            {!busy && data && !data.sessions.length && (
               <div className="web-empty">
                 <Globe size={28} />
                 <h4>No tracked visits in this range</h4>
                 <p>
                   {customerId
-                    ? "Visits appear when a shopper allows analytics and submits their details."
-                    : "Tracking starts with this release. Past browsing cannot be reconstructed."}
+                    ? "Visits appear when a tracked shopper submits their details."
+                    : "Try Last 7 days and All sources. Signed-in website staff, opt-outs, privacy signals, and blockers can exclude visits."}
                 </p>
               </div>
             )}
@@ -640,7 +703,7 @@ export function WebsiteActivity({
                   Open {c.name} in CRM <ArrowRight size={13} />
                 </button>
               ))}
-              {journeyBusy && <p>Loading journey…</p>}
+              {journeyBusy && !journey && <p>Loading journey…</p>}
               {journeyError && (
                 <p role="alert" className="error">
                   {journeyError}
@@ -684,9 +747,13 @@ export function WebsiteActivity({
         </div>
         <div className="web-pagination">
           <span>
-            {data?.total
-              ? `${offset + 1}–${Math.min(offset + 50, data.total)} of ${data.total}`
-              : "0 visits"}
+            {!data
+              ? busy
+                ? "Loading visits…"
+                : "Visits unavailable"
+              : data.total
+                ? `${offset + 1}–${Math.min(offset + 50, data.total)} of ${data.total}`
+                : "0 visits"}
           </span>
           <button
             className="btn small"

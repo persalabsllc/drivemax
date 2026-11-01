@@ -5,6 +5,7 @@ import {
   activityPath,
   activitySource,
   activityRequestSchema,
+  activityChoice,
   privacySignal,
   excludedAgent,
 } from "../lib/website-activity";
@@ -98,4 +99,19 @@ test("privacy signals and recognizable bots disable collection", () => {
   assert(excludedAgent("Googlebot/2.1"));
   assert(excludedAgent("HeadlessChrome/150.0"));
   assert(!excludedAgent("Mozilla/5.0 Chrome/150.0 Safari/537.36"));
+});
+test("analytics defaults on while preserving saved opt-outs and browser signals", () => {
+  const ordinary = new Headers();
+  assert.equal(activityChoice(undefined, ordinary), "allow");
+  assert.equal(activityChoice("allow", ordinary), "allow");
+  assert.equal(activityChoice("deny", ordinary), "deny");
+  assert.equal(activityChoice("unexpected", ordinary), "deny");
+  for (const signal of [
+    new Headers({ "sec-gpc": "1" }),
+    new Headers({ dnt: "1" }),
+  ]) {
+    for (const saved of [undefined, "allow", "deny"]) {
+      assert.equal(activityChoice(saved, signal), "deny");
+    }
+  }
 });

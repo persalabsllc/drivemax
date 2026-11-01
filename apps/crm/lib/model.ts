@@ -1,4 +1,5 @@
 import { canManage, canRunCommand, type StaffRole } from "./permissions";
+import { lenderFinanceSchema } from "./lender-finance-schema";
 export { canManage } from "./permissions";
 import {
   claimCommands,
@@ -100,7 +101,11 @@ import {
   type Person,
   type Insurance,
 } from "./people";
-import { calculateQuote, type FinanceValues } from "./finance";
+import {
+  calculateQuote,
+  lenderFinanceMath,
+  type FinanceValues,
+} from "./finance";
 import {
   operationCommands,
   productSchema,
@@ -440,6 +445,7 @@ const amount = z.number().finite().min(0).max(1000000);
 export const quoteSchema = z
   .object({
     fiMenu: fiMenuSchema.optional(),
+    lenderFinance: lenderFinanceSchema.optional(),
     products: z.array(productSchema).max(30).optional(),
     price: amount,
     docFee: amount,
@@ -466,6 +472,7 @@ export const quoteSchema = z
         z.object({
           months: z.number().int().min(1).max(120),
           apr: z.number().min(0).max(50),
+          lenderFinance: lenderFinanceSchema.optional(),
         }),
       )
       .length(3)
@@ -480,7 +487,27 @@ export const quoteSchema = z
       values.fiMenu.selected === null ||
       fiSelectionMatches(values),
     "The selected F&I package does not match the deal products. Apply the package again.",
-  );
+  )
+  .superRefine((values, ctx) => {
+    const hasTerms =
+      values.lenderFinance ||
+      values.financeOptions?.some((o) => o.lenderFinance);
+    if (!hasTerms) return;
+    const selected = values.financeOptions?.[values.selectedOption ?? 2];
+    if (
+      selected &&
+      (JSON.stringify(selected.lenderFinance) !==
+        JSON.stringify(values.lenderFinance) ||
+        selected.months !== values.months ||
+        (values.mode !== "cash" && selected.apr !== values.apr))
+    )
+      ctx.addIssue({
+        code: "custom",
+        message: "Apply lender details to the selected payment option.",
+      });
+    if (lenderFinanceMath(values).reserve > 1_000_000)
+      ctx.addIssue({ code: "custom", message: "Review the reserve amount." });
+  });
 export const quickQuoteSchema = z.object({
   inventory_id: z.uuid().nullable(),
   vehicle: text,

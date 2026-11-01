@@ -23,7 +23,11 @@ export function deskingPaymentOptions(values: QuoteValues) {
     terms: values.financeOptions ?? [
       { months: 36, apr: values.apr },
       { months: 48, apr: values.apr },
-      { months: values.months, apr: values.apr },
+      {
+        months: values.months,
+        apr: values.apr,
+        lenderFinance: values.lenderFinance,
+      },
     ],
     downs: values.downPayments ?? [
       values.downPayment,
@@ -62,6 +66,7 @@ export function selectedDeskingValues(draft: QuoteValues): QuoteValues {
     ...draft,
     apr: draft.mode === "cash" ? 0 : selected.apr,
     months: selected.months,
+    lenderFinance: selected.lenderFinance,
     downPayment:
       draft.mode === "cash"
         ? draft.downPayment

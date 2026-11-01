@@ -182,7 +182,7 @@ test("closed-deal desking uses the same gross as Accounting, including missing t
 
 test("manager and owner profit starts hidden next to price; sales staff have no profit control", () => {
   const ws = demoWorkspace();
-  for (const role of ["owner", "manager", "sales"]) {
+  for (const role of ["owner", "manager", "finance", "sales"]) {
     const html = renderToStaticMarkup(
       createElement(QuickQuote, {
         ws: { ...ws, member: { ...ws.member, role } },
@@ -196,9 +196,12 @@ test("manager and owner profit starts hidden next to price; sales staff have no 
         onCreate: async () => ({ ok: true }),
       }),
     );
-    if (role === "sales") assert.ok(!html.includes("Show profit"));
-    else {
+    if (role === "sales") {
+      assert.ok(!html.includes("Show profit"));
+      assert.ok(!html.includes("Lender details"));
+    } else {
       assert.ok(html.includes("Show profit"));
+      assert.ok(html.includes("Lender details"));
       assert.ok(html.includes('aria-expanded="false"'));
       assert.ok(html.indexOf("Selling price") < html.indexOf("Show profit"));
       assert.ok(

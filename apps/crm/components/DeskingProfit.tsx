@@ -63,7 +63,7 @@ export function DeskingProfit({
           <p className="desk-profit-note">
             Includes doc fee · before commissions and overhead.
             {!accounting &&
-              " Reserve and accessory/other direct costs are not included."}
+              " Includes lender reserve and fees entered for the selected payment option."}
           </p>
           <details className="desk-profit-details">
             <summary>Calculation details</summary>
@@ -75,11 +75,17 @@ export function DeskingProfit({
                   ["Trade ACV less allowance", m.adjustment],
                   ["Product retail", m.productRevenue],
                   ["Product cost", m.productCost],
+                  ["Lender fees", m.lenderFees],
+                  [
+                    m.reserveSource === "estimate"
+                      ? "Estimated finance reserve"
+                      : "Finance reserve",
+                    m.financeReserve,
+                  ],
                   ...(accounting
                     ? [
                         ["Accessory cost", accounting.accessory_cost],
                         ["Other direct costs", accounting.other_cost],
-                        ["Finance reserve", accounting.finance_reserve],
                       ]
                     : []),
                 ] as [string, number | null][]
@@ -103,9 +109,10 @@ export function DeskingProfit({
               </p>
             )}
             <p>
-              Taxes, title fees, down payments and payoffs do not affect profit.
-              Trade reconditioning belongs to the acquired trade, not this
-              vehicle.
+              Lender fees reduce front gross. Reserve adds to back gross and may
+              change with the amount financed. Estimates remain subject to the
+              lender’s settlement. Trade reconditioning belongs to the acquired
+              trade.
             </p>
           </details>
         </div>

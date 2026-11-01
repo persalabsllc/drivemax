@@ -7,7 +7,11 @@ import {
 } from "./protection-programs";
 import type { Customer, Opportunity, Quote, Task, Workspace } from "./model";
 import type { InventoryVehicle, Trade, VehicleDetails } from "./vehicles";
-import { calculateQuote, type FinanceValues } from "./finance";
+import {
+  calculateQuote,
+  lenderAccounting,
+  type FinanceValues,
+} from "./finance";
 
 const amount = z.number().finite().min(0).max(1000000);
 const short = z.string().trim().max(250);
@@ -85,6 +89,10 @@ export const accountingSchema = z.object({
   accessory_cost: amount,
   other_cost: amount,
   finance_reserve: amount,
+  lender_fees: amount.default(0),
+  finance_reserve_source: z
+    .enum(["estimate", "confirmed", "manual"])
+    .default("manual"),
   pack: amount,
   product_costs: z.record(z.uuid(), amount.nullable()).default({}),
   legacy_product_cost: amount.nullable(),
@@ -99,6 +107,8 @@ export const emptyAccounting: DealAccounting = {
   accessory_cost: 0,
   other_cost: 0,
   finance_reserve: 0,
+  lender_fees: 0,
+  finance_reserve_source: "manual",
   pack: 0,
   product_costs: {},
   legacy_product_cost: null,
@@ -332,7 +342,7 @@ export function quoteGross(
     ? { allowance: v.tradeAllowance, acv: v.acv }
     : null,
 ) {
-  const a = { ...emptyAccounting, ...accounting };
+  const a = { ...emptyAccounting, ...lenderAccounting(v), ...accounting };
   const cost = a.vehicle_cost ?? vehicle?.cost ?? null,
     recon = a.recon ?? vehicle?.recon ?? null;
   const allowance = trade ? (v?.tradeAllowance ?? trade.allowance) : 0;
@@ -359,7 +369,8 @@ export function quoteGross(
             a.accessory_cost +
             adjustment +
             v.docFee -
-            a.other_cost,
+            a.other_cost -
+            a.lender_fees,
         );
   const back =
     productGross === null ? null : roundMoney(productGross + a.finance_reserve);
@@ -374,6 +385,9 @@ export function quoteGross(
     productRevenue,
     productCost,
     productGross,
+    financeReserve: a.finance_reserve,
+    reserveSource: a.finance_reserve_source,
+    lenderFees: a.lender_fees,
     front,
     back,
     gross,

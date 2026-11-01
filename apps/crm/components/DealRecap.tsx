@@ -102,6 +102,7 @@ export function RecapDocument({ ws, sale }: { ws: Workspace; sale: Sale }) {
               ["Doc fee", v?.docFee],
               ["Trade under/(over) allowance", m.adjustment],
               ["Other direct costs", a.other_cost],
+              ["Lender fees", a.lender_fees],
               ["Front gross", m.front],
               ["Pack (commission basis only)", a.pack],
               ["Commissionable front (doc fee excluded)", m.payableFront],
@@ -115,7 +116,12 @@ export function RecapDocument({ ws, sale }: { ws: Workspace; sale: Sale }) {
               ["Product retail", m.productRevenue],
               ["Product provider cost", m.productCost],
               ["Product gross", m.productGross],
-              ["Finance reserve", a.finance_reserve],
+              [
+                a.finance_reserve_source === "estimate"
+                  ? "Finance reserve (estimate)"
+                  : "Finance reserve",
+                a.finance_reserve,
+              ],
               ["F&I gross", m.back],
             ]}
           />
@@ -426,7 +432,25 @@ function AccountingEditor({
         {moneyField("recon", "Reconditioning", true)}
         {moneyField("accessory_cost", "Accessory / add-on cost")}
         {moneyField("other_cost", "Other direct costs")}
+        {moneyField("lender_fees", "Lender fees · front gross")}
         {moneyField("finance_reserve", "Finance reserve income")}
+        <label>
+          Reserve status
+          <select
+            value={a.finance_reserve_source}
+            onChange={(e) =>
+              setA({
+                ...a,
+                finance_reserve_source: e.target
+                  .value as DealAccounting["finance_reserve_source"],
+              })
+            }
+          >
+            <option value="estimate">Estimated · confirm with lender</option>
+            <option value="confirmed">Confirmed by lender</option>
+            <option value="manual">Manual accounting entry</option>
+          </select>
+        </label>
         {moneyField("pack", "Pack — commission basis only")}
         {!sale.snapshot.quote?.values.products &&
           moneyField(

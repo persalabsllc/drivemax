@@ -1,0 +1,60 @@
+/* Compact internal financing controls beside the payment options. */
+.desk-finance-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.lender-finance-modal {
+  width: min(520px, calc(100% - 24px));
+}
+.lender-finance-modal .modal-head {
+  padding: 19px 24px;
+}
+.lender-finance-modal .modal-form {
+  padding: 20px 24px;
+}
+.lender-finance-totals {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+  background: #f7f9fc;
+}
+.lender-finance-totals span,
+.lender-finance-totals small {
+  display: block;
+  font-size: 11px;
+  color: #64748b;
+}
+.lender-finance-totals strong {
+  display: block;
+  font-size: 23px;
+  margin: 7px 0 5px;
+  color: #243b53;
+}
+.lender-finance-settings {
+  margin-top: 17px;
+  font-size: 12px;
+}
+.lender-finance-settings summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.lender-finance-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+@media (max-width: 420px) {
+  .lender-finance-modal .modal-form {
+    padding: 18px;
+  }
+  .lender-finance-totals {
+    padding: 12px;
+    gap: 10px;
+  }
+}

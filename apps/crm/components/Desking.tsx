@@ -11,6 +11,7 @@ import {
   UserPlus,
   LayoutGrid,
   FileCheck2,
+  Landmark,
 } from "lucide-react";
 import {
   deskingDefaults,
@@ -36,6 +37,7 @@ import { financePayment } from "../lib/finance";
 import { type InventoryVehicle, vehicleName } from "../lib/vehicles";
 import { VehicleFacts } from "./VehicleFields";
 import { DeskingProfit } from "./DeskingProfit";
+import { LenderFinance } from "./LenderFinance";
 import { FIProducts } from "./FIProducts";
 import { ProtectionFromQuote } from "./ProtectionWorkspace";
 import type { Workspace } from "../lib/model";
@@ -103,6 +105,7 @@ export function Desking({
   pricing,
 }: DeskingProps) {
   const [productsOpen, setProductsOpen] = useState(false);
+  const [lenderOpen, setLenderOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPrint, setMenuPrint] = useState<{
     quote: PrintableQuote;
@@ -208,6 +211,24 @@ export function Desking({
   );
   return (
     <div className="profile-body desking">
+      {lenderOpen && canViewProfit && (
+        <LenderFinance
+          values={values}
+          readOnly={readOnly}
+          accounting={accounting}
+          onClose={() => setLenderOpen(false)}
+          onApply={(lenderFinance, apr, months) =>
+            setDraft({
+              ...draft,
+              financeOptions: terms.map((option, index) =>
+                index === selectedRow
+                  ? { ...option, apr, months, lenderFinance }
+                  : option,
+              ),
+            })
+          }
+        />
+      )}
       {productsOpen && (
         <FIProducts
           pricing={pricing}
@@ -586,7 +607,19 @@ export function Desking({
             </div>
           </section>
           <section className="desk-payment">
-            <span className="eyebrow">PAYMENT OPTIONS</span>
+            <div className="desk-finance-heading">
+              <span className="eyebrow">PAYMENT OPTIONS</span>
+              {canViewProfit && draft.mode === "finance" && (
+                <button
+                  type="button"
+                  className="btn small"
+                  onClick={() => setLenderOpen(true)}
+                >
+                  <Landmark size={14} />
+                  Lender details
+                </button>
+              )}
+            </div>
             <h3>
               {draft.mode === "cash"
                 ? "Cash purchase summary"
@@ -675,7 +708,7 @@ export function Desking({
                                 type="number"
                                 min={0}
                                 max={50}
-                                step=".01"
+                                step=".001"
                                 value={t.apr}
                                 readOnly={readOnly}
                                 required

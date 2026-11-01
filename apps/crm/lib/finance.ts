@@ -1,7 +1,19 @@
 import type { FIProduct } from "./operations";
 import type { FIMenu } from "./fi-menu";
-export type FinanceOption = { months: number; apr: number };
+export type LenderFinance = {
+  lender: string;
+  buyRate: number | null;
+  payoutPercent: number;
+  reserveOverride: number | null;
+  lenderFees: number;
+};
+export type FinanceOption = {
+  months: number;
+  apr: number;
+  lenderFinance?: LenderFinance;
+};
 export type FinanceValues = {
+  lenderFinance?: LenderFinance;
   fiMenu?: FIMenu;
   products?: FIProduct[];
   price: number;
@@ -86,5 +98,59 @@ export function calculateQuote(v: FinanceValues) {
       Math.max(0, v.price + v.docFee + (v.addOns || 0) - v.tradeAllowance),
     ),
     ...payment,
+  };
+}
+
+export const emptyLenderFinance: LenderFinance = {
+  lender: "",
+  buyRate: null,
+  payoutPercent: 100,
+  reserveOverride: null,
+  lenderFees: 0,
+};
+
+// Estimate using the same rounded payments and odd-days convention as desking.
+// A bank's actual settlement can differ; its confirmed amount takes precedence.
+export function lenderFinanceMath(v: FinanceValues) {
+  const f = v.mode === "cash" ? undefined : v.lenderFinance;
+  const { balance, payment } = calculateQuote(v);
+  const buyPayment =
+    f?.buyRate == null
+      ? null
+      : financePayment(balance, f.buyRate, v.months, v.daysToFirstPayment ?? 30)
+          .payment;
+  // Integer cents and percentage basis points avoid half-cent float drift
+  // between the browser estimate and PostgreSQL's decimal accounting math.
+  const spreadCents = Math.max(
+    0,
+    Math.round(payment * 100) - Math.round((buyPayment ?? payment) * 100),
+  );
+  const payoutBasisPoints = Math.round((f?.payoutPercent ?? 100) * 100);
+  const estimatedReserve =
+    Math.round((spreadCents * v.months * payoutBasisPoints) / 10_000) / 100;
+  return {
+    buyPayment,
+    estimatedReserve,
+    reserve:
+      f?.reserveOverride != null ? cents(f.reserveOverride) : estimatedReserve,
+    lenderFees: cents(f?.lenderFees ?? 0),
+    source:
+      f?.reserveOverride != null
+        ? ("confirmed" as const)
+        : ("estimate" as const),
+  };
+}
+
+// Freeze once when sold; subsequent accounting corrections remain authoritative.
+export function lenderAccounting(v?: FinanceValues) {
+  const f = v?.mode === "cash" ? undefined : v?.lenderFinance;
+  if (!v || !f) return {};
+  const m = lenderFinanceMath(v);
+  return {
+    lender: f.lender,
+    buy_rate: f.buyRate,
+    finance_reserve: m.reserve,
+    lender_fees: m.lenderFees,
+    finance_reserve_source: m.source,
   };
 }

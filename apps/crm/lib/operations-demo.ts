@@ -1,4 +1,5 @@
 import { demoAttention } from "./attention";
+import { lenderAccounting } from "./finance";
 import type { Command, Opportunity, Workspace } from "./model";
 import { opportunityCustomer } from "./model";
 import { clearFIPaperwork } from "./fi-paperwork";
@@ -41,7 +42,7 @@ function recordSale(s: Workspace, o: Opportunity, stamp: string) {
       quote: structuredClone(q),
       salesperson: snap?.salesperson ?? null,
     },
-    accounting: { ...emptyAccounting },
+    accounting: { ...emptyAccounting, ...lenderAccounting(q?.values) },
     revision: 0,
     unwound_at: null,
     unwind_reason: "",

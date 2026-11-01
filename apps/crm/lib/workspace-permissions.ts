@@ -46,6 +46,7 @@ const privateFields = new Set([
   "vehicle_cost",
   "recon_cost",
   "internal_cost",
+  "lenderFinance",
   "pricing_snapshot",
   "accounting",
   "quote",

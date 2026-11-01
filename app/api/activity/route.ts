@@ -7,6 +7,7 @@ import { CHAT_ORG, readChatCredential } from "../../../lib/website-chat-server";
 import {
   ACTIVITY_CHOICE,
   ACTIVITY_COOKIE,
+  activityChoice,
   activityRequestSchema,
   excludedAgent,
   privacySignal,
@@ -27,11 +28,7 @@ const options = {
 export async function GET(request: Request) {
   const choice = (await cookies()).get(ACTIVITY_CHOICE)?.value;
   return json({
-    choice: privacySignal(request.headers)
-      ? "deny"
-      : choice === "allow" || choice === "deny"
-        ? choice
-        : null,
+    choice: activityChoice(choice, request.headers),
     privacy_signal: privacySignal(request.headers),
   });
 }
@@ -59,8 +56,8 @@ export async function POST(request: Request) {
       return json({ choice: allow ? "allow" : "deny" });
     }
     if (
-      privacySignal(request.headers) ||
-      jar.get(ACTIVITY_CHOICE)?.value !== "allow"
+      activityChoice(jar.get(ACTIVITY_CHOICE)?.value, request.headers) !==
+      "allow"
     )
       return json({ recorded: false });
     if (

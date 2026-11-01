@@ -5,7 +5,7 @@ import { CHAT_ORG, readChatCredential } from "./website-chat-server";
 import {
   ACTIVITY_CHOICE,
   ACTIVITY_COOKIE,
-  privacySignal,
+  activityChoice,
 } from "./website-activity";
 // A failed analytics link must never prevent a lead or appointment being saved.
 export async function linkWebsiteActivity(
@@ -15,8 +15,8 @@ export async function linkWebsiteActivity(
   try {
     const jar = await cookies();
     if (
-      jar.get(ACTIVITY_CHOICE)?.value !== "allow" ||
-      privacySignal(await headers())
+      activityChoice(jar.get(ACTIVITY_CHOICE)?.value, await headers()) !==
+      "allow"
     )
       return;
     const credential = readChatCredential(jar.get(ACTIVITY_COOKIE)?.value);

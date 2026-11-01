@@ -96,6 +96,14 @@ export function activitySource(referrer: string, location: string) {
 export function privacySignal(headers: Pick<Headers, "get">) {
   return headers.get("sec-gpc") === "1" || headers.get("dnt") === "1";
 }
+export function activityChoice(
+  savedChoice: string | undefined,
+  headers: Pick<Headers, "get">,
+): "allow" | "deny" {
+  if (privacySignal(headers)) return "deny";
+  if (savedChoice === undefined) return "allow";
+  return savedChoice === "allow" ? "allow" : "deny";
+}
 export function excludedAgent(agent: string) {
   return /bot\b|crawler|spider|headless|lighthouse|googleother|facebookexternalhit|preview|monitoring/i.test(
     agent,

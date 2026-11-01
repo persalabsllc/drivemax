@@ -11,7 +11,7 @@ import {
 type Event = { id: string; kind: ActivityKind; path: string; seconds?: number };
 export default function WebsiteActivity() {
   const pathname = usePathname();
-  const [choice, setChoice] = useState<"allow" | "deny" | null | undefined>(),
+  const [choice, setChoice] = useState<"allow" | "deny" | undefined>(),
     [open, setOpen] = useState(false),
     [signal, setSignal] = useState(false),
     [busy, setBusy] = useState(false),
@@ -180,18 +180,24 @@ export default function WebsiteActivity() {
       <button className="activity-privacy-button" onClick={() => setOpen(true)}>
         Privacy choices
       </button>
-      {(choice === null || open) && (
+      {open && (
         <section
           className="activity-consent"
           aria-label="Website analytics choice"
         >
           <div>
-            <strong>A little insight. A better experience.</strong>
+            <strong>Website privacy</strong>
             <p>
-              May we use analytics cookies to understand which vehicles and
-              pages interest you? If you send an inquiry, we can connect this
-              visit to it. We don’t record what you type into forms.{" "}
+              We use first-party analytics to understand which vehicles and
+              pages interest shoppers. If you send an inquiry, we can connect
+              this visit to it. We don’t record what you type into forms. You
+              can turn analytics off here.{" "}
               <Link href="/privacy-policy#website-analytics">Learn more</Link>
+            </p>
+            <p role="status">
+              {choice === undefined
+                ? "Checking your preference…"
+                : `Analytics is ${choice === "allow" ? "on" : "off"}.`}
             </p>
           </div>
           {signal && (
@@ -199,27 +205,25 @@ export default function WebsiteActivity() {
           )}
           <div className="activity-consent-actions">
             <button
-              disabled={busy}
+              disabled={busy || choice === undefined}
               className="button button-outline button-small"
               onClick={() => choose(false)}
             >
-              No thanks
+              Turn off analytics
             </button>
             <button
-              disabled={busy || signal}
+              disabled={busy || signal || choice === undefined}
               className="button button-primary button-small"
               onClick={() => choose(true)}
             >
-              Allow analytics
+              Turn on analytics
             </button>
-            {choice !== null && (
-              <button
-                className="button button-outline button-small"
-                onClick={() => setOpen(false)}
-              >
-                Close
-              </button>
-            )}
+            <button
+              className="button button-outline button-small"
+              onClick={() => setOpen(false)}
+            >
+              Close
+            </button>
           </div>
           {error && <p role="alert">{error}</p>}
         </section>

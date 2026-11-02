@@ -91,10 +91,10 @@ export default async function Inventory({
                   </option>
                 ))}
               </select>
-              <small id="inventory-price-hint">
-                Includes $399 dealer fee; plus tax and tags.
-              </small>
             </label>
+            <small id="inventory-price-hint">
+              Includes $399 dealer fee; plus tax and tags.
+            </small>
             <button className="button button-primary">
               Search available cars
             </button>

@@ -522,6 +522,17 @@ main[id], main [id] { scroll-margin-top: 172px; }
 .vehicle-pricing-prominent .vehicle-pricing-total dd { font-size: clamp(28px, 3vw, 38px); }
 .vehicle-pricing + .vehicle-card-price { margin-top: 12px; padding-top: 0; border-top: 0; }
 .inventory-filters small, #vehicle-price-help { color: #526173; font-size: 12px; font-weight: 450; line-height: 1.5; }
+.inventory-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 8px 15px; }
+.inventory-filters label { min-width: 0; }
+.inventory-filters > .button { grid-column: 4; grid-row: 1; }
+.inventory-filters > #inventory-price-hint { grid-column: 3; grid-row: 2; }
+.inventory-filters > .text-link { grid-column: 4; grid-row: 2; justify-self: center; align-self: start; }
+@media (max-width: 760px) {
+  .inventory-filters { grid-template-columns: minmax(0, 1fr); gap: 15px; }
+  .inventory-filters > .button,
+  .inventory-filters > #inventory-price-hint,
+  .inventory-filters > .text-link { grid-column: 1; grid-row: auto; }
+}
 .form-consent-note p { margin: 0 0 10px; }
 .form-consent-note a, .policy-copy a:not(.text-link) { text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
 .footer-disclosures { margin-top: 40px; padding-top: 22px; border-top: 1px solid rgba(255,255,255,.15); color: #bcc9d8; font-size: 12px; line-height: 1.7; }

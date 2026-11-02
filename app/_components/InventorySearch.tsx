@@ -13,7 +13,7 @@ export default function InventorySearch() {
   useEffect(() => {
     if (!open) return;
     inputRef.current?.focus();
-    function dismiss(event: PointerEvent) {
+    function dismiss(event: Event) {
       if (
         event.target instanceof Node &&
         !rootRef.current?.contains(event.target)
@@ -21,16 +21,19 @@ export default function InventorySearch() {
         setOpen(false);
     }
     document.addEventListener("pointerdown", dismiss);
-    return () => document.removeEventListener("pointerdown", dismiss);
+    // A button click can blur the input without focusing the button. Wait for
+    // actual outside focus instead of hiding the form during that click.
+    document.addEventListener("focusin", dismiss);
+    return () => {
+      document.removeEventListener("pointerdown", dismiss);
+      document.removeEventListener("focusin", dismiss);
+    };
   }, [open]);
 
   return (
     <div
       ref={rootRef}
       className="header-search"
-      onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
-      }}
       onKeyDown={(event) => {
         if (event.key === "Escape" && open) {
           event.preventDefault();
@@ -58,7 +61,7 @@ export default function InventorySearch() {
       </button>
       <div id={id} className="header-search-panel" hidden={!open}>
         <form
-          action="/inventory"
+          action="/inventory#inventory-results"
           method="get"
           role="search"
           aria-label="Inventory search"

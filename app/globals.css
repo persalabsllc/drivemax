@@ -618,11 +618,12 @@ main[id], main [id] { scroll-margin-top: 172px; }
 .staff-bio-more summary:hover { text-decoration: underline; text-underline-offset: 4px; }
 .staff-bio-more > div { padding-top: 8px; }
 .staff-team-content .staff-profile-email { border-top: 1px solid var(--line); padding-top: 14px; font-size: 14px; }
-.staff-join-section { padding-top: 0; }
-.staff-join { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 30px; border-radius: 18px; background: var(--blue-50); }
-.staff-join h2 { margin: 0 0 7px; font-size: 25px; letter-spacing: -.03em; line-height: 1.2; }
-.staff-join p { margin: 0; color: var(--muted); }
-.staff-join .button { flex-shrink: 0; }
+.staff-join-section { padding-block: 48px; }
+.staff-join { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 24px 32px; padding: 32px; border: 1px solid var(--line); border-radius: 18px; background: var(--blue-50); }
+.staff-join > div { min-width: 0; }
+.staff-join h2 { margin: 0 0 8px; font-size: clamp(22px, 2.2vw, 28px); letter-spacing: -.03em; line-height: 1.25; }
+.staff-join p { max-width: 62ch; margin: 0; color: var(--muted); line-height: 1.65; }
+.staff-join .button { justify-self: end; }
 @media (max-width: 1100px) and (min-width: 981px) {
   .desktop-nav .nav-link { padding-inline: 10px; font-size: 14px; }
   .header-inner { gap: 16px; }
@@ -634,7 +635,8 @@ main[id], main [id] { scroll-margin-top: 172px; }
 @media (max-width: 760px) {
   .staff-category-section { padding-block: 40px; }
   .staff-team-grid { grid-template-columns: 1fr; }
-  .staff-join { align-items: flex-start; flex-direction: column; }
+  .staff-join-section { padding-block: 32px; }
+  .staff-join { grid-template-columns: minmax(0, 1fr); gap: 22px; padding: 24px; }
   .staff-join .button { width: 100%; }
   .owner-monogram { width: 80px; height: 80px; font-size: 32px; margin-bottom: 24px; }
 }

@@ -104,7 +104,10 @@ export default async function Inventory({
               </Link>
             )}
           </form>
-          <div className="section-heading section-heading-split">
+          <div
+            id="inventory-results"
+            className="section-heading section-heading-split"
+          >
             <h2>{searching ? "Search results" : "Available now"}</h2>
             <p>
               {active.length} available{" "}

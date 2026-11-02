@@ -49,13 +49,15 @@ export function leadLabel(lead: {
 }) {
   return isPurchaseRequest(lead)
     ? "Purchase offer request"
-    : lead.details.purpose === "test-drive"
-      ? "Test-drive request"
-      : lead.details.purpose === "vehicle-update"
-        ? "Availability update request"
-        : lead.details.purpose === "similar-vehicle"
-          ? "Similar vehicle request"
-          : `${lead.kind} inquiry`;
+    : lead.details.purpose === "price-request"
+      ? "Price request"
+      : lead.details.purpose === "test-drive"
+        ? "Test-drive request"
+        : lead.details.purpose === "vehicle-update"
+          ? "Availability update request"
+          : lead.details.purpose === "similar-vehicle"
+            ? "Similar vehicle request"
+            : `${lead.kind} inquiry`;
 }
 export function purchaseSummary(value: {
   sellerYear?: string;

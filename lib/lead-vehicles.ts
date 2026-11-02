@@ -17,6 +17,7 @@ export const leadVehicleColumns =
   "id,slug,year,make,model,trim,vin,stock_number,miles,status";
 export const openLeadStatuses = ["new", "contacted", "appointment"];
 export const vehicleInquiryPurposes = [
+  "price-request",
   "test-drive",
   "vehicle-update",
   "similar-vehicle",
@@ -60,13 +61,15 @@ export function captureVehicleInquiry<
         ? "vehicle-update"
         : input.purpose;
   const reason =
-    purpose === "test-drive"
-      ? "Test drive requested"
-      : purpose === "similar-vehicle"
-        ? "Request a vehicle similar to this sold listing"
-        : purpose === "vehicle-update"
-          ? "Request an update on this pending vehicle"
-          : "Vehicle inquiry";
+    purpose === "price-request"
+      ? "Price requested"
+      : purpose === "test-drive"
+        ? "Test drive requested"
+        : purpose === "similar-vehicle"
+          ? "Request a vehicle similar to this sold listing"
+          : purpose === "vehicle-update"
+            ? "Request an update on this pending vehicle"
+            : "Vehicle inquiry";
   const preferredVisit =
     purpose === "test-drive" ? input.preferredVisit || "" : "";
   return {

@@ -149,7 +149,7 @@ export function inventoryPageMetadata(
   return pageMetadata({
     title: "Used Car Inventory in New Bern, NC",
     description:
-      "Shop used cars, trucks, and SUVs at Drive Max in New Bern, serving Havelock and eastern NC. View photos, mileage, clear pricing, and test-drive requests.",
+      "Shop used cars, trucks, and SUVs at Drive Max in New Bern, serving Havelock and eastern NC. View photos, mileage, and clear pricing, then request your price.",
     path: `/inventory${!filtered && query.size ? `?${query}` : ""}`,
     noIndex: filtered,
   });

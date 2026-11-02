@@ -58,7 +58,7 @@ test("every form and customer reply alerts sales, with the customer as Reply-To"
   assert.match(phoneOnly.text, /Preferred contact: Phone call/);
 });
 
-test("purchase, financing, employment, and test-drive details survive in readable alerts", () => {
+test("purchase, financing, employment, and vehicle inquiry details survive in readable alerts", () => {
   const purchase = notificationMessage({
     ...example,
     kind: "vehicle",
@@ -102,6 +102,7 @@ test("purchase, financing, employment, and test-drive details survive in readabl
   assert.match(employment.text, /Position or area of interest: Sales/);
   assert.match(employment.text, /Five years of experience\./);
   for (const [purpose, label] of [
+    ["price-request", "Price request"],
     ["test-drive", "Test-drive"],
     ["vehicle-update", "Availability update"],
     ["similar-vehicle", "Similar vehicle"],

@@ -48,6 +48,42 @@ const request = {
 };
 const now = "2026-09-07T19:00:00.000Z";
 
+test("price requests require a specific car and retain pricing intent without scheduling a visit", () => {
+  const priceRequest = { ...request, purpose: "price-request" };
+  for (const patch of [{ vehicleId: "" }, { kind: "contact" }])
+    assert.equal(
+      leadSchema.safeParse({ ...priceRequest, ...patch }).success,
+      false,
+    );
+  const captured = captureVehicleInquiry(
+    leadSchema.parse({ ...priceRequest, originalVehicleVin: "FORGED" }),
+    original,
+    now,
+  );
+  assert.equal(captured.purpose, "price-request");
+  assert.equal(captured.originalVehicleVin, original.vin);
+  assert.equal(captured.assignedVehicleId, original.id);
+  assert.equal(captured.preferredVisit, "");
+  assert.match(captured.message, /Price requested: 2003 Honda Accord EX/);
+  assert.doesNotMatch(captured.message, /Preferred visit|Test drive/);
+  assert.equal(
+    leadLabel({ kind: "vehicle", details: { purpose: captured.purpose! } }),
+    "Price request",
+  );
+  for (const [status, purpose] of [
+    ["sold", "similar-vehicle"],
+    ["pending", "vehicle-update"],
+  ] as const)
+    assert.equal(
+      captureVehicleInquiry(
+        leadSchema.parse(priceRequest),
+        { ...original, status },
+        now,
+      ).purpose,
+      purpose,
+    );
+});
+
 test("test-drive requests require a specific car and capture trusted inventory details", () => {
   for (const patch of [
     { vehicleId: "" },

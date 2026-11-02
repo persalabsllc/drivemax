@@ -100,14 +100,15 @@ export function vehicleSlug(
     .replace(/^-|-$/g, "")}-${id.slice(0, 8)}`;
 }
 export function inventoryMatches(v: Vehicle, q = "", body = "", maxPrice = "") {
+  const terms = q.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  const searchable = [vehicleTitle(v), v.stock_number, v.vin, ...v.features]
+    .join(" ")
+    .toLowerCase();
   return (
     v.status === "available" &&
     (!body || v.body_style === body) &&
     (!maxPrice || totalVehiclePrice(v.internet_price) <= Number(maxPrice)) &&
-    (!q ||
-      `${vehicleTitle(v)} ${v.stock_number} ${v.features.join(" ")}`
-        .toLowerCase()
-        .includes(q.toLowerCase().trim()))
+    terms.every((term) => searchable.includes(term))
   );
 }
 export function schemaAvailability(status: Vehicle["status"]) {

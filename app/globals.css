@@ -76,6 +76,16 @@ main[id], main [id] { scroll-margin-top: 172px; }
   backdrop-filter: blur(14px);
 }
 .header-inner { min-height: 104px; display: flex; align-items: center; justify-content: space-between; gap: 28px; }
+.header-actions { position: relative; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.header-search { flex: 0 0 auto; }
+.header-search-toggle { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 10px; background: transparent; color: #526173; cursor: pointer; }
+.header-search-toggle:hover, .header-search-toggle[aria-expanded="true"] { background: var(--blue-50); color: var(--blue-700); }
+.header-search-panel { position: absolute; z-index: 5; top: calc(100% + 12px); right: 0; width: min(380px, calc(100vw - 30px)); padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: #fff; box-shadow: var(--shadow-lg); }
+.header-search-panel label { display: block; margin-bottom: 8px; color: var(--navy-900); font-size: 14px; font-weight: 750; }
+.header-search-row { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: 8px; }
+.header-search-row input { min-width: 0; width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: var(--navy-900); font-size: 16px; }
+.header-search-row button { display: grid; place-items: center; width: 44px; min-height: 44px; padding: 0; border: 0; border-radius: 8px; background: var(--blue-700); color: #fff; cursor: pointer; }
+.header-search-row button:hover { background: #064a9a; }
 .brand {
   width: 270px;
   aspect-ratio: 2 / 1;
@@ -440,6 +450,9 @@ main[id], main [id] { scroll-margin-top: 172px; }
 }
 
 @media (max-width: 520px) {
+  .header-actions { gap: 8px; }
+  .mobile-nav summary { width: 44px; min-height: 44px; justify-content: center; padding: 0; }
+  .mobile-nav summary > span, .mobile-nav .menu-chevron { display: none; }
   .mobile-nav nav { right: 0; width: min(300px, calc(100vw - 30px)); }
   .button-row { flex-direction: column; }
   .button-row .button { width: 100%; }

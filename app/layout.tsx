@@ -10,6 +10,7 @@ import Link from "next/link";
 import { Mail, MapPin, Phone } from "lucide-react";
 import MobileNav from "./_components/MobileNav";
 import AboutNav from "./_components/AboutNav";
+import InventorySearch from "./_components/InventorySearch";
 import { SITE_URL } from "../lib/seo";
 import BusinessHours from "./_components/BusinessHours";
 import { CONTACT_NOTICE_PARAGRAPHS } from "../lib/contact-notice";
@@ -111,10 +112,13 @@ export default function RootLayout({
                 aria-hidden="true"
               />
             </Link>
-            <nav className="desktop-nav" aria-label="Primary navigation">
-              <HeaderLinks />
-            </nav>
-            <MobileNav />
+            <div className="header-actions">
+              <nav className="desktop-nav" aria-label="Primary navigation">
+                <HeaderLinks />
+              </nav>
+              <InventorySearch />
+              <MobileNav />
+            </div>
           </div>
         </header>
         <main id="main-content">{children}</main>

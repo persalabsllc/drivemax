@@ -60,11 +60,11 @@ export default async function Inventory({
         <div className="container">
           <form className="inventory-filters" action="/inventory">
             <label>
-              Make, model, or keyword
+              Vehicle search
               <input
                 name="q"
                 defaultValue={q}
-                placeholder="Try Toyota Camry"
+                placeholder="Make, model, stock #, or VIN"
                 maxLength={100}
               />
             </label>

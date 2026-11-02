@@ -39,6 +39,24 @@ const vehicle = {
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 } as Vehicle;
+test("inventory search matches stock numbers, full or partial VINs, and vehicle terms", () => {
+  for (const query of [
+    "dm001",
+    "DM001",
+    "4t1b11hk0ku123456",
+    "123456",
+    "  Toyota   CAMRY  ",
+    "Camry Toyota",
+    "2020 Camry LE",
+    "backup camera",
+  ])
+    assert.equal(inventoryMatches(vehicle, query), true, query);
+  for (const query of ["DM999", "4T1B11HK0KU999999", "Toyota Corolla"])
+    assert.equal(inventoryMatches(vehicle, query), false, query);
+  for (const status of ["sold", "pending", "draft", "archived"] as const)
+    assert.equal(inventoryMatches({ ...vehicle, status }, vehicle.vin), false);
+  assert.equal(inventoryMatches(vehicle, "   "), true);
+});
 test("available searches exclude sold, pending, draft, and archived even when featured", () => {
   assert.equal(
     inventoryMatches(vehicle, "Toyota Camry", "Sedan", "20000"),

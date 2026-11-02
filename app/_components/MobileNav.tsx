@@ -28,7 +28,7 @@ export default function MobileNav() {
 
   return (
     <details ref={detailsRef} className="mobile-nav">
-      <summary>
+      <summary aria-label="Navigation menu">
         <Menu aria-hidden="true" size={21} />
         <span>Menu</span>
         <ChevronDown className="menu-chevron" aria-hidden="true" size={18} />

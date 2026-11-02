@@ -373,6 +373,7 @@ export default async function ControlRoom({
                   Request type
                   <select name="type" defaultValue={requestType}>
                     <option value="">All inquiries</option>
+                    <option value="price-request">Price requests</option>
                     <option value="test-drive">Test-drive requests</option>
                     <option value="vehicle-update">Availability updates</option>
                     <option value="similar-vehicle">

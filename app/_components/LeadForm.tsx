@@ -34,7 +34,6 @@ const labels: Record<string, string> = {
   position: "Position or area of interest",
   message: "Message",
   experience: "Experience",
-  preferredVisit: "Preferred visit (awaiting confirmation)",
   contactNoticeVersion: "Website contact notice version",
   smsConsent: "Customer care text message consent",
 };
@@ -92,10 +91,10 @@ export default function LeadForm({
   vehicleId?: string;
   vehicle?: LeadVehicle;
 }) {
-  const testDrive = kind === "vehicle" && vehicle?.status === "available";
+  const priceRequest = kind === "vehicle" && vehicle?.status === "available";
   const purpose = vehicle
-    ? testDrive
-      ? "test-drive"
+    ? priceRequest
+      ? "price-request"
       : vehicle.status === "sold"
         ? "similar-vehicle"
         : "vehicle-update"
@@ -174,8 +173,8 @@ export default function LeadForm({
         setSubmitted(true);
         setStatus({
           type: "info",
-          message: testDrive
-            ? `Thanks! Your test-drive request for the ${vehicleName} has been received. We’ll contact you to confirm availability and a time.`
+          message: priceRequest
+            ? `Thanks! Your price request for the ${vehicleName} has been received. We’ll follow up with pricing and availability using your preferred contact method.`
             : "Thanks! Your inquiry has been received. The Drive Max team will follow up using your preferred contact method.",
         });
       } catch (error) {
@@ -197,7 +196,7 @@ export default function LeadForm({
     );
     if (vehicle)
       details.unshift(
-        `${testDrive ? "Test-drive request" : "Vehicle inquiry"}: ${vehicleName}`,
+        `${priceRequest ? "Price request" : "Vehicle inquiry"}: ${vehicleName}`,
         `VIN: ${vehicle.vin}`,
         `Stock: ${vehicle.stock_number}`,
         `Listed mileage: ${vehicle.miles.toLocaleString("en-US")} miles`,
@@ -343,24 +342,6 @@ export default function LeadForm({
           </>
         )}
 
-        {testDrive && (
-          <div className="field field-full">
-            <label htmlFor={`${kind}-preferredVisit`}>
-              Preferred day and time{" "}
-              <span className="optional">(optional)</span>
-            </label>
-            <input
-              id={`${kind}-preferredVisit`}
-              name="preferredVisit"
-              maxLength={160}
-              placeholder="For example, Saturday morning or Tuesday after 3 PM"
-            />
-            <p className="form-help">
-              We’ll contact you to confirm the time and vehicle availability.
-            </p>
-          </div>
-        )}
-
         {kind === "contact" && (
           <div className="field field-full">
             <label htmlFor={`${kind}-reason`}>How can we help?</label>
@@ -432,8 +413,8 @@ export default function LeadForm({
             id={`${kind}-${messageName}`}
             name={messageName}
             placeholder={
-              testDrive
-                ? "Any questions about this vehicle or your visit?"
+              priceRequest
+                ? "Any questions about this vehicle or its price?"
                 : vehicle
                   ? "What would you like to know, or what are you looking for?"
                   : kind === "vehicle"
@@ -469,8 +450,8 @@ export default function LeadForm({
             : submitted
               ? "Request received"
               : online
-                ? testDrive
-                  ? "Request a test drive"
+                ? priceRequest
+                  ? "Request your price"
                   : "Send inquiry"
                 : "Open email to send"}{" "}
           <ArrowRight aria-hidden="true" size={18} />

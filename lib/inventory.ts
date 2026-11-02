@@ -146,6 +146,7 @@ export const leadSchema = z
     purpose: z
       .enum([
         "purchase-offer",
+        "price-request",
         "test-drive",
         "vehicle-update",
         "similar-vehicle",
@@ -191,7 +192,7 @@ export const leadSchema = z
       ctx.addIssue({
         code: "custom",
         message:
-          "Choose a listed vehicle before requesting a test drive or availability update.",
+          "Choose a listed vehicle before sending a vehicle inquiry.",
       });
     if (v.purpose === "purchase-offer") {
       const issue = (message: string) =>

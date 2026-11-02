@@ -86,8 +86,8 @@ export default function AreasWeServe() {
               <BusinessHours />
               <p>
                 Check availability and arrange your visit before heading over.
-                On a vehicle listing, choose “Request a test drive” to send us
-                the specific car you have in mind.
+                On a vehicle listing, choose “Request your price” to ask about
+                pricing and availability for the specific car you have in mind.
               </p>
               <a
                 className="button button-primary"

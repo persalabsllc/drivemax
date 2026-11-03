@@ -24,7 +24,7 @@ export const dynamic = "force-dynamic";
 export const metadata = pageMetadata({
   title: "Used Cars in New Bern, NC",
   description:
-    "Shop quality used cars at family-owned Drive Max in New Bern, NC. Serving Havelock, Kinston, Jacksonville, and nearby communities with financing options.",
+    "Shop quality used cars at family-owned Drive Max in New Bern, NC. Serving New Bern, Havelock, Kinston, Jacksonville, and nearby communities with financing options.",
   path: "/",
 });
 export default async function Home() {
@@ -281,10 +281,10 @@ export default async function Home() {
             </span>
             <h2>Used cars in New Bern. A welcome for every neighbor.</h2>
             <p>
-              Shopping for used cars in Havelock, Jacksonville, Kinston, or
-              Greenville? Explore Drive Max’s inventory online, then visit our
-              New Bern dealership. We also welcome our neighbors in Dover, Cove
-              City, Trent Woods, and James City.
+              Shopping for used cars in New Bern, Havelock, Jacksonville,
+              Kinston, or Greenville? Explore Drive Max’s inventory online, then
+              visit our New Bern dealership. We also welcome our neighbors in
+              Dover, Cove City, Trent Woods, and James City.
             </p>
           </div>
           <Link className="button button-secondary" href="/areas-we-serve">

@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Clock,
   Globe,
+  MapPin,
   MousePointer2,
   RefreshCw,
   TrendingUp,
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 import {
   activityLabels,
+  activityLocation,
   activityPage,
   activityRange,
   activeTime,
@@ -59,6 +61,9 @@ function demoActivity(): WebActivity {
         last_at: now,
         source: "Facebook",
         device: "Mobile",
+        location_city: "New Bern",
+        location_region: "NC",
+        location_country: "US",
         is_returning: true,
         views: 5,
         active_seconds: 238,
@@ -80,6 +85,9 @@ function demoActivity(): WebActivity {
         last_at: now,
         source: "Google",
         device: "Desktop",
+        location_city: "Myrtle Beach",
+        location_region: "SC",
+        location_country: "US",
         is_returning: false,
         views: 3,
         active_seconds: 111,
@@ -640,6 +648,13 @@ export function WebsiteActivity({
                 </div>
                 <div className="web-visit-tags">
                   <span>{visit.source}</span>
+                  <span
+                    className="web-visit-location"
+                    title="Approximate network location; cellular service or a VPN may show a different city."
+                  >
+                    <MapPin size={12} aria-hidden="true" />
+                    {activityLocation(visit)}
+                  </span>
                   {visit.is_returning && <span>Returning</span>}
                   {visit.lead && (
                     <span className="web-lead-badge">Lead captured</span>
@@ -681,6 +696,17 @@ export function WebsiteActivity({
                       `Visitor ${selected.visitor_id.slice(0, 8)}`}
                   </h4>
                   <small>{stamp(selected.started_at)} · Eastern</small>
+                  <div className="web-journey-location">
+                    <small>Approximate location</small>
+                    <span>
+                      <MapPin size={14} aria-hidden="true" />
+                      {activityLocation(
+                        data?.sessions.find(
+                          (visit) => visit.id === selected.id,
+                        ) || selected,
+                      )}
+                    </span>
+                  </div>
                 </div>
                 <button
                   className="icon-btn"
@@ -772,11 +798,13 @@ export function WebsiteActivity({
         </div>
       </section>
       <p className="web-activity-note">
-        Dates use Eastern time. Optional analytics only; privacy choices,
-        blockers, and different devices affect counts. Visits end after 30
-        minutes without recorded activity. History is kept for 180 days. Linked
-        appointments and sales show current outcomes of leads from the selected
-        visits, even if the outcome occurred later.
+        Locations are approximate and may reflect a nearby city or VPN. Older
+        visits without location data show Location unavailable. Dates use
+        Eastern time. Optional analytics only; privacy choices, blockers, and
+        different devices affect counts. Visits end after 30 minutes without
+        recorded activity. History is kept for 180 days. Linked appointments and
+        sales show current outcomes of leads from the selected visits, even if
+        the outcome occurred later.
       </p>
     </div>
   );

@@ -67,11 +67,16 @@ export async function verifyWebsiteActivity(client) {
       kind,
       path: p,
     });
-    const record = (events, id = browser, hash = token) =>
-      client.query(
-        "select dmcrm_web_record($1,$2,$3,$4::jsonb,'Facebook','Mobile')",
-        [org, id, hash, JSON.stringify(events)],
-      );
+    const record = (events, id = browser, hash = token, location) =>
+      location === undefined
+        ? client.query(
+            "select dmcrm_web_record($1,$2,$3,$4::jsonb,'Facebook','Mobile')",
+            [org, id, hash, JSON.stringify(events)],
+          )
+        : client.query(
+            "select dmcrm_web_record_with_location($1,$2,$3,$4::jsonb,'Facebook','Mobile',$5::jsonb)",
+            [org, id, hash, JSON.stringify(events), JSON.stringify(location)],
+          );
     const read = (actor = owner, customer = null, session = null) =>
       one("select dmcrm_web_read($1,$2,$3,$3,$4,$5,0,'',$6) value", [
         org,
@@ -100,6 +105,32 @@ export async function verifyWebsiteActivity(client) {
       "vehicle interaction and active time",
     );
     const sid = data.sessions[0].id;
+    check(
+      data.sessions[0].location_city === null &&
+        data.sessions[0].location_country === null,
+      "legacy collector remains compatible with unavailable location",
+    );
+    const raleigh = { city: "Raleigh", region: "NC", country: "US" };
+    await record([first], browser, token, raleigh);
+    data = await read();
+    check(
+      data.sessions[0].location_city === "Raleigh" &&
+        data.sessions[0].location_region === "NC" &&
+        data.sessions[0].location_country === "US" &&
+        data.summary.views === 1,
+      "coarse location reaches report without duplicate events",
+    );
+    await record([first], browser, token, {
+      city: "Myrtle Beach",
+      region: "SC",
+      country: "US",
+    });
+    await record([first], browser, token, null);
+    check(
+      (await read()).sessions[0].location_city === "Raleigh",
+      "first available visit location survives retries and missing headers",
+    );
+    await reject(() => record([first], browser, "b".repeat(64), raleigh));
     await record([
       event("page_view", "/control-room"),
       event("page_view", "/apply?secret=123"),
@@ -203,7 +234,8 @@ export async function verifyWebsiteActivity(client) {
     check(
       mine.summary === null &&
         mine.vehicles.length === 0 &&
-        mine.sessions.length === 1,
+        mine.sessions.length === 1 &&
+        mine.sessions[0].location_city === "Raleigh",
       "assigned customer history without global totals",
     );
     check(
@@ -225,7 +257,11 @@ export async function verifyWebsiteActivity(client) {
       "update dmcrm_web_sessions set last_at=now()-interval '31 minutes' where id=$1",
       [sid],
     );
-    await record([event()]);
+    await record([event()], browser, token, {
+      city: "Myrtle Beach",
+      region: "SC",
+      country: "US",
+    });
     data = await read();
     check(
       data.summary.visitors === 2 &&
@@ -239,6 +275,26 @@ export async function verifyWebsiteActivity(client) {
     check(
       latest && !latest.lead,
       "return visit does not falsely count a new lead",
+    );
+    check(
+      latest.location_city === "Myrtle Beach" &&
+        latest.location_region === "SC" &&
+        data.sessions.find((s) => s.id === sid).location_city === "Raleigh",
+      "new visits get their own location without rewriting history",
+    );
+    await record([event()], second, token, {
+      city: "<script>",
+      region: "invalid",
+      country: "US",
+      ip: "192.0.2.1",
+    });
+    const limited = (await read()).sessions.find((s) => s.id === secondSession);
+    check(
+      limited.location_city === null &&
+        limited.location_region === null &&
+        limited.location_country === "US" &&
+        !("ip" in limited),
+      "malformed geolocation is discarded without losing visit recording",
     );
     const detail = await read(owner, null, sid);
     check(
@@ -263,6 +319,15 @@ export async function verifyWebsiteActivity(client) {
           )
         ).allowed,
         "no direct browser report RPC",
+      );
+      check(
+        !(
+          await one(
+            "select has_function_privilege($1,'dmcrm_web_record_with_location(uuid,uuid,text,jsonb,text,text,jsonb)','execute') allowed",
+            [role],
+          )
+        ).allowed,
+        "no direct browser geolocation RPC",
       );
     }
     await client.query(

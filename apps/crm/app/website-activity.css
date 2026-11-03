@@ -318,6 +318,29 @@
   background: #e7f6ef;
   color: #28765b;
 }
+.web-visit-tags > .web-visit-location {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #edf5fa;
+  color: #3d6585;
+}
+.web-visit-location svg,
+.web-journey-location svg {
+  flex-shrink: 0;
+}
+.web-journey-location {
+  display: grid;
+  gap: 5px;
+  margin-top: 12px;
+}
+.web-journey-location > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #3d6585;
+}
 .web-path {
   display: flex;
   gap: 7px;

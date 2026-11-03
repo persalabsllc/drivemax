@@ -40,6 +40,9 @@ export type WebVisit = {
   last_at: string;
   source: string;
   device: string;
+  location_city: string | null;
+  location_region: string | null;
+  location_country: string | null;
   is_returning: boolean;
   views: number;
   active_seconds: number;
@@ -118,6 +121,30 @@ export const activeTime = (seconds: number) =>
   seconds >= 60
     ? `${Math.floor(seconds / 60)}m ${seconds % 60}s`
     : `${seconds}s`;
+export function activityLocation(
+  visit: Pick<
+    WebVisit,
+    "location_city" | "location_region" | "location_country"
+  >,
+) {
+  const city = visit.location_city;
+  const region = visit.location_region;
+  const country = visit.location_country;
+  if (!city && !region && !country) return "Location unavailable";
+  let countryName = country;
+  if (country) {
+    try {
+      countryName =
+        new Intl.DisplayNames(["en"], { type: "region" }).of(country) ||
+        country;
+    } catch {
+      // Preserve a readable fallback if a country is not recognized.
+    }
+  }
+  return [city, region, country === "US" && city && region ? null : countryName]
+    .filter(Boolean)
+    .join(", ");
+}
 export function activityRange(days = 30, now = new Date()) {
   const to = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/New_York",

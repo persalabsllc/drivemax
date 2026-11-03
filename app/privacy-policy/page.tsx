@@ -65,10 +65,14 @@ export default function PrivacyPolicy() {
             We use first-party analytics cookies by default to understand
             visits, vehicle interest, photo interactions, contact-button clicks,
             and inquiry starts. We record page paths and approximate active
-            time, a general traffic source (such as Google or Facebook), and
-            device type. We do not record form contents, full referring URLs,
-            query strings, keystrokes, or screen recordings in analytics. We do
-            not use device fingerprinting.
+            time, a general traffic source (such as Google or Facebook),
+            device type, and an approximate city, state or region, and country
+            inferred from your network connection. This is not GPS or a precise
+            address, and may reflect a nearby city or a VPN location. We do not
+            store raw IP addresses or precise coordinates in analytics. We do
+            not record form contents, full referring URLs, query strings,
+            keystrokes, or screen recordings in analytics. We do not use device
+            fingerprinting.
           </p>
           <p>
             A random browser identifier can recognize return visits for up to 90

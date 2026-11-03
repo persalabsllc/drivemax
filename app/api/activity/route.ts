@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { backendReady, db, staffSession } from "../../../lib/backend";
 import { takeSlot } from "../../../lib/rate-limit";
+import { activityLocationFromHeaders } from "../../../lib/website-activity-location";
 import { CHAT_ORG, readChatCredential } from "../../../lib/website-chat-server";
 import {
   ACTIVITY_CHOICE,
@@ -81,12 +82,16 @@ export async function POST(request: Request) {
       credential = readChatCredential(rawCredential)!;
     }
     const agent = request.headers.get("user-agent") || "";
-    const { error } = await db().rpc("dmcrm_web_record", {
+    const { error } = await db().rpc("dmcrm_web_record_with_location", {
       p_org: CHAT_ORG,
       p_visitor: credential.id,
       p_token: credential.hash,
       p_events: parsed.data.events,
       p_source: parsed.data.source,
+      p_location: activityLocationFromHeaders(
+        request.headers,
+        process.env.VERCEL === "1",
+      ),
       p_device: /ipad|tablet/i.test(agent)
         ? "Tablet"
         : /mobi|iphone|android/i.test(agent)

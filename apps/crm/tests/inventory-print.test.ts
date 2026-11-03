@@ -10,14 +10,23 @@ import {
   printMaterialsSchema,
   printVehicleSchema,
   stickerTotal,
+  printMaterialsFilename,
+  printMaterialsInstructions,
 } from "../lib/inventory-print";
 import { buildInventoryPrintPdf } from "../lib/inventory-print-pdf";
 import { emptyStickerSpecs } from "../lib/vehicle-specifications";
+import { inventoryTitleValues } from "../lib/inventory-title-pdf";
+import { defaultInventoryTitle } from "../lib/inventory-title";
+import { soldForms, formValues } from "../lib/documents";
 
 const vehicle = demoInventory("private-org-id", "2026-10-26")[0];
 const defaults = () => defaultPrintMaterials(vehicle);
 const assets = (asset: string) =>
-  fs.readFile(path.join(process.cwd(), "public", asset));
+  fs.readFile(
+    asset === "/api/forms/MVR-1"
+      ? path.join(process.cwd(), "assets/forms/MVR-1.pdf")
+      : path.join(process.cwd(), "public", asset),
+  );
 async function inspect(bytes: Uint8Array) {
   const pdf = await PDFDocument.load(bytes);
   const task = getDocument({
@@ -187,6 +196,208 @@ test("combined duplex packet keeps the sticker separate from the two-sided Buyer
   assert.equal(text[1], "");
   assert.match(text[2], /BUYERS GUIDE/);
   assert.match(text[3], /FOR COMPLAINTS AFTER SALE/);
+});
+
+test("inventory title-only application prints the dealership as owner without a sale or asking price", async () => {
+  const original = structuredClone(vehicle);
+  const draft = {
+    ...defaultPrintMaterials({ ...vehicle, price: 0 }),
+    sticker: false,
+    buyersGuide: false,
+    titleApplication: true,
+  };
+  const loaded: string[] = [];
+  const { pdf, text } = await inspect(
+    await buildInventoryPrintPdf(vehicle, draft, async (asset) => {
+      loaded.push(asset);
+      return assets(asset);
+    }),
+  );
+  assert.deepEqual(loaded, ["/api/forms/MVR-1"]);
+  assert.equal(pdf.getPageCount(), 1);
+  for (const expected of [
+    "MVR-1",
+    "04/26",
+    "DRIVE MAX USED CARS LLC",
+    "6210 Old US Hwy 70 W",
+    "New Bern",
+    "28562",
+    "Craven",
+    vehicle.vin,
+    "121400",
+    "10/14/2026",
+  ])
+    assert.ok(text[0].includes(expected), expected);
+  assert.doesNotMatch(
+    text[0],
+    /5995|5,995|3,000|private-org-id|General Manager/,
+  );
+  assert.equal(pdf.getForm().getFields().length, 0);
+  assert.ok(pdf.getPages().every((page) => !page.node.Annots()?.size()));
+  assert.equal(
+    pdf.catalog.getOrCreateViewerPreferences().getDuplex(),
+    Duplex.Simplex,
+  );
+  assert.equal(
+    printMaterialsFilename(vehicle, draft),
+    "drive-max-DM-101-title-only-application.pdf",
+  );
+  assert.match(
+    printMaterialsInstructions(draft),
+    /1-page title-only application.*one-sided/,
+  );
+  assert.deepEqual(vehicle, original);
+});
+
+test("inventory title fields select title only and keep registration, seller, signatures and unknown facts blank", () => {
+  const title = defaultInventoryTitle(vehicle);
+  const mapped = inventoryTitleValues(vehicle, title);
+  const template = soldForms.find((form) => form.id === "MVR-1")!;
+  const fields = formValues(template, mapped.context, mapped.paperwork);
+  const checked = Object.entries(fields)
+    .filter(([, value]) => value === true)
+    .map(([name]) => name);
+  assert.deepEqual(
+    checked.sort(),
+    [
+      "Check Box Title Only - Vehicle Not in Operation",
+      "CheckBox Vehicle Purchased Used",
+    ].sort(),
+  );
+  for (const name of [
+    "Enter Owner 1 ID Number",
+    "Enter Full Legal Name of Owner 2 to include First, Middle, Last, Suffix or Company 2 Name",
+    "Enter Name and Address From Whom you Purchased the Vehicle",
+    "Enter NC Dealer Number if applicable",
+    "Enter Plate Number Transferred",
+    "Enter Name of Insurance Company authorized in NC",
+    "Enter 1st Lienholder Name",
+  ])
+    assert.equal(fields[name], "", name);
+  assert.ok(
+    Object.keys(fields).every(
+      (name) => !/signature|initial|notary|notariz/i.test(name),
+    ),
+  );
+});
+
+test("inventory title review supports seller details, updated mileage and both liens without changing inventory", async () => {
+  const title = {
+    ...defaultInventoryTitle(vehicle),
+    ownerId: "TEST-ID",
+    mileage: "122345",
+    body: "Sedan",
+    fuel: "Gas",
+    purchasedFrom: "Sample Seller\n123 Example Rd, Raleigh, NC 27601",
+    sellerDealerNumber: "TEST-123",
+    leased: "no" as const,
+  };
+  title.liens[0] = {
+    name: "First Sample Lender",
+    address: "1 Test St",
+    city: "Raleigh",
+    state: "nc",
+    zip: "27601",
+    id: "TEST-L1",
+    account: "TEST-ACCOUNT-1",
+    date: "2026-10-12",
+  };
+  title.liens[1] = {
+    ...title.liens[0],
+    name: "Second Sample Lender",
+    id: "TEST-L2",
+    account: "TEST-ACCOUNT-2",
+  };
+  const { text } = await inspect(
+    await buildInventoryPrintPdf(
+      vehicle,
+      {
+        ...defaults(),
+        sticker: false,
+        buyersGuide: false,
+        titleApplication: true,
+        titleDetails: title,
+      },
+      assets,
+    ),
+  );
+  for (const expected of [
+    "TEST-ID",
+    "122345",
+    "Sedan",
+    "Sample Seller",
+    "TEST-123",
+    "First Sample Lender",
+    "Second Sample Lender",
+    "TEST-ACCOUNT-1",
+    "TEST-ACCOUNT-2",
+    "10/12/2026",
+  ])
+    assert.ok(text[0].includes(expected), expected);
+  assert.equal(vehicle.mileage, 121400);
+  assert.equal(defaultInventoryTitle(vehicle).purchasedFrom, "");
+});
+
+test("title application stays on a separate sheet for every print-material combination", async () => {
+  for (const [sticker, buyersGuide, count] of [
+    [false, true, 3],
+    [true, false, 2],
+    [true, true, 5],
+  ] as const) {
+    const draft = {
+      ...defaults(),
+      sticker,
+      buyersGuide,
+      titleApplication: true,
+    };
+    const { pdf, text } = await inspect(
+      await buildInventoryPrintPdf(vehicle, draft, assets),
+    );
+    assert.equal(pdf.getPageCount(), count);
+    assert.match(text.at(-1)!, /TITLE APPLICATION/);
+    if (buyersGuide)
+      assert.equal(
+        (count - 1) % 2,
+        0,
+        "title begins on a front side in duplex mode",
+      );
+    assert.equal(
+      printMaterialsFilename(vehicle, draft),
+      "drive-max-DM-101-print-materials.pdf",
+    );
+    assert.match(
+      printMaterialsInstructions(draft),
+      new RegExp(`${count}-page`),
+    );
+  }
+});
+
+test("title review validates dates, owner details and whole-number mileage only when selected", () => {
+  for (const edit of [
+    { purchaseDate: "2026-02-30" },
+    { mileage: "-1" },
+    { mileage: "12.5" },
+    { ownerName: "" },
+    { state: "North Carolina" },
+  ]) {
+    const titleDetails = { ...defaultInventoryTitle(vehicle), ...edit };
+    assert.equal(
+      printMaterialsSchema.safeParse({
+        ...defaults(),
+        titleApplication: true,
+        titleDetails,
+      }).success,
+      false,
+    );
+    assert.equal(
+      printMaterialsSchema.safeParse({
+        ...defaults(),
+        titleApplication: false,
+        titleDetails,
+      }).success,
+      true,
+    );
+  }
 });
 
 test("edited terms and dealer contact print without changing the inventory or defaults", async () => {

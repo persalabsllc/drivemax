@@ -7,6 +7,7 @@ import { vehicleName, type InventoryVehicle } from "../lib/vehicles";
 import {
   defaultPrintMaterials,
   printMaterialsFilename,
+  printMaterialsInstructions,
   printMaterialsSchema,
   printVehicleSchema,
   stickerTotal,
@@ -15,6 +16,8 @@ import {
 import { money } from "../lib/model";
 import StickerSpecifications from "./StickerSpecifications";
 import { emptyStickerSpecs } from "../lib/vehicle-specifications";
+import InventoryTitleApplication from "./InventoryTitleApplication";
+import { defaultInventoryTitle } from "../lib/inventory-title";
 
 export default function InventoryPrintMaterials({
   vehicle,
@@ -37,7 +40,8 @@ export default function InventoryPrintMaterials({
     setError("");
     setNotice("");
   };
-  const both = draft.sticker && draft.buyersGuide;
+  const anySelected =
+    draft.sticker || draft.buyersGuide || draft.titleApplication;
   const total = stickerTotal(
     Number(draft.price),
     Number(draft.administrationFee),
@@ -160,7 +164,35 @@ export default function InventoryPrintMaterials({
                 </small>
               </span>
             </label>
+            <label
+              className={
+                draft.titleApplication
+                  ? "selected inventory-title-choice"
+                  : "inventory-title-choice"
+              }
+            >
+              <input
+                type="checkbox"
+                checked={draft.titleApplication ?? false}
+                onChange={(e) => change("titleApplication", e.target.checked)}
+                aria-label="Title application — title only"
+              />
+              <FileText size={23} />
+              <span>
+                <strong>Title application — title only</strong>
+                <small>
+                  NC MVR-1 with Drive Max Used Cars LLC as the owner. One page.
+                </small>
+              </span>
+            </label>
           </div>
+
+          {draft.titleApplication && (
+            <InventoryTitleApplication
+              value={draft.titleDetails ?? defaultInventoryTitle(vehicle)}
+              onChange={(value) => change("titleDetails", value)}
+            />
+          )}
 
           {draft.sticker && (
             <section
@@ -385,44 +417,45 @@ export default function InventoryPrintMaterials({
             </section>
           )}
 
-          <details className="inventory-print-details dealer-details">
-            <summary>Dealer information & complaints contact</summary>
-            <div className="inventory-print-grid">
-              {(
-                [
-                  ["dealerName", "Dealer name", 100],
-                  ["address", "Dealer address", 150],
-                  ["phone", "Dealer phone", 40],
-                  ["email", "Dealer email", 100],
-                  ["website", "Dealer website", 100],
+          {(draft.sticker || draft.buyersGuide) && (
+            <details className="inventory-print-details dealer-details">
+              <summary>Dealer information & complaints contact</summary>
+              <div className="inventory-print-grid">
+                {(
                   [
-                    "complaintsContact",
-                    "Complaints contact name or position",
-                    120,
-                  ],
-                ] as const
-              ).map(([key, label, max]) => (
-                <label key={key}>
-                  {label}
-                  <input
-                    aria-label={label}
-                    value={draft[key]}
-                    maxLength={max}
-                    onChange={(e) => change(key, e.target.value)}
-                  />
-                </label>
-              ))}
-            </div>
-          </details>
+                    ["dealerName", "Dealer name", 100],
+                    ["address", "Dealer address", 150],
+                    ["phone", "Dealer phone", 40],
+                    ["email", "Dealer email", 100],
+                    ["website", "Dealer website", 100],
+                    [
+                      "complaintsContact",
+                      "Complaints contact name or position",
+                      120,
+                    ],
+                  ] as const
+                ).map(([key, label, max]) => (
+                  <label key={key}>
+                    {label}
+                    <input
+                      aria-label={label}
+                      value={draft[key]}
+                      maxLength={max}
+                      onChange={(e) => change(key, e.target.value)}
+                    />
+                  </label>
+                ))}
+              </div>
+            </details>
+          )}
         </fieldset>
         <div className="inventory-print-instructions">
           <Printer size={19} />
           <p>
-            {both
-              ? "4-page packet: window sticker, blank sticker back, Buyers Guide front and back. Print two-sided and flip on the long edge."
-              : draft.buyersGuide
-                ? "2-page Buyers Guide. Print both sides of one sheet, flipping on the long edge."
-                : "1-page portrait window sticker."}{" "}
+            {printMaterialsInstructions({
+              ...draft,
+              titleApplication: draft.titleApplication ?? false,
+            })}{" "}
             Use US Letter paper at actual size (100%).
           </p>
         </div>
@@ -448,9 +481,7 @@ export default function InventoryPrintMaterials({
           <button
             type="button"
             className="btn"
-            disabled={
-              working || lookingUp || (!draft.sticker && !draft.buyersGuide)
-            }
+            disabled={working || lookingUp || !anySelected}
             onClick={() => void output(false)}
           >
             <Download size={16} /> Download PDF
@@ -458,9 +489,7 @@ export default function InventoryPrintMaterials({
           <button
             type="button"
             className="btn primary"
-            disabled={
-              working || lookingUp || (!draft.sticker && !draft.buyersGuide)
-            }
+            disabled={working || lookingUp || !anySelected}
             onClick={() => void output(true)}
           >
             <Printer size={16} />

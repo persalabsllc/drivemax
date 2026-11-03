@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { vinSchema, type InventoryVehicle } from "./vehicles";
+import { defaultInventoryTitle, inventoryTitleSchema } from "./inventory-title";
 import {
   emptyStickerSpecs,
   stickerSpecsSchema,
@@ -34,6 +35,11 @@ export const printMaterialsSchema = z
   .object({
     sticker: z.boolean(),
     buyersGuide: z.boolean(),
+    titleApplication: z.boolean().default(false),
+    // Only validate title-specific edits when that document is selected.
+    titleDetails: z
+      .custom<ReturnType<typeof defaultInventoryTitle>>()
+      .default(defaultInventoryTitle),
     price: numericText("vehicle price", 1000000),
     administrationFee: numericText("administration fee", 10000),
     highlights: text("Vehicle highlights", 500),
@@ -61,8 +67,14 @@ export const printMaterialsSchema = z
   .superRefine((value, ctx) => {
     const issue = (path: string, message: string) =>
       ctx.addIssue({ code: "custom", path: [path], message });
-    if (!value.sticker && !value.buyersGuide)
-      issue("sticker", "Select a window sticker, Buyers Guide, or both.");
+    if (!value.sticker && !value.buyersGuide && !value.titleApplication)
+      issue("sticker", "Select at least one document to print.");
+    if (value.titleApplication) {
+      const title = inventoryTitleSchema.safeParse(value.titleDetails);
+      if (!title.success)
+        for (const error of title.error.issues)
+          ctx.addIssue({ ...error, path: ["titleDetails", ...error.path] });
+    }
     if (value.sticker && value.price <= 0)
       issue(
         "price",
@@ -79,11 +91,14 @@ export const printMaterialsSchema = z
 export type PrintMaterialsDraft = z.input<typeof printMaterialsSchema>;
 export type PrintMaterials = z.output<typeof printMaterialsSchema>;
 export function defaultPrintMaterials(
-  vehicle: Pick<InventoryVehicle, "price">,
+  vehicle: Pick<InventoryVehicle, "price"> &
+    Partial<Pick<InventoryVehicle, "mileage" | "acquired_on">>,
 ): PrintMaterialsDraft {
   return {
     sticker: true,
     buyersGuide: true,
+    titleApplication: false,
+    titleDetails: defaultInventoryTitle(vehicle),
     price: String(vehicle.price),
     // Same itemization as the website's lib/vehicle-pricing.ts.
     administrationFee: "399",
@@ -115,16 +130,34 @@ export const stickerTotal = (price: number, fee: number) =>
 
 export function printMaterialsFilename(
   vehicle: PrintVehicle,
-  options: Pick<PrintMaterials, "sticker" | "buyersGuide">,
+  options: Pick<PrintMaterials, "sticker" | "buyersGuide"> &
+    Partial<Pick<PrintMaterials, "titleApplication">>,
 ) {
   const stock =
     vehicle.stock_number.replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 40) ||
     vehicle.vin;
   const kind =
-    options.sticker && options.buyersGuide
+    [options.sticker, options.buyersGuide, options.titleApplication].filter(
+      Boolean,
+    ).length > 1
       ? "print-materials"
       : options.sticker
         ? "window-sticker"
-        : "buyers-guide";
+        : options.buyersGuide
+          ? "buyers-guide"
+          : "title-only-application";
   return `drive-max-${stock}-${kind}.pdf`;
+}
+
+export function printMaterialsInstructions(
+  options: Pick<PrintMaterials, "sticker" | "buyersGuide" | "titleApplication">,
+) {
+  const pages =
+    (options.sticker ? (options.buyersGuide ? 2 : 1) : 0) +
+    (options.buyersGuide ? 2 : 0) +
+    (options.titleApplication ? 1 : 0);
+  if (!pages) return "Select at least one document to print.";
+  if (options.buyersGuide)
+    return `${pages}-page packet: ${options.sticker ? "window sticker, blank sticker back, " : ""}Buyers Guide front and back${options.titleApplication ? ", title-only application on a separate sheet" : ""}. Print two-sided and flip on the long edge.`;
+  return `${pages}-page ${options.sticker && options.titleApplication ? "packet: window sticker and title-only application" : options.titleApplication ? "title-only application" : "portrait window sticker"}. Print one-sided.`;
 }

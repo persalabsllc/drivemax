@@ -64,6 +64,44 @@ function fittedSize(text: string, f: FormField, font: PDFFont, label: string) {
     `${label}: the text is too long for this field. Shorten it in the preview before printing.`,
   );
 }
+/** Fill native PDF fields without flattening or copying away the AcroForm. */
+export async function fillPdfForm(
+  pdf: PDFDocument,
+  spec: FormTemplate,
+  context: PaperValues,
+  paperwork: Paperwork,
+) {
+  const font = await pdf.embedFont(StandardFonts.Helvetica),
+    form = pdf.getForm(),
+    values = formValues(spec, context, paperwork);
+  for (const f of spec.pages.flatMap((p) => p.fields)) {
+    const value = values[fieldKey(f)];
+    if (f.radioGroup) {
+      if (value === true)
+        form.getRadioGroup(f.radioGroup).select(f.exportValue!);
+      continue;
+    }
+    const field = form.getFieldMaybe(f.name);
+    if (!field)
+      throw new Error(`Template field missing: ${spec.title} / ${f.label}`);
+    if (field instanceof PDFCheckBox) {
+      if (value === true) field.check();
+      else field.uncheck();
+    } else if (field instanceof PDFTextField) {
+      const label = spec.title + " / " + f.label,
+        text = printable(
+          f.textCheckbox ? (value === true ? "X" : "") : String(value ?? ""),
+          label,
+        );
+      field.setText(text);
+      if (f.multiline) field.enableMultiline();
+      field.setFontSize(fittedSize(text, f, font, label));
+    }
+  }
+  form.updateFieldAppearances(font);
+  return pdf;
+}
+
 export async function buildSoldPack(
   context: PaperValues,
   paperwork: Paperwork,
@@ -74,36 +112,13 @@ export async function buildSoldPack(
   packet.setTitle("Drive Max sold pack");
   packet.setAuthor("Drive Max");
   for (const spec of forms) {
-    const pdf = await PDFDocument.load(await load(spec)),
-      font = await pdf.embedFont(StandardFonts.Helvetica),
-      form = pdf.getForm(),
-      values = formValues(spec, context, paperwork);
-    for (const f of spec.pages.flatMap((p) => p.fields)) {
-      const value = values[fieldKey(f)];
-      if (f.radioGroup) {
-        if (value === true)
-          form.getRadioGroup(f.radioGroup).select(f.exportValue!);
-        continue;
-      }
-      const field = form.getFieldMaybe(f.name);
-      if (!field)
-        throw new Error(`Template field missing: ${spec.title} / ${f.label}`);
-      if (field instanceof PDFCheckBox) {
-        if (value === true) field.check();
-        else field.uncheck();
-      } else if (field instanceof PDFTextField) {
-        const label = spec.title + " / " + f.label,
-          text = printable(
-            f.textCheckbox ? (value === true ? "X" : "") : String(value ?? ""),
-            label,
-          );
-        field.setText(text);
-        if (f.multiline) field.enableMultiline();
-        field.setFontSize(fittedSize(text, f, font, label));
-      }
-    }
-    form.updateFieldAppearances(font);
-    form.flatten();
+    const pdf = await fillPdfForm(
+      await PDFDocument.load(await load(spec)),
+      spec,
+      context,
+      paperwork,
+    );
+    pdf.getForm().flatten();
     for (const page of pdf.getPages()) page.node.delete(PDFName.of("Annots"));
     for (const page of await packet.copyPages(pdf, pdf.getPageIndices()))
       packet.addPage(page);

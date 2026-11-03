@@ -137,14 +137,9 @@ export async function buildInventoryPrintPdf(
       ? load("/print-materials/ftc-buyers-guide-en.pdf")
       : undefined,
   ]);
-  const pdf = await PDFDocument.create();
+  let pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
-  pdf.setTitle(
-    `${vehicle.year} ${vehicle.make} ${vehicle.model} - ${options.dealerName}`,
-  );
-  pdf.setAuthor(options.dealerName);
-  pdf.setSubject("Vehicle print materials");
 
   if (options.sticker && logoBytes) {
     const page = pdf.addPage([612, 792]);
@@ -667,12 +662,20 @@ export async function buildInventoryPrintPdf(
   }
   if (options.titleApplication) {
     const { buildInventoryTitlePdf } = await import("./inventory-title-pdf");
-    const source = await PDFDocument.load(
+    const editableTitle = await PDFDocument.load(
       await buildInventoryTitlePdf(vehicle, options.titleDetails, load),
     );
-    for (const page of await pdf.copyPages(source, source.getPageIndices()))
-      pdf.addPage(page);
+    // Retain the title document's canonical AcroForm and widget references.
+    // Copy only the static sticker/Guide pages into it, ahead of the title.
+    const pages = await editableTitle.copyPages(pdf, pdf.getPageIndices());
+    pages.forEach((page, index) => editableTitle.insertPage(index, page));
+    pdf = editableTitle;
   }
+  pdf.setTitle(
+    `${vehicle.year} ${vehicle.make} ${vehicle.model} - ${options.dealerName}`,
+  );
+  pdf.setAuthor(options.dealerName);
+  pdf.setSubject("Vehicle print materials");
   // Letter size at 100%, duplex long edge when printing a Guide.
   const preferences = pdf.catalog.getOrCreateViewerPreferences();
   preferences.setPrintScaling(PrintScaling.None);

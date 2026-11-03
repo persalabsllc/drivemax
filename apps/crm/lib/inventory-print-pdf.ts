@@ -665,6 +665,14 @@ export async function buildInventoryPrintPdf(
       8,
     );
   }
+  if (options.titleApplication) {
+    const { buildInventoryTitlePdf } = await import("./inventory-title-pdf");
+    const source = await PDFDocument.load(
+      await buildInventoryTitlePdf(vehicle, options.titleDetails, load),
+    );
+    for (const page of await pdf.copyPages(source, source.getPageIndices()))
+      pdf.addPage(page);
+  }
   // Letter size at 100%, duplex long edge when printing a Guide.
   const preferences = pdf.catalog.getOrCreateViewerPreferences();
   preferences.setPrintScaling(PrintScaling.None);

@@ -351,8 +351,8 @@ export function InventoryForm({
         {existing && (
           <div className="inventory-print-launch">
             <div>
-              <strong>Ready for the lot</strong>
-              <p>Window sticker and editable Buyers Guide.</p>
+              <strong>Vehicle print materials</strong>
+              <p>Window sticker, Buyers Guide and title-only application.</p>
             </div>
             <button
               type="button"

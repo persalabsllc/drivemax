@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
-import { activityQuerySchema } from "../lib/website-activity";
+import { activityLocation, activityQuerySchema } from "../lib/website-activity";
 import { verifyWebsiteActivity } from "../scripts/verify-website-activity.mjs";
 test("activity report dates and IDs are bounded", () => {
   assert(
@@ -19,7 +19,27 @@ test("activity report dates and IDs are bounded", () => {
   ])
     assert.equal(activityQuerySchema.safeParse(query).success, false);
 });
-test("analytics SQL: safe ingestion, deduplication, real conversions, assigned access, sessions and retention", async () => {
+test("visit locations distinguish US cities, international visits and missing data", () => {
+  const label = (
+    city: string | null,
+    region: string | null,
+    country: string | null,
+  ) =>
+    activityLocation({
+      location_city: city,
+      location_region: region,
+      location_country: country,
+    });
+  assert.equal(label("Charlotte", "NC", "US"), "Charlotte, NC");
+  assert.equal(label("Atlantic Beach", "NC", "US"), "Atlantic Beach, NC");
+  assert.equal(label("Myrtle Beach", "SC", "US"), "Myrtle Beach, SC");
+  assert.equal(label("Raleigh", "NC", "US"), "Raleigh, NC");
+  assert.equal(label("Toronto", "ON", "CA"), "Toronto, ON, Canada");
+  assert.equal(label(null, "NC", "US"), "NC, United States");
+  assert.equal(label(null, null, "US"), "United States");
+  assert.equal(label(null, null, null), "Location unavailable");
+});
+test("analytics SQL: safe ingestion, coarse location, deduplication, real conversions, assigned access, sessions and retention", async () => {
   const db = new PGlite();
   try {
     await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;

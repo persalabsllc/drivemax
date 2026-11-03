@@ -6,6 +6,7 @@ The manager-only Website activity view reports consenting website visits, vehicl
 
 - A unique browser is a random, opaque first-party identifier, not a verified person. No fingerprint or IP is stored in the activity tables. The credential is HTTP-only, Secure in production, and hashed in the database.
 - A visit expires after 30 minutes without recorded activity. Return visits indicate a previously recorded browser, not necessarily a repeat view of the same vehicle.
+- Each visit can show its first available approximate city, region, and country from the website host's network geolocation. It is not GPS or a verified address; mobile networks, proxies, and VPNs may show a nearby or different city. Older visits are not backfilled, and missing location is labeled unavailable. Raw IPs, coordinates, and postal codes are not stored in analytics.
 - Active time is approximate foreground time while interacting or within a minute of the last interaction. Background tabs stop the timer. It is not total wall-clock dwell time.
 - Vehicle lead visits count visits that both viewed a vehicle and produced a saved CRM lead. They do not assert the inquiry was about that exact vehicle.
 - Form and chat links are written by validated server handlers. Browser events cannot claim leads, appointments, or sales. Links survive delayed CRM intake. Lead totals deduplicate customer IDs; conversion rate uses visits with a lead divided by tracked visits.
@@ -23,3 +24,5 @@ Preview deployments, recognized bots, and signed-in website staff are excluded. 
 Migration 037 is additive. Deploy CRM first to install the schema and run the rollback verifier, then deploy the website collector. The existing database scheduler runs `dmcrm_web_prune` daily, removing visits older than 180 days and their events/links. Source customer and sales records are unaffected. Browser identifiers expire 90 days after the last tracked request.
 
 Verification: `node --import tsx --test tests/website-activity.test.ts` exercises the actual website/CRM migrations plus the same rollback verifier used at production deployment. It covers private data access, token mismatch, safe route validation, retry deduplication, session expiry, real conversion deduplication, canceled/unwound outcomes, and retention.
+
+Migration 039 adds nullable visit location columns and a service-only collector wrapper. The existing collector remains callable during rollout. Deploy CRM first, then the public website. The report's existing authorized session summaries include the coarse location fields; no broader access is granted. The rollback verifier checks location persistence, unavailable/malformed data, per-visit changes, and collector permissions.

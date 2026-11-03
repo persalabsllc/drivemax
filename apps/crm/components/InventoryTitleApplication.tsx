@@ -57,8 +57,9 @@ export default function InventoryTitleApplication({
       </p>
       <p className="inventory-print-help">
         “Title Only — Vehicle Not in Operation” and “Used” are selected. Vehicle
-        identity comes from this inventory record. Review any missing details
-        before submitting; initial, sign and notarize the printed application.
+        identity comes from this inventory record. The PDF opens with editable
+        fields for manual adjustments before printing. Initial, sign and
+        notarize the printed application.
       </p>
       <div className="inventory-print-grid">
         {field("mileage", "Title application odometer reading", 7, "number")}

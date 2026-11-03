@@ -82,7 +82,9 @@ export default function InventoryPrintMaterials({
       if (preview && !preview.closed) {
         preview.location.href = url;
         setNotice(
-          "Your PDF is open in a new tab. Use the PDF viewer’s Print button.",
+          draft.titleApplication
+            ? "Your editable PDF is open in a new tab. Adjust the title application fields, then use the PDF viewer’s Print button."
+            : "Your PDF is open in a new tab. Use the PDF viewer’s Print button.",
         );
       } else {
         const link = document.createElement("a");
@@ -181,7 +183,8 @@ export default function InventoryPrintMaterials({
               <span>
                 <strong>Title application — title only</strong>
                 <small>
-                  NC MVR-1 with Drive Max Used Cars LLC as the owner. One page.
+                  Editable NC MVR-1 with Drive Max Used Cars LLC as the owner.
+                  One page.
                 </small>
               </span>
             </label>

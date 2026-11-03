@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { PDFDocument, PrintScaling, Duplex } from "pdf-lib";
+import { PDFDocument, PDFDict, PDFName, PrintScaling, Duplex } from "pdf-lib";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { demoInventory } from "../lib/demo-vehicles";
 import {
@@ -29,8 +29,12 @@ const assets = (asset: string) =>
   );
 async function inspect(bytes: Uint8Array) {
   const pdf = await PDFDocument.load(bytes);
+  // Inspect printed text using a temporary flattened copy. Keep the returned
+  // original intact so tests can verify its native editable fields as well.
+  const printCopy = await PDFDocument.load(bytes);
+  if (printCopy.getForm().getFields().length) printCopy.getForm().flatten();
   const task = getDocument({
-    data: Uint8Array.from(bytes),
+    data: Uint8Array.from(await printCopy.save()),
     standardFontDataUrl: path.join(
       process.cwd(),
       "node_modules/pdfjs-dist/standard_fonts/",
@@ -232,8 +236,7 @@ test("inventory title-only application prints the dealership as owner without a 
     text[0],
     /5995|5,995|3,000|private-org-id|General Manager/,
   );
-  assert.equal(pdf.getForm().getFields().length, 0);
-  assert.ok(pdf.getPages().every((page) => !page.node.Annots()?.size()));
+  await assertEditableTitle(pdf);
   assert.equal(
     pdf.catalog.getOrCreateViewerPreferences().getDuplex(),
     Duplex.Simplex,
@@ -355,6 +358,7 @@ test("title application stays on a separate sheet for every print-material combi
     );
     assert.equal(pdf.getPageCount(), count);
     assert.match(text.at(-1)!, /TITLE APPLICATION/);
+    await assertEditableTitle(pdf);
     if (buyersGuide)
       assert.equal(
         (count - 1) % 2,
@@ -369,6 +373,142 @@ test("title application stays on a separate sheet for every print-material combi
       printMaterialsInstructions(draft),
       new RegExp(`${count}-page`),
     );
+  }
+});
+
+async function assertEditableTitle(pdf: PDFDocument) {
+  const template = await PDFDocument.load(await assets("/api/forms/MVR-1"));
+  const form = pdf.getForm();
+  assert.deepEqual(
+    form
+      .getFields()
+      .map((field) => field.getName())
+      .sort(),
+    template
+      .getForm()
+      .getFields()
+      .map((field) => field.getName())
+      .sort(),
+    "all original fields must survive in the canonical AcroForm tree",
+  );
+  const titlePage = pdf.getPages().at(-1)!;
+  const widgets = new Set(
+    titlePage.node
+      .Annots()!
+      .asArray()
+      .map((ref) => pdf.context.lookup(ref)),
+  );
+  for (const field of form.getFields()) {
+    assert.equal(field.isReadOnly(), false, field.getName());
+    const fontName = /\/([^\s]+)\s+[\d.]+\s+Tf/.exec(
+      field.acroField.getDefaultAppearance() ?? "",
+    )?.[1];
+    if (fontName === "Helvetica") {
+      const fonts = field.acroField.dict
+        .lookup(PDFName.of("DR"), PDFDict)
+        .lookup(PDFName.of("Font"), PDFDict);
+      assert.ok(
+        fonts.has(PDFName.of(fontName)),
+        "manual edits can resolve their font",
+      );
+    }
+    for (const widget of field.acroField.getWidgets()) {
+      assert.ok(widgets.has(widget.dict), field.getName());
+      assert.equal(
+        widget.dict.get(PDFName.of("P"))?.toString(),
+        titlePage.ref.toString(),
+        "widgets remain attached to the title page",
+      );
+      if (field.acroField.dict.get(PDFName.of("FT"))?.toString() !== "/Sig")
+        assert.ok(
+          widget.getAppearances()?.normal,
+          `${field.getName()} has an appearance`,
+        );
+    }
+  }
+  assert.equal(form.getTextField("Enter ODOMETER READING").getText(), "121400");
+  assert.equal(
+    form.getTextField("Enter VEHICLE IDENTIFICATION NUMBER").getText(),
+    vehicle.vin,
+  );
+  assert.equal(
+    form
+      .getCheckBox("Check Box Title Only - Vehicle Not in Operation")
+      .isChecked(),
+    true,
+  );
+  assert.equal(
+    form.getCheckBox("CheckBox Vehicle Purchased Used").isChecked(),
+    true,
+  );
+  assert.ok(
+    pdf
+      .getPages()
+      .slice(0, -1)
+      .every((page) => !page.node.Annots()?.size()),
+    "sticker and Guide stay static",
+  );
+}
+
+test("manual PDF edits survive save/reopen and print in standalone and combined title packets", async () => {
+  for (const combined of [false, true]) {
+    const bytes = await buildInventoryPrintPdf(
+      vehicle,
+      {
+        ...defaults(),
+        sticker: combined,
+        buyersGuide: combined,
+        titleApplication: true,
+      },
+      assets,
+    );
+    const pdf = await PDFDocument.load(bytes);
+    const form = pdf.getForm();
+    const ownerName =
+      "Enter Full Legal Name of Owner 1 to include First, Middle, Last, Suffix or Company 1 Name";
+    form.getTextField(ownerName).setText("DRIVE MAX USED CARS LLC - UPDATED");
+    form.getTextField("Enter ODOMETER READING").setText("123456");
+    form.getTextField("Enter Owner 1 ID Number").setText("TEST-OWNER-ID");
+    form
+      .getCheckBox("Check Box Title Only - Vehicle Not in Operation")
+      .uncheck();
+    form
+      .getCheckBox(
+        "Check Box Title and License Plate to include Class of License",
+      )
+      .check();
+    const { pdf: reopened, text } = await inspect(await pdf.save());
+    assert.equal(reopened.getPageCount(), combined ? 5 : 1);
+    const saved = reopened.getForm();
+    assert.equal(
+      saved.getTextField(ownerName).getText(),
+      "DRIVE MAX USED CARS LLC - UPDATED",
+    );
+    assert.equal(
+      saved.getTextField("Enter ODOMETER READING").getText(),
+      "123456",
+    );
+    assert.equal(
+      saved.getTextField("Enter Owner 1 ID Number").getText(),
+      "TEST-OWNER-ID",
+    );
+    assert.equal(
+      saved
+        .getCheckBox("Check Box Title Only - Vehicle Not in Operation")
+        .isChecked(),
+      false,
+    );
+    assert.equal(
+      saved
+        .getCheckBox(
+          "Check Box Title and License Plate to include Class of License",
+        )
+        .isChecked(),
+      true,
+    );
+    assert.match(text.at(-1)!, /DRIVE MAX USED CARS LLC - UPDATED/);
+    assert.match(text.at(-1)!, /123456/);
+    assert.match(text.at(-1)!, /TEST-OWNER-ID/);
   }
 });
 

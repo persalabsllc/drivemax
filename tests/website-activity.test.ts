@@ -91,6 +91,14 @@ test("public event contract cannot fabricate conversions or submit form contents
     }).success,
     false,
   );
+  assert.equal(
+    activityRequestSchema.safeParse({
+      action: "events",
+      events: [event],
+      location: { city: "Raleigh", region: "NC", country: "US" },
+    }).success,
+    false,
+  );
 });
 test("privacy signals and recognizable bots disable collection", () => {
   assert(privacySignal(new Headers({ "sec-gpc": "1" })));

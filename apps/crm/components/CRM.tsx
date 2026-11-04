@@ -144,6 +144,7 @@ type View =
 const nav = [
   { name: "Overview", icon: LayoutDashboard },
   { name: "Showroom", icon: DoorOpen },
+  { name: "Inventory", icon: Car },
   { name: "Work Today", icon: CheckCircle2 },
   { name: "Customers", icon: Users },
   { name: "Desking", icon: FileText },
@@ -152,7 +153,6 @@ const nav = [
   { name: "Website chat", icon: MessageSquare },
   { name: "Website activity", icon: TrendingUp },
   { name: "Planner", icon: CalendarDays },
-  { name: "Inventory", icon: Car },
   { name: "Trade-ins", icon: RefreshCw },
   { name: "Appraisals", icon: Car },
   { name: "Title Clerk", icon: ShieldCheck },

@@ -18,6 +18,7 @@ import {
 import { verifyWorkflows } from "../scripts/verify-workflows.mjs";
 import { salesFunnel } from "../lib/sales-reports";
 import { dayKey } from "../lib/model";
+import { starterEmailTemplates } from "../lib/email";
 const org = "d5a1c100-0000-4000-8000-000000000001",
   owner = "00000000-0000-4000-8000-000000000099",
   sales = "00000000-0000-4000-8000-000000000098",
@@ -89,6 +90,33 @@ test("sales workflows: real SQL scheduling, deduplication, appointment changes, 
       );
       return { c, o };
     };
+    await t.test("marking sold schedules one thank-you for 24 hours later and queues its review invitation only when due", async () => {
+      const { c, o } = await make();
+      await command({ type: "close_opportunity", id: o.id, outcome: "sold" });
+      const job = await one(
+        "select j.*,extract(epoch from (j.run_at-j.anchor_at))::int delay_seconds,r.delay_minutes,t.body template_body from dmcrm_workflow_jobs j join dmcrm_workflow_rules r on r.id=j.rule_id join dmcrm_email_templates t on t.id=r.template_id where j.opportunity_id=$1 and t.system_key='sold'",
+        [o.id],
+      );
+      assert.equal(job.delay_seconds, 86400);
+      assert.equal(job.delay_minutes, 1440);
+      assert.equal(job.template_body, starterEmailTemplates.find(t => t.key === "sold")!.body);
+      await prepare();
+      assert.equal((await one("select state from dmcrm_workflow_jobs where id=$1", [job.id])).state, "scheduled");
+      assert.equal((await one("select count(*)::int n from dmcrm_messages where customer_id=$1", [c.id])).n, 0);
+      // Advance this fixture's sale anchor and due time, without sleeping or changing the live clock.
+      await pg.query("update dmcrm_workflow_jobs set anchor_at=now()-interval '24 hours',run_at=now() where id=$1", [job.id]);
+      await prepare();
+      await prepare();
+      const queued = await one("select j.state,m.body,m.status from dmcrm_workflow_jobs j join dmcrm_messages m on m.id=j.message_id where j.id=$1", [job.id]);
+      assert.equal(queued.state, "queued");
+      assert.equal(queued.status, "queued");
+      assert.match(queued.body, /Hi Jamie,/);
+      assert.match(queued.body, /Ford Fusion/);
+      assert.match(queued.body, /Your honest feedback/);
+      assert.match(queued.body, /https:\/\/search\.google\.com\/local\/writereview\?placeid=ChIJvzL6lxvRqIkRLEFsYcr3ABM/);
+      assert.match(queued.body, /Email preferences:/);
+      assert.equal((await one("select count(*)::int n from dmcrm_messages where customer_id=$1 and direction='outbound'", [c.id])).n, 1);
+    });
     await t.test(
       "full names stay consistent and profile editing cannot change another user or role",
       async () => {

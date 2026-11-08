@@ -209,7 +209,7 @@ export const starterEmailTemplates = [
     name: "Sold · thank you for your purchase",
     category: "Sold",
     subject: "Thank you for choosing Drive Max!",
-    body: "Hi {{first_name}},\n\nThank you for purchasing {{vehicle}} from Drive Max Used Cars! We appreciate your business and the opportunity to help.\n\nIf you have questions about your paperwork or anything we discussed during your purchase, reply here or call {{phone}}. We're glad to help.\n\nEnjoy your vehicle, and thank you again!",
+    body: "Hi {{first_name}},\n\nThank you for purchasing {{vehicle}} from Drive Max Used Cars! We appreciate your business and the opportunity to help you find your next vehicle.\n\nWe hope you're enjoying your vehicle. When you have a moment, would you please share your experience in a Google review? Your honest feedback means a lot to our team and helps other local drivers get to know Drive Max.\n\nhttps://search.google.com/local/writereview?placeid=ChIJvzL6lxvRqIkRLEFsYcr3ABM\n\nIf you have any questions about your vehicle or paperwork, just reply to this email or call {{phone}}. We're always happy to help.\n\nThank you again, and enjoy the road ahead!",
   },
   {
     key: "sold-7",

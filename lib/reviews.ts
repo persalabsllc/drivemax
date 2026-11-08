@@ -16,6 +16,9 @@ export type CustomerReview = ReviewContent &
 export const GOOGLE_REVIEWS_URL =
   "https://www.google.com/maps/search/?api=1&query=Drive+Max+Used+Cars+New+Bern&query_place_id=ChIJvzL6lxvRqIkRLEFsYcr3ABM";
 
+export const GOOGLE_WRITE_REVIEW_URL =
+  "https://search.google.com/local/writereview?placeid=ChIJvzL6lxvRqIkRLEFsYcr3ABM";
+
 // Full text transcribed from owner-provided screenshots on October 12, 2026.
 // Facebook months come from visible dates; Google months were verified against
 // original review timestamps. Never estimate a month from a relative date.

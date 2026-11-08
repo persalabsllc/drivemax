@@ -183,11 +183,14 @@ test("email database protects drafts, queues acknowledgments once, records repli
     );
 
     await t.test(
-      "starter templates match the UI and historical leads are not emailed",
+      "upgraded starter templates match the UI and historical leads are not emailed",
       async () => {
+        await pg.exec("begin");
+        for (const file of ["015_workflows.sql", "040_sold_review_followup.sql"])
+          await pg.exec(await fs.readFile(new URL("../db/" + file, import.meta.url), "utf8"));
         const rows = (
           await pg.query<any>(
-            "select * from dmcrm_email_templates where org_id=$1",
+            "select * from dmcrm_email_templates where org_id=$1 and system_key not like 'appt-%' and system_key <> 'purchase-anniversary'",
             [org],
           )
         ).rows;
@@ -205,6 +208,7 @@ test("email database protects drafts, queues acknowledgments once, records repli
           ),
           undefined,
         );
+        await pg.exec("rollback");
       },
     );
     await t.test(

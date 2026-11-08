@@ -96,6 +96,31 @@ export async function verifyWorkflows(client) {
         )
       ).n === 1,
     );
+    // Exercise the same sale command as the UI. All fixtures and temporary rule
+    // overrides remain inside this savepoint and never reach an email provider.
+    await client.query("select public.dmcrm_command($1,$2,$3::jsonb)", [
+      org, staff.user_id, JSON.stringify({ type: "close_opportunity", id: oid, outcome: "sold" }),
+    ]);
+    const sold = await one(
+      "select j.id,j.rule_id,j.state,extract(epoch from (j.run_at-j.anchor_at))::int delay_seconds,r.delay_minutes from public.dmcrm_workflow_jobs j join public.dmcrm_workflow_rules r on r.id=j.rule_id join public.dmcrm_email_templates t on t.id=r.template_id where j.opportunity_id=$1 and t.system_key='sold'",
+      [oid],
+    );
+    if (sold) {
+      assert(sold.state === "scheduled" && sold.delay_seconds === sold.delay_minutes * 60);
+      if (sold.delay_minutes > 0) {
+        await client.query("select public.dmcrm_workflow_prepare()");
+        assert((await one("select state from public.dmcrm_workflow_jobs where id=$1", [sold.id])).state === "scheduled");
+      }
+      await client.query("update public.dmcrm_workflow_rules set business_hours=false where id=$1", [sold.rule_id]);
+      await client.query("update public.dmcrm_workflow_jobs set run_at=now() where id=$1", [sold.id]);
+      await client.query("select public.dmcrm_workflow_prepare()");
+      const queued = await one(
+        "select j.state,m.body,m.recipient from public.dmcrm_workflow_jobs j join public.dmcrm_messages m on m.id=j.message_id where j.id=$1",
+        [sold.id],
+      );
+      assert(queued?.state === "queued" && queued.recipient === `verify-${cid}@example.invalid`);
+      assert(queued.body.includes("Email preferences:"));
+    }
   } finally {
     await client.query("rollback to savepoint workflow_verification");
     await client.query("release savepoint workflow_verification");

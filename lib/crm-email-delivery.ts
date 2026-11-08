@@ -1,3 +1,5 @@
+import { crmReviewEmailHtml } from "./crm-review-email";
+
 export type CRMEmailJob = {
   message_id: string;
   claim_token: string;
@@ -19,7 +21,9 @@ export function crmEmailPayload(
   from: string,
   replyDomain: string,
 ) {
-  // Names and body are plain text; there is no untrusted HTML or remote attachment fetch.
+  // Editable content stays plain text. The review renderer escapes every dynamic
+  // value and supplies the branded layout and button without accepting raw HTML.
+  const html = crmReviewEmailHtml(job.subject, job.body);
   const address = from.match(/<([^<>]+)>/)?.[1] || from;
   const name = job.sender_name
     .replace(/[\r\n<>"\\]/g, "")
@@ -30,6 +34,7 @@ export function crmEmailPayload(
     to: job.recipient,
     subject: job.subject,
     text: job.body,
+    ...(html ? { html } : {}),
     reply_to: `crm+${job.reply_token}@${replyDomain}`,
     ...(job.attachments.length ? { attachments: job.attachments } : {}),
     tags: [{ name: "source", value: "drive-max-crm" }],

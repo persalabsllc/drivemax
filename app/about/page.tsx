@@ -180,7 +180,7 @@ export default async function AboutPage() {
               to see.
             </p>
             <address>
-              6210 Old US Hwy 70 West
+              6210 Old US Hwy 70 W
               <br />
               New Bern, NC 28562
             </address>

@@ -1,10 +1,11 @@
 .family-section{background:linear-gradient(180deg,#f2f7fd 0%,#fff 100%);border-top:1px solid var(--line)}
-.family-section .review-section-heading{align-items:center;margin-bottom:30px}
+.family-section .review-section-heading{align-items:center;margin-bottom:24px}
 .family-section .section-heading{margin-bottom:0}
+.family-section > .container > .section-heading{margin-bottom:24px}
 .family-section h2{font-size:clamp(30px,4vw,46px);letter-spacing:-.035em;margin:8px 0 12px;line-height:1.1}
-.family-section .reviews-grid{margin-top:42px}
-.family-review-label{display:block;margin:38px 0 -24px;font-size:13px;font-weight:750;color:var(--muted)}
-.customer-photos{display:grid;gap:20px;min-width:0}
+.family-section .reviews-grid{margin-top:30px}
+.family-review-label{display:block;margin:28px 0 -16px;font-size:13px;font-weight:750;color:var(--muted)}
+.customer-photos{display:grid;gap:16px;min-width:0}
 .customer-photos-strip{grid-template-columns:repeat(4,minmax(0,1fr))}
 .customer-photos-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 .customer-photo{margin:0;min-width:0;background:white;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 8px 22px #10294a08}
@@ -13,7 +14,7 @@
 .customer-photo-open:hover img{transform:scale(1.025)}
 .customer-photo-open:focus-visible{outline:3px solid var(--blue-600);outline-offset:-4px;box-shadow:none}
 .customer-photo-expand{position:absolute;bottom:12px;right:12px;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#fffef2e8;color:var(--navy-900);box-shadow:0 2px 8px #0002}
-.customer-photo figcaption{padding:15px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:3px solid var(--brand-yellow);font-size:13px;font-weight:650;line-height:1.45}
+.customer-photo figcaption{padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:2px solid var(--brand-yellow);font-size:13px;font-weight:650;line-height:1.45}
 .customer-photo figcaption small{font-size:12px;color:var(--muted);font-weight:500}
 .customer-swipe{display:none}
 .customer-show-more{margin-top:24px}
@@ -21,10 +22,10 @@
 .customer-photos-collage .customer-photo:first-child{grid-column:1/-1}
 .customer-photos-collage .customer-photo:first-child .customer-photo-open{aspect-ratio:4/3}
 .customer-photos-collage .customer-photo figcaption{font-size:12px;padding:10px 12px}
-.family-story-grid{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:48px}
+.family-story-grid{display:grid;grid-template-columns:1fr 1fr;align-items:start;gap:32px}
 .family-story-grid .story-copy p{color:var(--muted)}
 .family-story-caption{color:var(--muted);font-size:13px;line-height:1.6;margin:16px 0 0}
-.family-promise{margin-top:32px}
+.family-promise{margin-top:24px}
 .family-promise .purchase-promise{height:auto}
 .family-promise .purchase-promise ul{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
 .family-promise .purchase-promise>strong{max-width:800px}
@@ -42,6 +43,6 @@
 .customer-lightbox-image{height:0;min-height:0;flex:1;width:100%;object-fit:contain}
 .customer-lightbox-bottom p{text-align:center;font-size:14px;margin:6px 0;color:#e3ebf5}
 @media(max-width:980px){.customer-photos-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.family-story-grid{gap:28px}.family-promise .purchase-promise ul{grid-template-columns:1fr}}
-@media(max-width:760px){.family-section .review-section-heading{align-items:flex-start}.customer-photos-strip{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:14px;padding:4px 4px 16px;margin:-4px -4px 0;scrollbar-width:thin;scrollbar-color:#86a7cd transparent}.customer-photos-strip .customer-photo{flex:0 0 82%;scroll-snap-align:start}.customer-swipe{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;margin:6px 0 0}.family-story-grid{grid-template-columns:1fr}.customer-lightbox{padding:14px}.family-section .reviews-grid{margin-top:32px}.family-review-label{margin-top:26px;margin-bottom:-16px}}
+@media(max-width:760px){.family-section .review-section-heading{align-items:flex-start}.customer-photos-strip{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:14px;padding:4px 4px 16px;margin:-4px -4px 0;scrollbar-width:thin;scrollbar-color:#86a7cd transparent}.customer-photos-strip .customer-photo{flex:0 0 82%;scroll-snap-align:start}.customer-swipe{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;margin:6px 0 0}.family-story-grid{grid-template-columns:1fr}.customer-lightbox{padding:14px}.family-section .reviews-grid{margin-top:28px}.family-review-label{margin-top:26px;margin-bottom:-16px}}
 @media(max-width:480px){.customer-photos-grid{grid-template-columns:1fr}.customer-photos-collage{gap:10px}.customer-photos-collage .customer-photo figcaption small{display:none}}
 @media(prefers-reduced-motion:reduce){.customer-photo-open img{transition:none}}

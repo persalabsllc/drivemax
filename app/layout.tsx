@@ -80,7 +80,7 @@ export default function RootLayout({
             <div className="container announcement-inner">
               <span>
                 <MapPin aria-hidden="true" size={15} />
-                6210 Old US Hwy 70 West, New Bern, NC
+                6210 Old US Hwy 70 W, New Bern, NC
               </span>
               <a className="header-phone" href="tel:+12525410040">
                 <Phone aria-hidden="true" size={19} />
@@ -98,6 +98,7 @@ export default function RootLayout({
               className="brand"
               aria-label="Drive Max Used Cars home"
             >
+              <span className="logo-glow" aria-hidden="true" />
               <Image
                 src="/drive-max-logo-transparent.webp"
                 alt="Drive Max Used Cars"
@@ -133,6 +134,7 @@ export default function RootLayout({
                 className="footer-logo"
                 aria-label="Drive Max Used Cars home"
               >
+                <span className="logo-glow" aria-hidden="true" />
                 <Image
                   src="/drive-max-logo-transparent.webp"
                   alt=""
@@ -171,11 +173,11 @@ export default function RootLayout({
                 (252) 541-0040
               </a>
               <a
-                href="https://www.google.com/maps/dir/?api=1&destination=6210+Old+US+Hwy+70+West+New+Bern+NC+28562"
+                href="https://www.google.com/maps/dir/?api=1&destination=6210+Old+US+Hwy+70+W+New+Bern+NC+28562"
                 target="_blank"
                 rel="noreferrer"
               >
-                6210 Old US Hwy 70 West
+                6210 Old US Hwy 70 W
                 <br />
                 New Bern, NC 28562
               </a>

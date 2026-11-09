@@ -224,7 +224,7 @@ export const dealershipSchema = {
       openingHoursSpecification: REGULAR_OPENING_HOURS,
       address: {
         "@type": "PostalAddress",
-        streetAddress: "6210 Old US Hwy 70 West",
+        streetAddress: "6210 Old US Hwy 70 W",
         addressLocality: "New Bern",
         addressRegion: "NC",
         postalCode: "28562",

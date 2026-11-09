@@ -484,7 +484,7 @@ export default function WebsiteChat() {
               {selected && (
                 <div className="dm-chat-confirm">
                   <strong>{selected.label}</strong>
-                  <span>Drive Max · 6210 Old US 70 West</span>
+                  <span>Drive Max · 6210 Old US 70 W</span>
                   <button
                     className="dm-chat-primary"
                     disabled={busy}

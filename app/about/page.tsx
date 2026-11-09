@@ -1,3 +1,6 @@
+import CustomerGallery from "../_components/CustomerGallery";
+import DealershipPhotos from "../_components/DealershipPhotos";
+import { publicGallery } from "../../lib/customer-gallery-server";
 import { pageMetadata } from "../../lib/seo";
 import Link from "next/link";
 import BusinessHours from "../_components/BusinessHours";
@@ -16,7 +19,11 @@ export const metadata = pageMetadata({
   path: "/about",
 });
 
-export default function AboutPage() {
+export const dynamic = "force-dynamic";
+
+export default async function AboutPage() {
+  const gallery = await publicGallery();
+  const memories = gallery.filter((p) => p.kind === "customer").slice(0, 3);
   return (
     <>
       <section className="subpage-hero">
@@ -32,7 +39,7 @@ export default function AboutPage() {
         </div>
       </section>
       <section className="section">
-        <div className="container story-grid">
+        <div className="container family-story-grid">
           <div className="story-copy">
             <span className="kicker">Our story</span>
             <h2>Family owned. Community minded.</h2>
@@ -57,10 +64,22 @@ export default function AboutPage() {
                 Meet the staff
               </Link>
               <Link className="text-link" href="/reviews">
-                Read customer reviews <ArrowRight aria-hidden="true" size={17} />
+                Read customer reviews{" "}
+                <ArrowRight aria-hidden="true" size={17} />
               </Link>
             </div>
           </div>
+          {memories.length > 0 && (
+            <div>
+              <CustomerGallery photos={memories} layout="collage" />
+              <p className="family-story-caption">
+                From our customers, over the years. These delivery-day memories
+                include our original office.
+              </p>
+            </div>
+          )}
+        </div>
+        <div className="container family-promise">
           <aside className="story-highlight purchase-promise">
             <span>The Drive Max promise</span>
             <strong>
@@ -149,6 +168,7 @@ export default function AboutPage() {
           <div>
             <span className="kicker">Come see us</span>
             <h2>A friendly welcome, on your schedule.</h2>
+            <DealershipPhotos photos={gallery} />
             <p>
               Visit our New Bern dealership Tuesday through Saturday during our
               regular hours, or arrange a Monday or Sunday appointment. We’re

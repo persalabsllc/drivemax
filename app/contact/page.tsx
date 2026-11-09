@@ -1,3 +1,5 @@
+import DealershipPhotos from "../_components/DealershipPhotos";
+import { publicGallery } from "../../lib/customer-gallery-server";
 import { pageMetadata } from "../../lib/seo";
 import { Mail, MapPin, Phone } from "lucide-react";
 import LeadForm from "../_components/ConnectedLeadForm";
@@ -10,7 +12,10 @@ export const metadata = pageMetadata({
   path: "/contact",
 });
 
-export default function ContactPage() {
+export const dynamic = "force-dynamic";
+
+export default async function ContactPage() {
+  const gallery = await publicGallery();
   return (
     <>
       <section className="subpage-hero">
@@ -80,6 +85,7 @@ export default function ContactPage() {
             <div className="contact-hours-card">
               <BusinessHours headingLevel="h2" />
             </div>
+            <DealershipPhotos photos={gallery} exteriorOnly />
             <div className="contact-map">
               <iframe
                 title="Map showing Drive Max Used Cars in New Bern"

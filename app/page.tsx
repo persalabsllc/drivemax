@@ -3,6 +3,8 @@ import Link from "next/link";
 import FeaturedInventory from "./_components/FeaturedInventory";
 import BusinessHours from "./_components/BusinessHours";
 import HomepageInventory from "./_components/HomepageInventory";
+import DealershipPhotos from "./_components/DealershipPhotos";
+import { publicGallery } from "../lib/customer-gallery-server";
 import ReviewHighlights from "./_components/ReviewHighlights";
 import { photoUrl, publicInventory } from "../lib/backend";
 import { featuredHomepageVehicles } from "../lib/homepage-inventory";
@@ -28,7 +30,10 @@ export const metadata = pageMetadata({
   path: "/",
 });
 export default async function Home() {
-  const available = await publicInventory("available");
+  const [available, gallery] = await Promise.all([
+    publicInventory("available"),
+    publicGallery(),
+  ]);
   const hasInventory = available.length > 0;
   const homepageVehicles = featuredHomepageVehicles(available, photoUrl);
   return (
@@ -136,6 +141,7 @@ export default async function Home() {
       </section>
 
       <FeaturedInventory />
+      <ReviewHighlights photos={gallery} />
       <section className="section sell-home-section">
         <div className="container sell-home-card">
           <div>
@@ -242,8 +248,6 @@ export default async function Home() {
         </div>
       </section>
 
-      <ReviewHighlights />
-
       <section className="section finance-feature">
         <div className="container finance-feature-grid">
           <div>
@@ -297,6 +301,7 @@ export default async function Home() {
           <div className="location-copy">
             <span className="kicker">Find Drive Max</span>
             <h2>Easy to find in New Bern.</h2>
+            <DealershipPhotos photos={gallery} exteriorOnly />
             <p>
               Visit us on Old US Highway 70 West. Browse the lot, meet the team,
               and let’s find your next vehicle.

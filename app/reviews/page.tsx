@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ArrowRight, ArrowUpRight, MessageSquareQuote } from "lucide-react";
 import { customerReviews, GOOGLE_REVIEWS_URL } from "../../lib/reviews";
 import { pageMetadata } from "../../lib/seo";
+import CustomerGallery from "../_components/CustomerGallery";
+import { publicGallery } from "../../lib/customer-gallery-server";
 import ReviewCard from "../_components/ReviewCard";
 
 export const metadata = pageMetadata({
@@ -11,7 +13,10 @@ export const metadata = pageMetadata({
   path: "/reviews",
 });
 
-export default function ReviewsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function ReviewsPage() {
+  const photos = (await publicGallery()).filter((p) => p.kind === "customer");
   return (
     <>
       <section className="subpage-hero reviews-hero">
@@ -39,6 +44,25 @@ export default function ReviewsPage() {
           </div>
         </div>
       </section>
+      {photos.length > 0 && (
+        <section
+          className="section family-section"
+          id="customer-gallery"
+          aria-labelledby="gallery-heading"
+        >
+          <div className="container">
+            <div className="section-heading">
+              <span className="kicker">The Drive Max family</span>
+              <h2 id="gallery-heading">Memories from our lot.</h2>
+              <p>
+                Delivery-day smiles and new adventures, shared by our customers
+                over the years.
+              </p>
+            </div>
+            <CustomerGallery photos={photos} layout="grid" />
+          </div>
+        </section>
+      )}
       <section
         className="section reviews-section"
         aria-labelledby="featured-reviews-heading"

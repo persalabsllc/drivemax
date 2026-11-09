@@ -1,5 +1,6 @@
 import "./globals.css";
 import "./reviews.css";
+import "./customer-gallery.css";
 import "./website-chat.css";
 import "./website-activity.css";
 import WebsiteActivity from "./_components/WebsiteActivity";

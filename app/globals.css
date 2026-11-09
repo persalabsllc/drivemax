@@ -182,7 +182,7 @@ main[id], main [id] { scroll-margin-top: 172px; }
 .kicker-on-dark { color: var(--brand-yellow); }
 .status-dot { width: 9px; height: 9px; display: inline-block; flex: 0 0 auto; border-radius: 999px; background: #e89a0c; box-shadow: 0 0 0 5px rgba(232,154,12,.17); }
 .hero-copy h1 { max-width: 660px; margin: 18px 0 20px; font-size: clamp(52px, 6.3vw, 82px); font-weight: 900; letter-spacing: -.055em; line-height: .98; }
-.hero-copy h1 span { color: #ff4b57; }
+.hero-copy h1 span { color: #ff4b57; font-style: italic; }
 .hero-lead { max-width: 660px; margin: 0; color: #c8d7e8; font-size: clamp(17px, 1.6vw, 20px); line-height: 1.65; }
 .button-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
 .hero-trust { max-width: 600px; display: flex; align-items: flex-start; gap: 11px; margin-top: 30px; color: #aebfd2; font-size: 14px; }

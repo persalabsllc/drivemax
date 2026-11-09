@@ -25,6 +25,10 @@ test("analytics only accepts safe public routes and strips sensitive URL parts",
     assert.equal(activityPath(path), null);
   assert.equal(activityPath("/"), "/");
   assert.equal(activityPath("/about/staff/"), "/about/staff");
+  assert.equal(
+    activityPath("/warranty?email=private#optional-protection"),
+    "/warranty",
+  );
 });
 test("source classification stores a category, never raw referrers or campaigns", () => {
   assert.equal(

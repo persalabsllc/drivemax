@@ -1,5 +1,6 @@
 "use client";
 import { canDesk, canAccessView, roleLabel } from "../lib/permissions";
+import { CustomerGallery } from "./CustomerGallery";
 import { WebsiteActivity } from "./WebsiteActivity";
 import { WebsiteChatInbox, WebsiteChatSettingsPanel } from "./WebsiteChatInbox";
 import { restrictWorkspace } from "../lib/workspace-permissions";
@@ -24,6 +25,7 @@ import { SalesReports } from "./SalesReports";
 import { IntegrationSettings } from "./IntegrationSettings";
 import { PushSettings } from "./PushSettings";
 import {
+  Camera,
   FolderLock,
   LayoutDashboard,
   Users,
@@ -138,6 +140,7 @@ type View =
   | "Money owed"
   | "Accounting"
   | "Conversations"
+  | "Customer gallery"
   | "Website activity"
   | "Website chat"
   | "Workspace";
@@ -152,6 +155,7 @@ const nav = [
   { name: "Conversations", icon: MessageSquare },
   { name: "Website chat", icon: MessageSquare },
   { name: "Website activity", icon: TrendingUp },
+  { name: "Customer gallery", icon: Camera },
   { name: "Planner", icon: CalendarDays },
   { name: "Trade-ins", icon: RefreshCw },
   { name: "Appraisals", icon: Car },
@@ -769,6 +773,8 @@ export default function CRM({
                         "The customers, appointments and deals that need your attention next.",
                       "Website activity":
                         "Vehicle interest, visitor journeys, and leads from your online showroom.",
+                      "Customer gallery":
+                        "Customer memories and dealership photos for your website.",
                       "Website chat":
                         "Website visitors, real conversations, and the next appointment.",
                       "Management reports":
@@ -1495,6 +1501,7 @@ export default function CRM({
                 }}
               />
             )}
+            {view === "Customer gallery" && canManage(ws.member.role) && <CustomerGallery demo={demo} />}
             {view === "Website chat" && (
               <WebsiteChatInbox
                 ws={ws}

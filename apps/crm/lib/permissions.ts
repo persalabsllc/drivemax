@@ -20,6 +20,7 @@ export function canAccessView(role: string, view: string) {
       "Sales reports",
       "Management reports",
       "Website activity",
+      "Customer gallery",
       "Service",
       "Trade-ins",
       "Money owed",

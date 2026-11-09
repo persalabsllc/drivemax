@@ -52,13 +52,13 @@ export default async function ContactPage() {
                 </div>
                 <h2>Visit Drive Max</h2>
                 <p>
-                  6210 Old US Hwy 70 West
+                  6210 Old US Hwy 70 W
                   <br />
                   New Bern, NC 28562
                 </p>
                 <p>
                   <a
-                    href="https://www.google.com/maps/dir/?api=1&destination=6210+Old+US+Hwy+70+West+New+Bern+NC+28562"
+                    href="https://www.google.com/maps/dir/?api=1&destination=6210+Old+US+Hwy+70+W+New+Bern+NC+28562"
                     target="_blank"
                     rel="noreferrer"
                   >
@@ -91,7 +91,7 @@ export default async function ContactPage() {
                 title="Map showing Drive Max Used Cars in New Bern"
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
-                src="https://www.google.com/maps?q=6210%20Old%20US%20Hwy%2070%20West%20New%20Bern%20NC%2028562&output=embed"
+                src="https://www.google.com/maps?q=6210%20Old%20US%20Hwy%2070%20W%20New%20Bern%20NC%2028562&output=embed"
               />
             </div>
           </div>

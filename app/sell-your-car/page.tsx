@@ -63,7 +63,7 @@ export default function SellYourCarPage() {
             <p className="sell-location">
               Drive Max Used Cars
               <br />
-              6210 Old US Hwy 70 West
+              6210 Old US Hwy 70 W
               <br />
               New Bern, NC 28562
             </p>

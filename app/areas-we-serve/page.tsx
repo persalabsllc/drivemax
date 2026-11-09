@@ -55,7 +55,7 @@ export default function AreasWeServe() {
               <h2>Based in New Bern, here for our neighbors.</h2>
               <p>
                 We’re family owned and operated since 2019, right here at 6210
-                Old US Hwy 70 West in New Bern. Whether you’re coming from
+                Old US Hwy 70 W in New Bern. Whether you’re coming from
                 Havelock, Jacksonville, Kinston, Dover, Cove City, Trent Woods,
                 James City, or Greenville, our team is ready to help you find a
                 vehicle that fits your life.
@@ -79,7 +79,7 @@ export default function AreasWeServe() {
               <address>
                 Drive Max Used Cars LLC
                 <br />
-                6210 Old US Hwy 70 West
+                6210 Old US Hwy 70 W
                 <br />
                 New Bern, NC 28562
               </address>
@@ -91,7 +91,7 @@ export default function AreasWeServe() {
               </p>
               <a
                 className="button button-primary"
-                href="https://www.google.com/maps/dir/?api=1&destination=6210+Old+US+Hwy+70+West+New+Bern+NC+28562"
+                href="https://www.google.com/maps/dir/?api=1&destination=6210+Old+US+Hwy+70+W+New+Bern+NC+28562"
                 target="_blank"
                 rel="noreferrer"
               >

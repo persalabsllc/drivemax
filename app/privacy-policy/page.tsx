@@ -272,7 +272,7 @@ export default function PrivacyPolicy() {
           <address>
             Drive Max Used Cars LLC
             <br />
-            6210 Old US Hwy 70 West
+            6210 Old US Hwy 70 W
             <br />
             New Bern, NC 28562
             <br />

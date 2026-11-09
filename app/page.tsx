@@ -142,6 +142,28 @@ export default async function Home() {
 
       <FeaturedInventory />
       <ReviewHighlights photos={gallery} />
+      <section
+        className="warranty-home-section"
+        aria-labelledby="home-warranty-heading"
+      >
+        <div className="container warranty-home-card">
+          <BadgeCheck aria-hidden="true" size={34} />
+          <div>
+            <h2 id="home-warranty-heading">
+              A little peace of mind comes with the keys.
+            </h2>
+            <p>
+              Every vehicle includes a 14-day / 500-mile limited powertrain
+              warranty, whichever comes first. Explore optional service
+              contracts with terms up to 10 years, subject to vehicle
+              eligibility and mileage limits.
+            </p>
+          </div>
+          <Link className="button button-secondary" href="/warranty">
+            Explore protection <ArrowRight aria-hidden="true" size={18} />
+          </Link>
+        </div>
+      </section>
       <section className="section sell-home-section">
         <div className="container sell-home-card">
           <div>

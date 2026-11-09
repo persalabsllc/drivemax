@@ -10,6 +10,7 @@ const links = [
   { href: "/inventory", label: "Inventory" },
   { href: "/sell-your-car", label: "Sell your car" },
   { href: "/apply", label: "Financing" },
+  { href: "/warranty", label: "Warranty" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
 ];

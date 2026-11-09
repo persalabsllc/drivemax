@@ -99,10 +99,14 @@ export default async function AboutPage() {
               <li>
                 <ShieldCheck aria-hidden="true" />
                 <div>
-                  <b>Free 14-day dealer warranty</b>
+                  <b>Included limited powertrain warranty</b>
                   <p>
-                    Included with every vehicle we sell. Ask us for the written
-                    coverage, terms, and exclusions.
+                    14 days or 500 miles, whichever comes first, on every
+                    vehicle we sell.{" "}
+                    <Link className="text-link" href="/warranty">
+                      Explore coverage
+                    </Link>
+                    .
                   </p>
                 </div>
               </li>

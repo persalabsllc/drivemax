@@ -1,6 +1,7 @@
 import "./globals.css";
 import "./reviews.css";
 import "./customer-gallery.css";
+import "./warranty.css";
 import "./website-chat.css";
 import "./website-activity.css";
 import WebsiteActivity from "./_components/WebsiteActivity";
@@ -41,6 +42,7 @@ const primaryLinks = [
   { href: "/inventory", label: "Inventory" },
   { href: "/sell-your-car", label: "Sell your car" },
   { href: "/apply", label: "Financing" },
+  { href: "/warranty", label: "Warranty" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
 ];
@@ -151,6 +153,7 @@ export default function RootLayout({
               <Link href="/inventory">Shop inventory</Link>
               <Link href="/sell-your-car">Sell your car</Link>
               <Link href="/apply">Financing request</Link>
+              <Link href="/warranty">Warranty & protection</Link>
               <Link href="/payments">Payment help</Link>
             </div>
             <div className="footer-column">

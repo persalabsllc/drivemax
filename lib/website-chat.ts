@@ -90,6 +90,9 @@ export const chatActionSchema = z.discriminatedUnion("action", [
   }),
 ]);
 export const protectionKnowledge = `Drive Max Protection product descriptions (specific issued contract controls coverage, limits, exclusions and deductible):
+Warranty information is available at /warranty, including a PDF of the written dealer warranty.
+Every vehicle includes a complimentary limited powertrain warranty for 14 calendar days or 500 additional miles after delivery, whichever comes first. It covers mechanical failure of internally lubricated, moving components inside the engine or transmission, with 100% of covered parts and labor and no deductible. Accessories, seals, gaskets, leaks, electrical components, sensors and routine maintenance are excluded. Contact Drive Max before authorizing repairs.
+Optional mechanical service-contract terms can extend up to 120 months (10 years), subject to vehicle eligibility and selected mileage limits, whichever expires first. Optional products cost extra and are not required to buy a vehicle or obtain financing. Current Deluxe and Platinum are named-component plans, not bumper-to-bumper; A/C, steering, suspension and unlisted components are excluded.
 Deluxe: listed engine, transmission, transfer case and drive axle powertrain components.
 Platinum: Deluxe powertrain components plus listed alternator, water pump, thermostat, sensors and engine accessories.
 Prepaid maintenance: oil/filter change and tire rotation up to $125 combined per covered visit; visit count and interval are selected in the contract.

@@ -43,9 +43,16 @@ export const PUBLIC_PAGES = [
     description: "Our family-owned dealership and approach to service.",
   },
   {
+    path: "/warranty",
+    label: "Warranty & protection",
+    description:
+      "Included 14-day / 500-mile limited powertrain warranty and optional protection plans.",
+  },
+  {
     path: "/reviews",
     label: "Customer reviews",
-    description: "Customer reviews and recommendations from Google and Facebook.",
+    description:
+      "Customer reviews and recommendations from Google and Facebook.",
   },
   {
     path: "/about/staff",

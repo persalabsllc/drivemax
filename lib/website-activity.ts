@@ -46,7 +46,7 @@ export const activityRequestSchema = z.discriminatedUnion("action", [
 ]);
 export function activityPath(path: string) {
   const safe = path.split(/[?#]/)[0].replace(/\/$/, "") || "/";
-  return /^\/(?:inventory(?:\/[a-z0-9-]+)?|apply|contact|sell-your-car|payments|about(?:\/staff|\/employment)?|reviews|privacy-policy|areas-we-serve|site-map)?$/.test(
+  return /^\/(?:inventory(?:\/[a-z0-9-]+)?|apply|contact|sell-your-car|payments|about(?:\/staff|\/employment)?|reviews|warranty|privacy-policy|areas-we-serve|site-map)?$/.test(
     safe,
   )
     ? safe

@@ -33,6 +33,12 @@
 .dealership-photos>.kicker{display:block;margin-bottom:12px}
 .dealership-photos .customer-photos-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
 .dealership-photos .customer-photo-open{aspect-ratio:4/3}
+.dealership-photos [data-kind="exterior"] .customer-photo-open{aspect-ratio:16/9}
+.dealership-photos [data-kind="exterior"] .customer-photo-open img{object-fit:contain}
+.location-media{display:grid;gap:20px;align-content:start;min-width:0}
+.location-media .dealership-photos{margin:0}
+.location-media .map-card{min-height:0}
+.location-media .map-card iframe{height:320px;min-height:0}
 .customer-lightbox{max-width:none;max-height:none;width:100vw;height:100dvh;border:0;padding:20px;margin:0;background:#071422f5;color:#fff;position:fixed;inset:0;z-index:2000}
 .customer-lightbox::backdrop{background:#071422e8}
 .customer-lightbox-inner{max-width:1100px;height:100%;margin:auto;display:flex;flex-direction:column;gap:12px}

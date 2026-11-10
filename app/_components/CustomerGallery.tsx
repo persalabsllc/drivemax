@@ -42,7 +42,11 @@ export default function CustomerGallery({
     <>
       <div className={`customer-photos customer-photos-${layout}`}>
         {shown.map((photo, i) => (
-          <figure className="customer-photo" key={photo.id}>
+          <figure
+            className="customer-photo"
+            data-kind={photo.kind}
+            key={photo.id}
+          >
             <button
               type="button"
               className="customer-photo-open"
@@ -55,13 +59,15 @@ export default function CustomerGallery({
               <Image
                 src={photo.src}
                 alt={photo.alt}
-                width={720}
+                width={photo.kind === "exterior" ? 1280 : 720}
                 height={720}
                 unoptimized={photo.src.startsWith("/api/")}
                 sizes={
-                  layout === "collage"
-                    ? "(max-width: 760px) 80vw, 560px"
-                    : "(max-width: 600px) 80vw, (max-width: 980px) 45vw, 290px"
+                  photo.kind !== "customer"
+                    ? "(max-width: 980px) calc(100vw - 30px), 640px"
+                    : layout === "collage"
+                      ? "(max-width: 760px) 80vw, 560px"
+                      : "(max-width: 600px) 80vw, (max-width: 980px) 45vw, 290px"
                 }
               />
               <span className="customer-photo-expand">
@@ -117,7 +123,9 @@ export default function CustomerGallery({
           <div className="customer-lightbox-inner">
             <div className="customer-lightbox-top">
               <span id={titleId}>
-                The Drive Max family{" "}
+                {active.kind === "customer"
+                  ? "The Drive Max family"
+                  : "A look around Drive Max"}{" "}
                 <small>
                   {" "}
                   {index! + 1} / {photos.length}

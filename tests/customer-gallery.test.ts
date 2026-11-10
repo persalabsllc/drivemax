@@ -20,7 +20,9 @@ test("homepage remains bounded as the gallery grows and office photos stay separ
   };
   assert.equal(featuredCustomerPhotos([...customers, exterior]).length, 4);
   assert.deepEqual(officePhotos([...customers, exterior]), [exterior]);
-  assert.deepEqual(officePhotos(galleryPreview), []);
+  assert.equal(officePhotos(galleryPreview, "exterior").length, 1);
+  assert.equal(officePhotos(galleryPreview, "exterior")[0].kind, "exterior");
+  assert.deepEqual(officePhotos(galleryPreview, "interior"), []);
   assert.deepEqual(
     featuredCustomerPhotos(customers.map((p) => ({ ...p, featured: false }))),
     [],

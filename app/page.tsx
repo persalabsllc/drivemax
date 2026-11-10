@@ -323,7 +323,6 @@ export default async function Home() {
           <div className="location-copy">
             <span className="kicker">Find Drive Max</span>
             <h2>Easy to find in New Bern.</h2>
-            <DealershipPhotos photos={gallery} exteriorOnly />
             <p>
               Visit us on Old US Highway 70 W. Browse the lot, meet the team,
               and let’s find your next vehicle.
@@ -357,13 +356,16 @@ export default async function Home() {
               </Link>
             </div>
           </div>
-          <div className="map-card">
-            <iframe
-              title="Map showing Drive Max Used Cars in New Bern"
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              src="https://www.google.com/maps?q=6210%20Old%20US%20Hwy%2070%20W%20New%20Bern%20NC%2028562&output=embed"
-            />
+          <div className="location-media">
+            <DealershipPhotos photos={gallery} exteriorOnly />
+            <div className="map-card">
+              <iframe
+                title="Map showing Drive Max Used Cars in New Bern"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                src="https://www.google.com/maps?q=6210%20Old%20US%20Hwy%2070%20W%20New%20Bern%20NC%2028562&output=embed"
+              />
+            </div>
           </div>
         </div>
       </section>

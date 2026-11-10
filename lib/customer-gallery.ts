@@ -131,6 +131,16 @@ export const galleryPreview: GalleryPhoto[] = [
     sort_order: 120,
     taken_year: 2019,
   },
+  {
+    id: "d9a11000-0000-4000-8000-000000000013",
+    src: "/customers/drive-max-office-exterior.webp",
+    alt: "Exterior view of the Drive Max office, gravel driveway, and vehicle lot in New Bern",
+    caption: "Drive Max office & lot",
+    kind: "exterior",
+    featured: false,
+    sort_order: 0,
+    taken_year: null,
+  },
 ];
 
 export function featuredCustomerPhotos(photos: GalleryPhoto[]) {

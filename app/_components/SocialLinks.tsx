@@ -1,10 +1,8 @@
 import { Facebook, Instagram } from "lucide-react";
 
-// Replace these local preview anchors with the owner's confirmed profiles
-// before publishing.
 const profiles = [
-  { name: "Facebook", href: "#facebook-profile-pending", Icon: Facebook },
-  { name: "Instagram", href: "#instagram-profile-pending", Icon: Instagram },
+  { name: "Facebook", href: "https://www.facebook.com/drivemaxnc/", Icon: Facebook },
+  { name: "Instagram", href: "https://www.instagram.com/drivemaxnc/", Icon: Instagram },
 ] as const;
 
 export default function SocialLinks() {

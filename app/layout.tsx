@@ -15,6 +15,7 @@ import AboutNav from "./_components/AboutNav";
 import InventorySearch from "./_components/InventorySearch";
 import { SITE_URL } from "../lib/seo";
 import BusinessHours from "./_components/BusinessHours";
+import SocialLinks from "./_components/SocialLinks";
 import { CONTACT_NOTICE_PARAGRAPHS } from "../lib/contact-notice";
 
 export const metadata: Metadata = {
@@ -184,6 +185,7 @@ export default function RootLayout({
               <a href="mailto:sales@drivemaxusedcars.com">
                 sales@drivemaxusedcars.com
               </a>
+              <SocialLinks />
               <BusinessHours compact />
             </div>
           </div>

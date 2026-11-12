@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import FeaturedInventory from "./_components/FeaturedInventory";
 import BusinessHours from "./_components/BusinessHours";
+import SocialLinks from "./_components/SocialLinks";
 import HomepageInventory from "./_components/HomepageInventory";
 import DealershipPhotos from "./_components/DealershipPhotos";
 import { publicGallery } from "../lib/customer-gallery-server";
@@ -341,6 +342,7 @@ export default async function Home() {
               <Mail aria-hidden="true" />
               sales@drivemaxusedcars.com
             </a>
+            <SocialLinks />
             <BusinessHours />
             <div className="button-row">
               <a

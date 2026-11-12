@@ -4,6 +4,7 @@ import { pageMetadata } from "../../lib/seo";
 import { Mail, MapPin, Phone } from "lucide-react";
 import LeadForm from "../_components/ConnectedLeadForm";
 import BusinessHours from "../_components/BusinessHours";
+import SocialLinks from "../_components/SocialLinks";
 
 export const metadata = pageMetadata({
   title: "Contact & Directions to Our New Bern Dealership",
@@ -82,6 +83,7 @@ export default async function ContactPage() {
                 </p>
               </div>
             </div>
+            <SocialLinks />
             <div className="contact-hours-card">
               <BusinessHours headingLevel="h2" />
             </div>

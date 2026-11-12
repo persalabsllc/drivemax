@@ -4,6 +4,7 @@ import { publicGallery } from "../../lib/customer-gallery-server";
 import { pageMetadata } from "../../lib/seo";
 import Link from "next/link";
 import BusinessHours from "../_components/BusinessHours";
+import SocialLinks from "../_components/SocialLinks";
 import {
   ArrowRight,
   BadgeCheck,
@@ -68,6 +69,7 @@ export default async function AboutPage() {
                 <ArrowRight aria-hidden="true" size={17} />
               </Link>
             </div>
+            <SocialLinks />
           </div>
           {memories.length > 0 && (
             <div>

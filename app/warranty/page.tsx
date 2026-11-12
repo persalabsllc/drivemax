@@ -106,7 +106,7 @@ export default function WarrantyPage() {
           <div>
             <span className="kicker kicker-on-dark">Warranty & protection</span>
             <h1>
-              Drive home with <em>a little peace of mind.</em>
+              Drive home with <em>peace of mind.</em>
             </h1>
             <p>
               Every Drive Max vehicle comes with a limited powertrain warranty.

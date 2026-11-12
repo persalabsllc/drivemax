@@ -85,7 +85,7 @@ export default async function AboutPage() {
           <aside className="story-highlight purchase-promise">
             <span>The Drive Max promise</span>
             <strong>
-              A little more peace of mind with your next set of keys.
+              Peace of mind with your next set of keys.
             </strong>
             <ul>
               <li>

@@ -151,7 +151,7 @@ export default async function Home() {
           <BadgeCheck aria-hidden="true" size={34} />
           <div>
             <h2 id="home-warranty-heading">
-              A little peace of mind comes with the keys.
+              Peace of mind comes with the keys.
             </h2>
             <p>
               Every vehicle includes a 14-day / 500-mile limited powertrain

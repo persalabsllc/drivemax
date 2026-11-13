@@ -1,6 +1,7 @@
 import type { Metadata, MetadataRoute } from "next";
 import type { Vehicle } from "./inventory";
 import { APPOINTMENT_NOTE, REGULAR_OPENING_HOURS } from "./business-hours";
+import { openPositions, positionPath } from "./employment";
 
 export const SITE_URL = "https://www.drivemaxusedcars.com";
 export const SITE_NAME = "Drive Max Used Cars";
@@ -62,7 +63,7 @@ export const PUBLIC_PAGES = [
   {
     path: "/about/employment",
     label: "Employment",
-    description: "Tell us about your interest in joining our team.",
+    description: "Browse open positions and apply for a specific role.",
   },
   {
     path: "/areas-we-serve",
@@ -195,6 +196,9 @@ export function buildSitemap(
   });
   return [
     ...PUBLIC_PAGES.map((page) => ({ url: absoluteUrl(page.path) })),
+    ...openPositions.map((position) => ({
+      url: absoluteUrl(positionPath(position.slug)),
+    })),
     ...listings.map((v) => ({
       url: absoluteUrl(`/inventory/${encodeURIComponent(v.slug)}`),
       ...(v.updated_at && Number.isFinite(Date.parse(v.updated_at))

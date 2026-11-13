@@ -85,12 +85,18 @@ export default function LeadForm({
   online = false,
   vehicleId = "",
   vehicle,
+  employmentPosition,
 }: {
   kind: LeadFormKind;
   online?: boolean;
   vehicleId?: string;
   vehicle?: LeadVehicle;
+  employmentPosition?: string;
 }) {
+  const application = kind === "employment" && !!employmentPosition;
+  const subject = application
+    ? `Application: ${employmentPosition} — Drive Max Used Cars`
+    : subjects[kind];
   const priceRequest = kind === "vehicle" && vehicle?.status === "available";
   const purpose = vehicle
     ? priceRequest
@@ -202,7 +208,9 @@ export default function LeadForm({
         `Listed mileage: ${vehicle.miles.toLocaleString("en-US")} miles`,
       );
     const body = [
-      "New inquiry from the Drive Max Used Cars website",
+      application
+        ? `Application for ${employmentPosition} at Drive Max Used Cars`
+        : "New inquiry from the Drive Max Used Cars website",
       "",
       ...details,
       "",
@@ -213,10 +221,11 @@ export default function LeadForm({
 
     setStatus({
       type: "info",
-      message:
-        "Your email app should open with the request prepared. Review it and press Send to finish.",
+      message: application
+        ? "Your email app should open with your application prepared. You can attach a résumé, then review and press Send to finish. If it doesn’t open, email your contact details, experience, and position title to sales@drivemaxusedcars.com."
+        : "Your email app should open with the request prepared. Review it and press Send to finish.",
     });
-    window.location.href = `mailto:sales@drivemaxusedcars.com?subject=${encodeURIComponent(subjects[kind])}&body=${encodeURIComponent(body)}`;
+    window.location.href = `mailto:sales@drivemaxusedcars.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   }
 
   const messageOptional = kind === "vehicle" || kind === "finance";
@@ -225,7 +234,7 @@ export default function LeadForm({
   return (
     <form
       className="lead-form"
-      action={`mailto:sales@drivemaxusedcars.com?subject=${encodeURIComponent(subjects[kind])}`}
+      action={`mailto:sales@drivemaxusedcars.com?subject=${encodeURIComponent(subject)}`}
       method="post"
       encType="text/plain"
       onSubmit={handleSubmit}
@@ -239,6 +248,19 @@ export default function LeadForm({
         </div>
       )}
       <div className="form-grid">
+        {application && (
+          <div className="field field-full">
+            <label htmlFor={`${kind}-position`}>
+              Position you’re applying for
+            </label>
+            <input
+              id={`${kind}-position`}
+              name="position"
+              value={employmentPosition}
+              readOnly
+            />
+          </div>
+        )}
         {vehicle && (
           <div className="inquiry-vehicle-summary field-full">
             <span className="kicker">
@@ -390,7 +412,7 @@ export default function LeadForm({
           </>
         )}
 
-        {kind === "employment" && (
+        {kind === "employment" && !application && (
           <Field
             id={`${kind}-position`}
             label="Position or area of interest"
@@ -413,15 +435,17 @@ export default function LeadForm({
             id={`${kind}-${messageName}`}
             name={messageName}
             placeholder={
-              priceRequest
-                ? "Any questions about this vehicle or its price?"
-                : vehicle
-                  ? "What would you like to know, or what are you looking for?"
-                  : kind === "vehicle"
-                    ? "Preferred makes, must-have features, mileage limits, or timing"
-                    : kind === "finance"
-                      ? "Vehicle needs, timing, or questions for the dealership"
-                      : "How can Drive Max help?"
+              application
+                ? "Share your sales or customer service experience, why you’re interested in this role, and your availability or earliest start date."
+                : priceRequest
+                  ? "Any questions about this vehicle or its price?"
+                  : vehicle
+                    ? "What would you like to know, or what are you looking for?"
+                    : kind === "vehicle"
+                      ? "Preferred makes, must-have features, mileage limits, or timing"
+                      : kind === "finance"
+                        ? "Vehicle needs, timing, or questions for the dealership"
+                        : "How can Drive Max help?"
             }
             required={!messageOptional}
           />
@@ -437,7 +461,9 @@ export default function LeadForm({
         <p className="form-help">
           {online
             ? "Your request goes directly to the Drive Max team."
-            : "This button opens your email app with the message prepared. Nothing is sent until you review it and press Send."}
+            : application
+              ? "Prepare your application email, attach a résumé if you’d like, then press Send in your email app."
+              : "This button opens your email app with the message prepared. Nothing is sent until you review it and press Send."}
         </p>
         <button
           className="button button-primary"
@@ -453,7 +479,9 @@ export default function LeadForm({
                 ? priceRequest
                   ? "Request your price"
                   : "Send inquiry"
-                : "Open email to send"}{" "}
+                : application
+                  ? "Prepare application email"
+                  : "Open email to send"}{" "}
           <ArrowRight aria-hidden="true" size={18} />
         </button>
       </div>

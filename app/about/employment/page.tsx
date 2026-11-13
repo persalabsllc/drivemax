@@ -1,11 +1,13 @@
+import Link from "next/link";
+import { ArrowRight, BriefcaseBusiness, MapPin } from "lucide-react";
 import { pageMetadata } from "../../../lib/seo";
-import { Check, Paperclip } from "lucide-react";
-import LeadForm from "../../_components/LeadForm";
+import { openPositions, positionPath } from "../../../lib/employment";
+import "./employment.css";
 
 export const metadata = pageMetadata({
-  title: "Employment",
+  title: "Careers & Open Positions",
   description:
-    "Share your employment interest with Drive Max Used Cars in New Bern, NC.",
+    "Explore open positions at Drive Max Used Cars in New Bern, NC. View responsibilities, compensation, and growth opportunities, then apply for a specific role.",
   path: "/about/employment",
 });
 
@@ -14,40 +16,79 @@ export default function EmploymentPage() {
     <>
       <section className="subpage-hero">
         <div className="container">
-          <span className="kicker kicker-on-dark">Work with Drive Max</span>
-          <h1>Bring your talents to Drive Max.</h1>
+          <span className="kicker kicker-on-dark">Careers at Drive Max</span>
+          <h1>Put people first. Build your future.</h1>
           <p>
-            We’re a family-owned dealership that values teamwork, clear
-            communication, and taking care of people. If that sounds like your
-            kind of workplace, introduce yourself.
+            Join a family-owned dealership where customer service comes first,
+            teamwork matters, and your effort makes a difference.
           </p>
         </div>
       </section>
       <section className="page-section page-section-muted">
-        <div className="container content-split">
-          <div className="content-intro">
-            <span className="kicker">Employment interest</span>
-            <h2>Tell us what you bring to the team.</h2>
-            <p>
-              This is a general expression of interest, not a posting for a
-              specific open role or a guarantee of employment.
-            </p>
-            <ul className="feature-list">
-              <li>
-                <Check aria-hidden="true" />
-                Share the role or area that interests you
-              </li>
-              <li>
-                <Check aria-hidden="true" />
-                Summarize relevant experience
-              </li>
-              <li>
-                <Paperclip aria-hidden="true" />
-                Attach a résumé in the email that opens
-              </li>
-            </ul>
+        <div className="container careers-container">
+          <div className="careers-heading">
+            <div>
+              <span className="kicker">Join our team</span>
+              <h2>Open positions</h2>
+            </div>
+            <span className="careers-opening-count">
+              {openPositions.length} open{" "}
+              {openPositions.length === 1 ? "role" : "roles"}
+            </span>
           </div>
-          <LeadForm kind="employment" />
+          <div className="careers-list">
+            {openPositions.map((position) => (
+              <article
+                key={position.slug}
+                className="career-card"
+                aria-labelledby={`${position.slug}-title`}
+              >
+                <div className="career-card-copy">
+                  <h3 id={`${position.slug}-title`}>
+                    <Link href={positionPath(position.slug)}>
+                      {position.title}
+                    </Link>
+                  </h3>
+                  <ul className="career-meta" aria-label="Position details">
+                    <li>
+                      <BriefcaseBusiness size={17} aria-hidden="true" />
+                      {position.schedule}
+                    </li>
+                    <li>
+                      <MapPin size={17} aria-hidden="true" />
+                      {position.location}
+                    </li>
+                  </ul>
+                  <p>{position.summary}</p>
+                  <p className="career-growth">
+                    Opportunity to advance to General Sales Manager.
+                  </p>
+                </div>
+                <div className="career-card-action">
+                  <span className="career-pay-label">
+                    Estimated annual earnings
+                  </span>
+                  <strong>{position.earnings.replace(" per year", "")}</strong>
+                  <p>
+                    Commission + performance bonuses
+                    <br />
+                    Biweekly draw against commissions
+                  </p>
+                  <Link
+                    href={positionPath(position.slug)}
+                    className="button button-primary"
+                  >
+                    View position &amp; apply{" "}
+                    <ArrowRight size={18} aria-hidden="true" />
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </div>
+          <p className="careers-note">
+            Choose a position to see the full description and apply for that
+            opening.
+          </p>
         </div>
       </section>
     </>

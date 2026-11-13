@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
+import { openPositions, positionPath } from "../lib/employment";
 import {
   absoluteUrl,
   breadcrumbSchema,
@@ -33,7 +34,14 @@ test("sitemap includes all public pages and excludes private stock", () => {
     ],
     (path) => `https://images.example/${path}`,
   );
-  assert.equal(urls.length, PUBLIC_PAGES.length + 3);
+  assert.equal(urls.length, PUBLIC_PAGES.length + openPositions.length + 3);
+  for (const position of openPositions) {
+    assert.ok(
+      urls.some(
+        (entry) => entry.url === absoluteUrl(positionPath(position.slug)),
+      ),
+    );
+  }
   assert.ok(urls.every((entry) => entry.url.startsWith(`${SITE_URL}/`)));
   assert.ok(
     !urls.some((entry) =>

@@ -1190,7 +1190,7 @@ export default function CRM({
               />
             )}
             {view === "Accounting" && canManage(ws.member.role) && (
-              <Accounting ws={ws} run={run} busy={busy} />
+              <Accounting ws={ws} run={run} busy={busy} demo={demo} />
             )}
             {view === "Trade-ins" && canManage(ws.member.role) && (
               <TradeIntake

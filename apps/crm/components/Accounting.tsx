@@ -1,5 +1,7 @@
 "use client";
 import { ProtectionFund } from "./ProtectionFund";
+import { CompanyChecks } from "./CompanyChecks";
+import { canPrintCompanyChecks } from "../lib/company-checks";
 import { useState } from "react";
 import { Download, Printer, BarChart3 } from "lucide-react";
 import { type Workspace, dayKey, fullMoney, canManage } from "../lib/model";
@@ -34,7 +36,18 @@ const names: Record<Report, string> = {
   unwound: "Unwound deal history",
 };
 type Row = { id: string; cells: (string | number | null)[]; sale?: Sale };
-export function Accounting({
+export function Accounting(props: { ws: Workspace; run: RunCommand; busy: boolean; demo: boolean }) {
+  const [tab, setTab] = useState<"reports" | "checks">("reports");
+  const owner = canPrintCompanyChecks(props.ws.member.role);
+  return <>
+    {owner && <div className="ops-report-tabs checks-nav" aria-label="Accounting sections">
+      <button className={tab === "reports" ? "chosen" : ""} onClick={() => setTab("reports")}><BarChart3 size={16} /> Reports & claims fund</button>
+      <button className={tab === "checks" ? "chosen" : ""} onClick={() => setTab("checks")}><Printer size={16} /> Company checks</button>
+    </div>}
+    {owner && tab === "checks" ? <CompanyChecks role={props.ws.member.role} demo={props.demo} /> : <AccountingReports {...props} />}
+  </>;
+}
+function AccountingReports({
   ws,
   run,
   busy,

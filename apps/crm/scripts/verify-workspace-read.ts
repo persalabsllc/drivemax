@@ -43,6 +43,19 @@ async function main() {
     console.log(
       "Verified production owner name agrees across staff and membership.",
     );
+    // Company checks use a dedicated API rather than the general workspace.
+    // Verify the same scoped reads after PostgREST receives the migration.
+    for (const table of ["dmcrm_check_accounts", "dmcrm_checks"]) {
+      for (let attempt = 0; attempt < 11; attempt++) {
+        const result = await d.from(table).select("id", { head: true, count: "exact" }).eq("org_id", staff.org_id).limit(1);
+        if (!result.error) break;
+        if (result.error.code !== "PGRST205" || attempt === 10) throw new Error("Company check register REST verification failed");
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+    }
+    const commandProbe = await d.rpc("dmcrm_check_command", { p_org: staff.org_id, p_actor: staff.user_id, p_data: { action: "release_probe", id: "d5a1c100-0000-4000-8000-000000004444" } });
+    if (!commandProbe.error?.message.includes("check_invalid")) throw new Error("Company check command REST verification failed");
+    console.log("Verified company check register and command API readiness without issuing checks.");
     for (const role of ["owner", "finance", "sales"] as const) {
       let records: Awaited<ReturnType<typeof readWorkspaceRecords>> | undefined;
       for (let attempt = 0; attempt < 11; attempt++) {

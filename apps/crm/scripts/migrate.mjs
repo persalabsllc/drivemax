@@ -1,4 +1,5 @@
 import { verifyWebsiteActivity } from "./verify-website-activity.mjs";
+import { verifyCompanyChecks } from "./verify-company-checks.mjs";
 import { verifyCustomerGallery } from "./verify-customer-gallery.mjs";
 import { verifyLenderFinance } from "./verify-lender-finance.mjs";
 import { verifyWebsiteChat } from "./verify-website-chat.mjs";
@@ -169,6 +170,8 @@ if (process.env.VERCEL_ENV === "production") {
     );
     await verifyCustomerGallery(client);
     console.log("Verified customer gallery: private drafts, manager-only storage, and organization isolation; fixtures rolled back.");
+    await verifyCompanyChecks(client);
+    console.log("Verified owner-only company checks: exact amounts, unique numbering, retry protection, print confirmation and void history; fixtures rolled back.");
     await setupWorkflowScheduler(client);
     console.log(
       "Configured existing database scheduler: five-minute CRM email and device-notification checks.",

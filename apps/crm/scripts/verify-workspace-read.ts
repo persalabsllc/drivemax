@@ -53,8 +53,16 @@ async function main() {
         await new Promise((resolve) => setTimeout(resolve, 2000));
       }
     }
-    const commandProbe = await d.rpc("dmcrm_check_command", { p_org: staff.org_id, p_actor: staff.user_id, p_data: { action: "release_probe", id: "d5a1c100-0000-4000-8000-000000004444" } });
-    if (!commandProbe.error?.message.includes("check_invalid")) throw new Error("Company check command REST verification failed");
+    for (let attempt = 0; attempt < 11; attempt++) {
+      const commandProbe = await d.rpc("dmcrm_check_command", { p_org: staff.org_id, p_actor: staff.user_id, p_data: { action: "release_probe", id: "d5a1c100-0000-4000-8000-000000004444" } });
+      if (commandProbe.error?.message.includes("check_invalid")) break;
+      // Function metadata can become available after table metadata during DDL refresh.
+      if (commandProbe.error?.code === "PGRST202" && attempt < 10) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        continue;
+      }
+      throw new Error("Company check command REST verification failed: " + (commandProbe.error?.code ?? "no error") + " / " + (commandProbe.error?.message ?? "unexpected response"));
+    }
     console.log("Verified company check register and command API readiness without issuing checks.");
     for (const role of ["owner", "finance", "sales"] as const) {
       let records: Awaited<ReturnType<typeof readWorkspaceRecords>> | undefined;

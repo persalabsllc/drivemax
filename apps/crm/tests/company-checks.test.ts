@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { PDFDocument, PrintScaling, Duplex } from "pdf-lib";
-import { canPrintCompanyChecks, parseCheckAmount, checkAmountWords, checkCommandSchema, defaultCheckLayout } from "../lib/company-checks";
+import { blankBottomCheckLayout, formatCheckNumber, canPrintCompanyChecks, parseCheckAmount, checkAmountWords, checkCommandSchema, defaultCheckLayout } from "../lib/company-checks";
 import { buildCompanyCheckPdf, sampleCheck } from "../lib/company-check-pdf";
 
 test("check amounts preserve cents and reject rounding, exponent, negative and oversized input", () => {
@@ -12,6 +13,23 @@ test("check amounts preserve cents and reject rounding, exponent, negative and o
   assert.equal(checkAmountWords(125009), "One Thousand Two Hundred Fifty and 09/100");
   assert.equal(checkAmountWords(10000000), "One Hundred Thousand and 00/100");
   assert.equal(checkAmountWords(99999999), "Nine Hundred Ninety-Nine Thousand Nine Hundred Ninety-Nine and 99/100");
+});
+test("blank bottom stock previews branding and 00230 but cannot issue an incomplete check", async () => {
+  const logo = await readFile(new URL("../public/print-materials/drive-max-logo.png", import.meta.url));
+  const check = { ...sampleCheck, check_number: 230, reference: "INV-1048", category: "Vehicle reconditioning", payment_details: "Oil and filter service - $74.00\nBrake service - $225.00" };
+  assert.equal(formatCheckNumber(230), "00230");
+  assert.equal(formatCheckNumber(231), "00231");
+  assert.equal(formatCheckNumber(123456), "123456");
+  const pdf = await PDFDocument.load(await buildCompanyCheckPdf(check, blankBottomCheckLayout, true, logo));
+  assert.equal(pdf.getPageCount(), 1);
+  assert.deepEqual(pdf.getPage(0).getSize(), { width: 612, height: 792 });
+  assert.match(pdf.getTitle()!, /VOID.*00230.*pending/);
+  assert.equal(pdf.catalog.getOrCreateViewerPreferences().getPrintScaling(), PrintScaling.None);
+  await assert.rejects(buildCompanyCheckPdf(check, blankBottomCheckLayout, false, logo), /pending/);
+  await assert.rejects(buildCompanyCheckPdf(check, blankBottomCheckLayout, true), /logo/);
+  await assert.rejects(buildCompanyCheckPdf(check, { ...blankBottomCheckLayout, y: 18 }, true, logo), /outside/);
+  await assert.rejects(buildCompanyCheckPdf({ ...check, payment_details: "a\nb\nc\nd\ne\nf" }, blankBottomCheckLayout, true, logo), /five lines/);
+  await assert.rejects(buildCompanyCheckPdf({ ...check, payment_details: "W".repeat(500) }, blankBottomCheckLayout, true, logo), /long words/);
 });
 test("check printing is owner-only; full bank data, invalid dates and ambiguous amounts are rejected", () => {
   assert.equal(canPrintCompanyChecks("owner"), true);

@@ -1,5 +1,6 @@
 import { Duplex, PDFDocument, PrintScaling, StandardFonts, rgb } from "pdf-lib";
-import { checkAmountWords, checkDetailsSchema, checkLayoutSchema, defaultCheckLayout, type CheckDetails, type CheckField, type CheckLayout } from "./company-checks";
+import { checkAmountWords, checkDetailsSchema, checkLayoutSchema, defaultCheckLayout, formatCheckNumber, isBlankCheckStock, type CheckDetails, type CheckField, type CheckLayout } from "./company-checks";
+import { buildBlankBottomCheckPdf } from "./company-check-bottom-pdf";
 
 export type PrintableCheck = CheckDetails & { check_number: number; account_name: string; account_last4: string };
 // US Letter, top check (3.5 inches), two remittance stubs. All values in points.
@@ -15,11 +16,12 @@ export const sampleCheck: PrintableCheck = {
   payee: "SAMPLE PAYEE", amount_cents: 123456, check_date: "2026-01-15", memo: "Alignment sample only",
   address: "123 Sample Street\nSample City, NC 00000", check_number: 0, account_name: "Sample account", account_last4: "",
 };
-export async function buildCompanyCheckPdf(check: PrintableCheck, layout: CheckLayout = defaultCheckLayout, sample = false) {
-  checkDetailsSchema.parse({ payee: check.payee, amount_cents: check.amount_cents, check_date: check.check_date, memo: check.memo, address: check.address });
+export async function buildCompanyCheckPdf(check: PrintableCheck, layout: CheckLayout = defaultCheckLayout, sample = false, logo?: Uint8Array) {
+  checkDetailsSchema.parse({ payee: check.payee, amount_cents: check.amount_cents, check_date: check.check_date, memo: check.memo, address: check.address, reference: check.reference, category: check.category, payment_details: check.payment_details });
   checkLayoutSchema.parse(layout);
+  if (isBlankCheckStock(layout)) return buildBlankBottomCheckPdf(check, layout, sample, logo);
   const pdf = await PDFDocument.create();
-  pdf.setTitle(sample ? "VOID - Company check alignment sample" : `Drive Max check ${check.check_number}`);
+  pdf.setTitle(sample ? "VOID - Company check alignment sample" : `Drive Max check ${formatCheckNumber(check.check_number)}`);
   const prefs = pdf.catalog.getOrCreateViewerPreferences();
   prefs.setPrintScaling(PrintScaling.None);
   prefs.setDuplex(Duplex.Simplex);
@@ -50,11 +52,13 @@ export async function buildCompanyCheckPdf(check: PrintableCheck, layout: CheckL
       page.drawText(text, { x: 36, y: 792 - top - y, size: fitted, font: face });
     };
     draw("DRIVE MAX USED CARS LLC", 30, 11, true);
-    draw(`${i === 0 ? "Payee" : "Company"} copy  |  Check #${check.check_number}  |  ${date}`, 50);
+    draw(`${i === 0 ? "Payee" : "Company"} copy  |  Check #${formatCheckNumber(check.check_number)}  |  ${date}`, 50);
     draw(`Pay to: ${check.payee}`, 75, 11, true);
     draw(`Amount: $${amount}`, 97, 11, true);
     draw(`Memo: ${check.memo || "-"}`, 121);
     draw(`Account: ${check.account_name}${check.account_last4 ? " (ending " + check.account_last4 + ")" : ""}`, 143);
+    draw(`Reference: ${check.reference || "-"} | Category: ${check.category || "-"}`, 161, 9);
+    if (check.payment_details) draw(check.payment_details.replace(/\n/g, " "), 178, 8);
     if (sample) draw("VOID - ALIGNMENT SAMPLE - PRINT ON PLAIN PAPER", 180, 11, true);
   }
   if (sample) {

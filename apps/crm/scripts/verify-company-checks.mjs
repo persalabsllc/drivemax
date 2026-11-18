@@ -34,11 +34,14 @@ export async function verifyCompanyChecks(client) {
       await client.query("rollback to savepoint check_role");
     }
     const account = await cmd(setup);
-    const create = { action: "create", id: randomUUID(), account_id: account.id, check_number: 7001, details: { payee: "Fictional Payee", amount_cents: 123456, check_date: "2026-11-18", address: "", memo: "Rolled-back test" } };
+    const create = { action: "create", id: randomUUID(), account_id: account.id, check_number: 7001, details: { payee: "Fictional Payee", amount_cents: 123456, check_date: "2026-11-18", address: "", memo: "Rolled-back test", reference: "INV-1048", category: "Vehicle reconditioning", payment_details: "Parts and labor\nPaid in full" } };
     let c = await cmd(create);
     assert(c.amount_cents === 123456 && c.status === "prepared", "exact cents and unprinted status");
+    assert(c.reference === create.details.reference && c.category === create.details.category && c.payment_details === create.details.payment_details, "stub details are saved exactly");
     assert((await cmd(create)).id === c.id, "lost-response retries do not reserve twice");
     await rejects(() => cmd({ ...create, details: { ...create.details, amount_cents: 99 } }), "check_retry_conflict");
+    await rejects(() => cmd({ ...create, details: { ...create.details, payment_details: "Changed" } }), "check_retry_conflict");
+    await rejects(() => cmd({ ...setup, revision: 2, next_number: 7002, layout: { ...layout, stock: "blank_bottom_1002" } }), "check_stock_in_use");
     await rejects(() => cmd({ ...create, id: randomUUID() }), "check_number_changed");
     await rejects(() => cmd({ action: "mark_printed", id: c.id, revision: c.revision }), "check_pdf_required");
     await rejects(() => cmd({ ...setup, revision: 1 }), "check_stale");
@@ -60,5 +63,9 @@ export async function verifyCompanyChecks(client) {
     assert(Number((await one("select count(*) n from dmcrm_check_events where check_id=$1", [c.id])).n) === 5, "creation, copies, print and void are audited");
     await rejects(() => cmd({ ...create, id: randomUUID(), check_number: 7010, details: { ...create.details, amount_cents: 0 } }), "amount_cents");
     assert((await one("select next_number from dmcrm_check_accounts where id=$1", [account.id])).next_number === 7010, "failed writes do not consume a number");
+    const pending = await cmd({ ...setup, id: randomUUID(), name: "Pending blank stock", next_number: 230, layout: { ...layout, stock: "blank_bottom_1002" } });
+    await rejects(() => cmd({ ...create, id: randomUUID(), account_id: pending.id, check_number: 230 }), "check_bank_details_pending");
+    assert((await one("select next_number from dmcrm_check_accounts where id=$1", [pending.id])).next_number === 230, "pending bank setup preserves the starting number");
+    assert(Number((await one("select count(*) n from dmcrm_checks where account_id=$1", [pending.id])).n) === 0, "pending bank setup issues no checks");
   } finally { await client.query("rollback to savepoint company_checks_verification"); }
 }

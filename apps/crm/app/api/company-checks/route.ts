@@ -1,10 +1,17 @@
 import { db, session } from "../../../lib/server";
-import { canPrintCompanyChecks, checkCommandSchema, checkErrors, type CheckAccount, type CompanyCheck } from "../../../lib/company-checks";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { canPrintCompanyChecks, checkCommandSchema, checkErrors, formatCheckNumber, isBlankCheckStock, type CheckAccount, type CompanyCheck } from "../../../lib/company-checks";
 import { buildCompanyCheckPdf, sampleCheck } from "../../../lib/company-check-pdf";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { "Cache-Control": "private, no-store" } });
+const checkLogo = () => readFile(join(process.cwd(), "public/print-materials/drive-max-logo.png"));
+const pdfResponse = (bytes: Uint8Array, number: number, extra: Record<string, string> = {}) => new Response(new Uint8Array(bytes), { headers: {
+  "Content-Type": "application/pdf", "Content-Disposition": `inline; filename="Drive-Max-Check-${formatCheckNumber(number)}.pdf"`,
+  "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", ...extra,
+} });
 
 export async function GET(request: Request) {
   try {
@@ -41,10 +48,21 @@ export async function POST(request: Request) {
     const parsed = checkCommandSchema.safeParse(JSON.parse(raw));
     if (!parsed.success) return json({ error: parsed.error.issues[0]?.message || "Review the check information." }, 400);
     const command = parsed.data;
+    // Preview is read-only: it neither creates a ledger entry nor consumes a number.
+    if (command.action === "preview") {
+      const result = await db().from("dmcrm_check_accounts").select("*").eq("org_id", s.org_id).eq("id", command.account_id).maybeSingle();
+      if (result.error) return json({ error: "Unable to load the check template." }, 503);
+      const account = result.data as CheckAccount | null;
+      if (!account) return json({ error: checkErrors.check_account_missing }, 404);
+      try {
+        const bytes = await buildCompanyCheckPdf({ ...command.details, check_number: account.next_number, account_name: account.name, account_last4: account.last4 }, account.layout, true, await checkLogo());
+        return pdfResponse(bytes, account.next_number, { "X-Check-Preview": "true" });
+      } catch (e) { return json({ error: e instanceof Error ? e.message : "Unable to preview this check." }, 400); }
+    }
     let pdf: Uint8Array | undefined;
     // Validate the complete printable payload before reserving a number or logging a print.
     if (command.action === "save_account") {
-      try { await buildCompanyCheckPdf(sampleCheck, command.layout, true); }
+      try { await buildCompanyCheckPdf(sampleCheck, command.layout, true, await checkLogo()); }
       catch (e) { return json({ error: e instanceof Error ? e.message : "Invalid check alignment." }, 400); }
     }
     if (command.action === "pdf" || command.action === "create") {
@@ -60,6 +78,7 @@ export async function POST(request: Request) {
       if (accountResult.error) return json({ error: "Unable to load check alignment." }, 503);
       const account = accountResult.data as CheckAccount | null;
       if (!account) return json({ error: checkErrors.check_account_missing }, 404);
+      if (isBlankCheckStock(account.layout)) return json({ error: checkErrors.check_bank_details_pending }, 409);
       const printable = check ?? (command.action === "create" ? { ...command.details, check_number: command.check_number, account_name: account.name, account_last4: account.last4 } : null);
       if (!printable) return json({ error: checkErrors.check_missing }, 404);
       try { pdf = await buildCompanyCheckPdf(printable, account.layout); }
@@ -70,11 +89,9 @@ export async function POST(request: Request) {
       const known = Object.keys(checkErrors).find((key) => error.message.includes(key));
       return json({ error: known ? checkErrors[known] : "The change could not be saved. Refresh before retrying." }, known ? 409 : 503);
     }
-    if (command.action === "pdf" && pdf) return new Response(new Uint8Array(pdf), { headers: {
-      "Content-Type": "application/pdf", "Content-Disposition": `inline; filename="Drive-Max-Check-${data.check_number}.pdf"`,
-      "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff",
+    if (command.action === "pdf" && pdf) return pdfResponse(pdf, data.check_number, {
       "X-Check-Revision": String(data.revision), "X-Check-Pdf-Count": String(data.pdf_count),
-    } });
+    });
     return json(data);
   } catch (e) {
     return json({ error: e instanceof SyntaxError ? "Invalid request." : "The check could not be saved. Refresh the register before retrying." }, e instanceof SyntaxError ? 400 : 503);

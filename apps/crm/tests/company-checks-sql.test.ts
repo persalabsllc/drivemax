@@ -13,6 +13,7 @@ test("check ledger: owner isolation, retries, number reservation, revisions, pri
       insert into dmcrm_members values('d5a1c100-0000-4000-8000-000000000001','d5a1c100-0000-4000-8000-000000000099',true,'owner');
       insert into dmcrm_staff select * from dmcrm_members;`);
     await db.exec(await readFile(new URL("../db/044_company_checks.sql", import.meta.url), "utf8"));
+    await db.exec(await readFile(new URL("../db/045_company_check_bottom_template.sql", import.meta.url), "utf8"));
     await db.exec("begin");
     await verifyCompanyChecks(db);
     await db.exec("rollback");

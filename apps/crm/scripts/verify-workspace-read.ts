@@ -47,9 +47,9 @@ async function main() {
     // Verify the same scoped reads after PostgREST receives the migration.
     for (const table of ["dmcrm_check_accounts", "dmcrm_checks"]) {
       for (let attempt = 0; attempt < 11; attempt++) {
-        const result = await d.from(table).select("id", { head: true, count: "exact" }).eq("org_id", staff.org_id).limit(1);
+        const result = await d.from(table).select(table === "dmcrm_checks" ? "id,reference,category,payment_details" : "id,layout,next_number", { head: true, count: "exact" }).eq("org_id", staff.org_id).limit(1);
         if (!result.error) break;
-        if (result.error.code !== "PGRST205" || attempt === 10) throw new Error("Company check register REST verification failed");
+        if (!["PGRST205", "PGRST204"].includes(result.error.code) || attempt === 10) throw new Error("Company check register REST verification failed");
         await new Promise((resolve) => setTimeout(resolve, 2000));
       }
     }

@@ -17,28 +17,28 @@ export class PaymentRequestError extends Error {
   constructor(message: string, readonly status: number) { super(message); }
 }
 
-function scopedPayments(s: Actor, columns: typeof privateColumns | typeof receiptColumns, count = false) {
+function scopedPayments<T extends Payment>(s: Actor, columns: typeof privateColumns | typeof receiptColumns, count = false) {
   if (!canAccessView(s.role, "Payments")) throw new PaymentRequestError("Staff access is required.", 403);
   let query = db().from("dmcrm_card_payments")
-    .select(columns, count ? { count: "exact" } : undefined).eq("org_id", s.org_id);
+    .select<string, T>(columns, count ? { count: "exact" } : undefined).eq("org_id", s.org_id);
   if (!canDesk(s.role)) query = query.eq("employee_id", s.staff_id);
   return query;
 }
 
 export async function listPayments(s: Actor, page: number) {
-  const result = await scopedPayments(s, receiptColumns, true)
+  const result = await scopedPayments<Payment>(s, receiptColumns, true)
     .order("created_at", { ascending: false }).order("id")
     .range(page * pageSize, (page + 1) * pageSize - 1);
   if (result.error) throw new Error("Payment register unavailable");
   const key = getStripePublishableKey();
-  return { payments: result.data as Payment[], total: result.count ?? 0, configured: !!key,
+  return { payments: result.data, total: result.count ?? 0, configured: !!key,
     livemode: key ? key.startsWith("pk_live_") : null };
 }
 
 export async function getScopedPayment(s: Actor, id: string): Promise<Payment | null> {
-  const result = await scopedPayments(s, receiptColumns).eq("id", id).maybeSingle();
+  const result = await scopedPayments<Payment>(s, receiptColumns).eq("id", id).maybeSingle();
   if (result.error) throw new Error("Payment unavailable");
-  return result.data as Payment | null;
+  return result.data;
 }
 
 function publicPayment(row: PaymentRow): Payment {
@@ -85,10 +85,10 @@ export async function runPaymentCommand(s: Actor, command: PaymentCommand) {
   let row: PaymentRow;
   if (command.action === "create") row = await reserve(s, command);
   else {
-    const result = await scopedPayments(s, privateColumns).eq("id", command.id).maybeSingle();
+    const result = await scopedPayments<PaymentRow>(s, privateColumns).eq("id", command.id).maybeSingle();
     if (result.error) throw new Error("Payment unavailable");
     if (!result.data) throw new PaymentRequestError("Payment not found.", 404);
-    row = result.data as PaymentRow;
+    row = result.data;
   }
   if (command.action === "resume" && row.employee_id !== s.staff_id)
     throw new PaymentRequestError("The employee who started this payment can resume card entry.", 403);
@@ -111,10 +111,10 @@ export async function runPaymentCommand(s: Actor, command: PaymentCommand) {
 }
 
 export async function reconcileStripeWebhook(orgId: string, paymentId: string, intentId: string) {
-  const result = await db().from("dmcrm_card_payments").select(privateColumns)
+  const result = await db().from("dmcrm_card_payments").select<string, PaymentRow>(privateColumns)
     .eq("org_id", orgId).eq("id", paymentId).eq("stripe_intent_id", intentId).maybeSingle();
   if (result.error) throw new Error("Payment lookup failed");
-  const row = result.data as PaymentRow | null;
+  const row = result.data;
   if (!row || row.status === "paid" || row.status === "canceled") return;
   await sync(row, await retrieveStripeIntent(intentId));
 }

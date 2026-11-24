@@ -35,6 +35,13 @@ const intentSchema = z.object({
   status: statuses,
   amount: z.number().int(),
   amount_received: z.number().int(),
+  amount_capturable: z.number().int().optional(),
+  capture_method: z.string().optional(),
+  payment_method_types: z.array(z.string()).optional(),
+  payment_method_options: z.object({
+    card: z.object({ capture_method: z.string().nullish() }).nullish(),
+  }).nullish(),
+  last_payment_error: z.object({}).nullish(),
   currency: z.string(),
   livemode: z.boolean(),
   metadata: z.record(z.string(), z.string()),
@@ -110,6 +117,28 @@ export async function retrieveStripeIntent(id: string) {
   const intent = await stripeRequest(`/${id}?expand%5B%5D=latest_charge`);
   if (intent.id !== id) throw new Error("Stripe returned a different payment.");
   return intent;
+}
+
+// All checkouts created by this CRM use automatically captured cards. Other
+// methods can be canceled during processing, and canceling an authorization
+// releases held funds. Require the same configuration before canceling.
+export function hasUnsettledFunds(intent: StripePaymentIntent) {
+  return intent.amount_received !== 0 || intent.amount_capturable !== 0 ||
+    !!intent.latest_charge && (intent.latest_charge.amount_captured !== 0 || intent.latest_charge.paid);
+}
+
+export async function cancelStripeIntent(intent: StripePaymentIntent) {
+  if (!["requires_payment_method", "requires_confirmation", "requires_action"].includes(intent.status) ||
+      hasUnsettledFunds(intent) || intent.capture_method !== "automatic" ||
+      intent.payment_method_options?.card?.capture_method === "manual" ||
+      intent.payment_method_types?.length !== 1 || intent.payment_method_types[0] !== "card") {
+    throw new Error("Stripe has not confirmed an unpaid card attempt eligible for cancellation.");
+  }
+  const canceled = await stripeRequest(`/${intent.id}/cancel`,
+    new URLSearchParams({ "expand[]": "latest_charge", cancellation_reason: "abandoned" }),
+    `dmcrm-payment-cancel-${intent.id}`);
+  if (canceled.id !== intent.id) throw new Error("Stripe returned a different payment.");
+  return canceled;
 }
 
 export function inspectStripeIntent(payment: StripePaymentBinding, intent: StripePaymentIntent) {

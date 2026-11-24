@@ -75,7 +75,7 @@ The initial workspace contains no real customer data. Existing website leads and
 
 ### Customer card payments
 
-Staff open **Payments** in the CRM and enter the payer, purpose, and USD amount. They can select a vehicle from inventory or enter a stock number or reference manually, with an optional vehicle or item description. Manual entries appear on the receipt and do not create inventory. The CRM records the signed-in employee's ID. The customer enters their card in Stripe's embedded payment form. The CRM verifies the captured amount with Stripe before opening the Drive Max receipt for printing. Staff can return to the payment register to check a pending payment or reprint its receipt.
+Staff open **Payments** in the CRM and enter the payer, purpose, and USD amount. They can select a vehicle from inventory or enter a stock number or reference manually, with an optional vehicle or item description. Manual entries appear on the receipt and do not create inventory. The CRM records the signed-in employee's ID. The customer enters their card in Stripe's embedded payment form. The CRM verifies the captured amount with Stripe before opening the Drive Max receipt for printing. In **Payment history**, the collecting employee, a manager, or an owner can edit the amount or remove an awaiting, failed, or canceled attempt. Editing preserves the payer, stock or reference, purpose, and employee. The collecting employee can then resume card entry at the corrected amount. Paid entries retain their printable receipts.
 
 Set `STRIPE_SECRET_KEY` and `STRIPE_PUBLISHABLE_KEY` from the same Drive Max Stripe account and mode on the **drive-max-crm** Vercel project and redeploy. Use a matching sandbox pair for test payments. The receipt identifies them as tests.
 

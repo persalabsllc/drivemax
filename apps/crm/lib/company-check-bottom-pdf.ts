@@ -83,13 +83,15 @@ export async function buildBlankBottomCheckPdf(check: PrintableCheck, layout: Ch
   text("$", 460, s + 98, 12, 11, true);
   line(92, s + 114, 450); line(477, s + 114, 580);
   line(30, s + 141, 580);
-  text("MEMO", 30, s + 194, 30, 7, true, muted);
-  line(59, s + 205, 320); line(370, s + 195, 580);
-  text("AUTHORIZED SIGNATURE", 370, s + 198, 210, 6.5, false, muted);
+  const bottomRuleTop = 195;
+  text("MEMO", 30, s + bottomRuleTop - 11, 30, 7, true, muted);
+  line(59, s + bottomRuleTop, 320);
+  line(370, s + bottomRuleTop, 580);
+  text("AUTHORIZED SIGNATURE", 370, s + bottomRuleTop + 3, 210, 6.5, false, muted);
   const boxes: Record<CheckField, { x: number; top: number; width: number; size: number }> = {
     date: { x: 470, top: 69, width: 110, size: 10 }, payee: { x: 92, top: 96, width: 358, size: 11 },
     amount: { x: 477, top: 96, width: 103, size: 11 }, words: { x: 30, top: 125, width: 550, size: 9 },
-    address: { x: 92, top: 148, width: 270, size: 8.5 }, memo: { x: 59, top: 191, width: 261, size: 9 },
+    address: { x: 92, top: 148, width: 270, size: 8.5 }, memo: { x: 59, top: bottomRuleTop - 14, width: 261, size: 9 },
   };
   const values: Record<CheckField, string> = { date, payee: check.payee, amount: `**${amount}**`, words: checkAmountWords(check.amount_cents) + " Dollars ***", address: check.address, memo: check.memo };
   for (const field of Object.keys(boxes) as CheckField[]) {

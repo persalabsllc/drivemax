@@ -106,6 +106,7 @@ export function Payments({ ws, demo }: { ws: Workspace; demo: boolean }) {
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState<Attempt | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [manualEntry, setManualEntry] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const lock = useRef(false);
   const mounted = useRef(false);
@@ -113,6 +114,7 @@ export function Payments({ ws, demo }: { ws: Workspace; demo: boolean }) {
   const employee = ws.member.staff_id || "";
   const storageKey = `dmcrm:payment:${ws.org.id}:${ws.member.id}`;
   const stock = ws.inventory;
+  const manual = manualEntry || stock.length === 0;
   const paused = busy || initializing;
 
   const load = useCallback(async (target: number) => {
@@ -202,13 +204,19 @@ export function Payments({ ws, demo }: { ws: Workspace; demo: boolean }) {
     const [whole, fraction = ""] = dollars.split(".");
     const cents = Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
     if (cents < 50 || cents > 99999999) { setError("Enter an amount from $0.50 to $999,999.99."); return; }
+    const reference = String(form.get("reference") || "").trim();
+    const description = String(form.get("description") || "").trim();
+    if (manual && !reference) { setError("Enter a stock number or payment reference."); return; }
+    const stockFields = manual
+      ? { manual_stock_number: reference, ...(description ? { manual_vehicle_name: description } : {}) }
+      : { inventory_id: String(form.get("stock") || "") };
     void run(async () => {
       const id = attemptId.current ?? crypto.randomUUID();
       attemptId.current = id;
       remember(storageKey, id);
       try {
         const next = await command({
-          action: "create", id, employee_id: employee, inventory_id: String(form.get("stock")),
+          action: "create", id, employee_id: employee, ...stockFields,
           payer_name: String(form.get("payer") || "").trim(), purpose: String(form.get("purpose") || "").trim(), amount_cents: cents,
         });
         accept(next);
@@ -266,7 +274,7 @@ export function Payments({ ws, demo }: { ws: Workspace; demo: boolean }) {
 
   function close() {
     remember(storageKey, null); attemptId.current = null;
-    setAttempt(null); setPendingId(null); setError("");
+    setAttempt(null); setPendingId(null); setManualEntry(false); setError("");
     if (!demo) void run(() => load(0));
   }
 
@@ -288,7 +296,10 @@ export function Payments({ ws, demo }: { ws: Workspace; demo: boolean }) {
         <div className="dm-payment-summary">
           <div><span>Amount</span><strong>{amount(active.amount_cents)}</strong></div>
           <div><span>Customer</span><b>{active.payer_name}</b></div>
-          <div><span>Stock #{active.stock_number}</span><b>{active.vehicle_name}</b></div>
+          <div>
+            <span>{active.inventory_id ? "Stock number" : "Stock number or reference"}</span><b>{active.stock_number}</b>
+            {active.vehicle_name && <span>{active.vehicle_name}</span>}
+          </div>
           <div><span>Payment for</span><b>{active.purpose}</b></div>
           <div className="dm-payment-collected"><span>Collected by</span><b>{active.employee_name}</b><small>Employee ID {active.employee_id}</small></div>
         </div>
@@ -310,17 +321,26 @@ export function Payments({ ws, demo }: { ws: Workspace; demo: boolean }) {
         <div className="dm-payment-fields">
           <label>Customer name<input name="payer" autoComplete="off" maxLength={120} required /></label>
           <label>Amount (USD)<input name="amount" type="number" step="0.01" min="0.50" max="999999.99" inputMode="decimal" placeholder="0.00" autoComplete="off" required /></label>
-          <label>Stock number<select name="stock" defaultValue="" required>
-            <option value="" disabled>{stock.length ? "Select a vehicle" : "No inventory available"}</option>
-            {stock.map(v => <option key={v.id} value={v.id}>{v.stock_number} · {vehicleName(v)}{v.status === "sold" ? " (sold)" : v.status === "archived" ? " (archived)" : ""}</option>)}
-          </select></label>
+          <div className="dm-payment-source">
+            {manual ? <label>Stock number or reference<input name="reference" maxLength={250} autoComplete="off" required /></label> :
+              <label>Stock number<select name="stock" defaultValue="" required>
+                <option value="" disabled>Select a vehicle</option>
+                {stock.map(v => <option key={v.id} value={v.id}>{v.stock_number} · {vehicleName(v)}{v.status === "sold" ? " (sold)" : v.status === "archived" ? " (archived)" : ""}</option>)}
+              </select></label>}
+            {stock.length > 0 && <button type="button" className="text-btn" disabled={paused} onClick={() => setManualEntry(!manual)}>
+              {manual ? "Select from inventory" : "Enter stock or reference manually"}
+            </button>}
+          </div>
           <label>Payment for<input name="purpose" maxLength={160} list="dm-payment-purposes" placeholder="e.g. Vehicle deposit" required />
             <datalist id="dm-payment-purposes"><option value="Vehicle deposit" /><option value="Down payment" /><option value="Vehicle balance" /></datalist>
           </label>
+          {manual && <label className="dm-payment-description">Vehicle or item description (optional)
+            <input name="description" maxLength={160} autoComplete="off" />
+          </label>}
         </div>
         <div className="dm-payment-footer">
           <div className="dm-payment-collected"><span>Collected by</span><b>{ws.member.name}</b><small>Employee ID {employee || "unavailable"}</small></div>
-          <button type="submit" className="btn primary" disabled={paused || !employee || !register?.configured || demo || !stock.length}>
+          <button type="submit" className="btn primary" disabled={paused || !employee || !register?.configured || demo}>
             <CreditCard size={16} />{busy ? "Please wait…" : "Continue to card entry"}
           </button>
         </div>
@@ -333,10 +353,10 @@ export function Payments({ ws, demo }: { ws: Workspace; demo: boolean }) {
       </div>
       {register?.payments.length ? <>
         <div className="dm-payment-scroll"><table className="dm-payment-table">
-          <thead><tr><th>Customer / date</th><th>Stock / purpose</th><th>Employee</th><th>Amount</th><th>Status</th><th><span className="dm-payment-sr">Actions</span></th></tr></thead>
+          <thead><tr><th>Customer / date</th><th>Stock or reference / purpose</th><th>Employee</th><th>Amount</th><th>Status</th><th><span className="dm-payment-sr">Actions</span></th></tr></thead>
           <tbody>{register.payments.map(p => <tr key={p.id}>
             <td><strong>{p.payer_name}</strong><small>{date.format(new Date(p.paid_at || p.created_at))}</small></td>
-            <td><strong>#{p.stock_number}</strong><small>{p.purpose}</small></td>
+            <td><strong>{p.stock_number}</strong>{p.vehicle_name && <small>{p.vehicle_name}</small>}<small>{p.purpose}</small></td>
             <td>{p.employee_name}</td>
             <td className="dm-payment-value">{amount(p.amount_cents)}</td>
             <td><span className={`dm-payment-status ${p.status}`}>{statusText[p.status]}</span>{p.livemode === false && <small>Test mode</small>}</td>

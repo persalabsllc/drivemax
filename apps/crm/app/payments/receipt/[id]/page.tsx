@@ -62,8 +62,8 @@ export default async function PaymentReceipt({
           <div><dt>Payment date</dt><dd><time dateTime={payment.paid_at}>{paidDate.format(new Date(payment.paid_at))}</time></dd></div>
           <div><dt>Payment for</dt><dd>{payment.purpose}</dd></div>
           <div><dt>Payment method</dt><dd>{card}{payment.card_last4 && ` ending in ${payment.card_last4}`}</dd></div>
-          <div><dt>Stock number</dt><dd>{payment.stock_number}</dd></div>
-          <div><dt>Vehicle</dt><dd>{payment.vehicle_name}</dd></div>
+          <div><dt>{payment.inventory_id ? "Stock number" : "Stock number / reference"}</dt><dd>{payment.stock_number}</dd></div>
+          {payment.vehicle_name && <div><dt>{payment.inventory_id ? "Vehicle" : "Vehicle / item"}</dt><dd>{payment.vehicle_name}</dd></div>}
           <div><dt>Received by</dt><dd>{payment.employee_name}</dd></div>
           <div><dt>Employee ID</dt><dd className={styles.identifier}>{payment.employee_id}</dd></div>
         </dl>

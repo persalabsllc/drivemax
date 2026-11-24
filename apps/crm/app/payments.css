@@ -5,6 +5,9 @@
 .dm-payment-fields, .dm-payment-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 17px 22px; }
 .dm-payment-fields label { margin: 0; font-size: 14px; }
 .dm-payment-fields input, .dm-payment-fields select { font-size: 15px; margin: 0; }
+.dm-payment-source { min-width: 0; }
+.dm-payment-source .text-btn { margin-top: 7px; min-height: 26px; padding: 0; }
+.dm-payment-description { grid-column: 1 / -1; }
 .dm-payment-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--line); }
 .dm-payment-summary { padding: 17px 20px; border: 1px solid var(--line); border-radius: 8px; background: #f8fafc; }
 .dm-payment-summary > div, .dm-payment-collected { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; overflow-wrap: anywhere; }

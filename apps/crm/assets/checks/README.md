@@ -18,6 +18,16 @@ The font is not a certification of the printer, toner or bank acceptance.
 Physical printing must preserve Actual size and use appropriate MICR toner.
 The bank-number band does not move with payee/memo alignment controls.
 
+For the bottom-of-sheet stock, the MICR baseline is 20.25pt (9/32 inch)
+above the physical bottom edge. With this font at 18pt, visible glyph ink
+ends below 28.66pt, keeping all characters inside the 13.5–31.5pt MICR print
+strip while clearing a 1/4-inch printer margin by 2.25pt. The former 13.5pt
+baseline could clip the bottoms of digits on printers with that margin.
+Do not move the line to match the security background's colored border.
+Placement and bottom-of-sheet margin reference: TROY MICR Basics Handbook,
+sections 1-5 and 3-1:
+https://8648589.fs1.hubspotusercontent-na1.net/hubfs/8648589/What-Is-MICR/currentMICRBasicsHandbook.pdf
+
 Banking is read only on the server from `DMCRM_CHECK_BANK`, bound to the exact
 organization/account UUID and masked account suffix. It is not stored in source,
 general account responses or audit details. Production release checks render a

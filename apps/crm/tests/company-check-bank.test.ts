@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { PDFDocument, PrintScaling, Duplex } from "pdf-lib";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
+import fontkit from "@pdf-lib/fontkit";
 import { bankConfigSchema, configuredCheckBank } from "../lib/company-check-bank-config";
 import { checkMicrFields, micrGeometry } from "../lib/company-check-micr";
 import { blankBottomCheckLayout } from "../lib/company-checks";
@@ -55,14 +56,14 @@ test("invalid configuration fails closed, including malformed JSON and invalid r
 });
 
 test("MICR uses fixed pitch and conventional routing, auxiliary on-us and account field positions", () => {
-  assert.deepEqual(micrGeometry, { size: 18, pitch: 9, baseline: 13.5, rightInset: 22.5 });
+  assert.deepEqual(micrGeometry, { size: 18, pitch: 9, baseline: 20.25, rightInset: 22.5 });
   const fields = checkMicrFields({ routing: config.routing, account: config.account }, 230);
   assert.deepEqual(fields.map((f) => [f.text, f.endPosition]), [
     ["C00230C", 46], ["A021000021A", 33], ["000123456789C", 14],
   ]);
   assert.equal(fields[1].endPosition + fields[1].text.length - 1, 43);
   for (const field of fields) {
-    assert.equal(field.y, 13.5);
+    assert.equal(field.y, 20.25);
     assert.ok(field.x > 0);
     const endInk = field.text.endsWith("A") ? 1731 : 1740;
     const rightInk = field.x + (field.text.length - 1) * 9 + endInk / 4096 * 18;
@@ -72,6 +73,29 @@ test("MICR uses fixed pitch and conventional routing, auxiliary on-us and accoun
     assert.throws(() => checkMicrFields({ routing: config.routing, account: config.account }, number), /pending/);
   }
   assert.throws(() => checkMicrFields({ routing: "021000022", account: config.account }, 230), /pending/);
+});
+
+test("MICR glyph ink clears the bottom printer margin and stays in the scanning strip", async () => {
+  const { logo, bank } = await assets();
+  const face = fontkit.create(bank.font);
+  // Exercise every digit and both printed control symbols in the generated PDF.
+  const fixtureBank = { ...bank, account: "012345678901" };
+  const fixtureCheck = { ...check, check_number: 987654321, account_last4: "8901" };
+  for (const sample of [false, true]) {
+    const items = await printedText(await buildCompanyCheckPdf(fixtureCheck, blankBottomCheckLayout, sample, logo, fixtureBank));
+    for (const field of checkMicrFields({ routing: fixtureBank.routing, account: fixtureBank.account }, fixtureCheck.check_number)) {
+      const item = items.find((item) => item.str === field.text);
+      assert.ok(item, "MICR field is present in the generated PDF");
+      const size = item.transform[3], baseline = item.transform[5];
+      for (const character of field.text) {
+        const { minY, maxY } = face.glyphForCodePoint(character.codePointAt(0)!).bbox;
+        const bottom = baseline + minY / face.unitsPerEm * size;
+        const top = baseline + maxY / face.unitsPerEm * size;
+        assert.ok(bottom >= 18 + 2.25, `${character} has clearance above a 1/4-inch printer margin`);
+        assert.ok(top <= 31.5, `${character} stays below the upper edge of the MICR scanning strip`);
+      }
+    }
+  }
 });
 
 test("configured blank-stock PDF embeds correct MICR and removes preview markings only for live checks", async () => {
@@ -91,7 +115,7 @@ test("configured blank-stock PDF embeds correct MICR and removes preview marking
   for (const field of checkMicrFields({ routing: bank.routing, account: bank.account }, 230)) {
     const item = items.find((item) => item.str === field.text);
     assert.ok(item, "MICR field is present in the actual PDF");
-    assert.equal(item.transform[5], 13.5);
+    assert.equal(item.transform[5], 20.25);
     assert.ok(Math.abs(item.width - field.text.length * 9) < .001);
     assert.ok(Math.abs(item.transform[4] - field.x) < .001);
   }

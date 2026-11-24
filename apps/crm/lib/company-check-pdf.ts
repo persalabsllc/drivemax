@@ -1,6 +1,7 @@
 import { Duplex, PDFDocument, PrintScaling, StandardFonts, rgb } from "pdf-lib";
 import { checkAmountWords, checkDetailsSchema, checkLayoutSchema, defaultCheckLayout, formatCheckNumber, isBlankCheckStock, type CheckDetails, type CheckField, type CheckLayout } from "./company-checks";
 import { buildBlankBottomCheckPdf } from "./company-check-bottom-pdf";
+import type { MicrBank } from "./company-check-micr";
 
 export type PrintableCheck = CheckDetails & { check_number: number; account_name: string; account_last4: string };
 // US Letter, top check (3.5 inches), two remittance stubs. All values in points.
@@ -16,10 +17,10 @@ export const sampleCheck: PrintableCheck = {
   payee: "SAMPLE PAYEE", amount_cents: 123456, check_date: "2026-01-15", memo: "Alignment sample only",
   address: "123 Sample Street\nSample City, NC 00000", check_number: 0, account_name: "Sample account", account_last4: "",
 };
-export async function buildCompanyCheckPdf(check: PrintableCheck, layout: CheckLayout = defaultCheckLayout, sample = false, logo?: Uint8Array) {
+export async function buildCompanyCheckPdf(check: PrintableCheck, layout: CheckLayout = defaultCheckLayout, sample = false, logo?: Uint8Array, bank?: MicrBank) {
   checkDetailsSchema.parse({ payee: check.payee, amount_cents: check.amount_cents, check_date: check.check_date, memo: check.memo, address: check.address, reference: check.reference, category: check.category, payment_details: check.payment_details });
   checkLayoutSchema.parse(layout);
-  if (isBlankCheckStock(layout)) return buildBlankBottomCheckPdf(check, layout, sample, logo);
+  if (isBlankCheckStock(layout)) return buildBlankBottomCheckPdf(check, layout, sample, logo, bank);
   const pdf = await PDFDocument.create();
   pdf.setTitle(sample ? "VOID - Company check alignment sample" : `Drive Max check ${formatCheckNumber(check.check_number)}`);
   const prefs = pdf.catalog.getOrCreateViewerPreferences();

@@ -45,7 +45,7 @@ export const checkCommandSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("void"), id: z.uuid(), revision: z.number().int().min(1), reason: printable(240).min(3, "Enter a reason for voiding this check.") }).strict(),
 ]);
 export type CheckCommand = z.infer<typeof checkCommandSchema>;
-export type CheckAccount = { id: string; name: string; last4: string; next_number: number; revision: number; layout: CheckLayout };
+export type CheckAccount = { id: string; name: string; last4: string; next_number: number; revision: number; layout: CheckLayout; bank_ready?: boolean };
 export type CompanyCheck = CheckDetails & {
   id: string; account_id: string; account_name: string; account_last4: string; check_number: number;
   status: "prepared" | "printed" | "voided"; revision: number; pdf_count: number;
@@ -74,6 +74,7 @@ export function checkAmountWords(cents: number): string {
   return words + " and " + String(cents % 100).padStart(2, "0") + "/100";
 }
 export const checkErrors: Record<string, string> = {
+  check_bank_account_locked: "This account’s bank details are configured. Its account digits cannot be changed here.",
   check_bank_details_pending: "Bank account and routing details are pending. You can preview the blank-stock template without reserving a check number.",
   check_stock_in_use: "Checks already use this account's paper format. Create a separate account entry to change formats.",
   check_owner_required: "Only the dealership owner can manage company checks.",

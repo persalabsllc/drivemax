@@ -1,17 +1,17 @@
 import { Duplex, PDFDocument, PrintScaling, StandardFonts, rgb } from "pdf-lib";
 import { checkAmountWords, checkBrand, checkErrors, formatCheckNumber, type CheckField, type CheckLayout } from "./company-checks";
 import type { PrintableCheck } from "./company-check-pdf";
+import { checkMicrFields, micrGeometry, type MicrBank } from "./company-check-micr";
 
 // VersaCheck #1002: Letter, perforations at 4 and 7.5 inches; 3.5-inch bottom check.
 // All artwork stays above the bottom 5/8-inch MICR clear band (page top 747pt).
 export const bottomCheckGeometry = { width: 612, height: 792, stubs: [36, 288], checkTop: 540, micrClearTop: 747 } as const;
-export async function buildBlankBottomCheckPdf(check: PrintableCheck, layout: CheckLayout, sample: boolean, logo?: Uint8Array) {
-  // No guessed routing/account numbers or substitute MICR font. Enable live output only
-  // after a later, verified bank/MICR setup is implemented. Previews never reserve numbers.
-  if (!sample) throw Error(checkErrors.check_bank_details_pending);
+export async function buildBlankBottomCheckPdf(check: PrintableCheck, layout: CheckLayout, sample: boolean, logo?: Uint8Array, bank?: MicrBank) {
+  if (!sample && !bank) throw Error(checkErrors.check_bank_details_pending);
+  if (bank && (check.account_last4.length !== 4 || !bank.account.endsWith(check.account_last4))) throw Error(checkErrors.check_bank_account_locked);
   if (!logo) throw Error("The Drive Max logo could not be loaded. Refresh and try again.");
   const pdf = await PDFDocument.create();
-  pdf.setTitle(`VOID - Drive Max check ${formatCheckNumber(check.check_number)} - bank details pending`);
+  pdf.setTitle(`${sample ? "VOID - " : ""}Drive Max check ${formatCheckNumber(check.check_number)}${!bank ? " - bank details pending" : ""}`);
   const prefs = pdf.catalog.getOrCreateViewerPreferences();
   prefs.setPrintScaling(PrintScaling.None); prefs.setDuplex(Duplex.Simplex);
   const page = pdf.addPage([612, 792]);
@@ -51,7 +51,7 @@ export async function buildBlankBottomCheckPdf(check: PrintableCheck, layout: Ch
     text(`${checkBrand.city}  |  ${checkBrand.phone}`, 155, s + 44, 240, 8);
     text(i === 0 ? "PAYEE REMITTANCE" : "COMPANY RECORD", 420, s + 16, 160, 9, true);
     text(`CHECK ${number}  |  ${date}`, 420, s + 33, 160, 9);
-    text("VOID PREVIEW", 420, s + 48, 160, 8, true, muted);
+    text(sample ? "VOID PREVIEW" : `ACCOUNT ENDING ${check.account_last4}`, 420, s + 48, 160, 8, true, muted);
     line(32, s + 74, 580);
     text("PAYEE", 32, s + 84, 70, 7, true, muted);
     text(check.payee, 32, s + 97, 400, 11, true);
@@ -64,7 +64,7 @@ export async function buildBlankBottomCheckPdf(check: PrintableCheck, layout: Ch
       text(notes[row] || "", 32, s + 171 + row * 12, 540, 8.5);
       line(32, s + 182 + row * 12, 580);
     }
-    text("VOID - TEMPLATE PREVIEW ONLY - NO PAYMENT ISSUED", 32, s + 236, 548, 7, false, muted);
+    if (sample) text("VOID - TEMPLATE PREVIEW ONLY - NO PAYMENT ISSUED", 32, s + 236, 548, 7, false, muted);
   }
   const s = bottomCheckGeometry.checkTop;
   image(30, s + 15, 90);
@@ -98,9 +98,19 @@ export async function buildBlankBottomCheckPdf(check: PrintableCheck, layout: Ch
     if (x < 18 || x + b.width > 594 || top < 15 || s + top + rows.length * 12 > bottomCheckGeometry.micrClearTop) throw Error(`${field}: alignment moves the text outside its printable area. Reduce the adjustment.`);
     rows.forEach((value, i) => text(value, x, s + top + i * 12, b.width, b.size));
   }
-  page.drawText("VOID", { x: 399, y: 792 - (s + 167), font: bold, size: 30, color: rgb(.65, .1, .1), opacity: .6 });
-  text("BANK DETAILS PENDING - NOT NEGOTIABLE", 370, s + 174, 210, 7, true, muted);
+  if (bank) {
+    const fields = checkMicrFields({ routing: bank.routing, account: bank.account }, check.check_number);
+    const fontkit = (await import("@pdf-lib/fontkit")).default;
+    pdf.registerFontkit(fontkit);
+    const micr = await pdf.embedFont(bank.font, { subset: true });
+    if (Math.abs(micr.widthOfTextAtSize("0123456789AC", micrGeometry.size) - 108) > .001) throw Error("The MICR font does not match the check layout.");
+    for (const field of fields) page.drawText(field.text, { x: field.x, y: field.y, font: micr, size: micrGeometry.size, color: rgb(0, 0, 0) });
+  }
+  if (sample) {
+    page.drawText("VOID", { x: 399, y: 792 - (s + 167), font: bold, size: 30, color: rgb(.65, .1, .1), opacity: .6 });
+    text(bank ? "PREVIEW ONLY - NOT NEGOTIABLE" : "BANK DETAILS PENDING - NOT NEGOTIABLE", 370, s + 174, 210, 7, true, muted);
+  }
   // Preview guides only; the actual security background comes from the check stock.
-  for (const top of [288, 540]) page.drawLine({ start: { x: 18, y: 792 - top }, end: { x: 594, y: 792 - top }, thickness: .5, dashArray: [3, 3], color: rule });
+  if (sample) for (const top of [288, 540]) page.drawLine({ start: { x: 18, y: 792 - top }, end: { x: 594, y: 792 - top }, thickness: .5, dashArray: [3, 3], color: rule });
   return pdf.save();
 }

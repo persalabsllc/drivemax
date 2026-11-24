@@ -67,5 +67,40 @@ export async function verifyCompanyChecks(client) {
     await rejects(() => cmd({ ...create, id: randomUUID(), account_id: pending.id, check_number: 230 }), "check_bank_details_pending");
     assert((await one("select next_number from dmcrm_check_accounts where id=$1", [pending.id])).next_number === 230, "pending bank setup preserves the starting number");
     assert(Number((await one("select count(*) n from dmcrm_checks where account_id=$1", [pending.id])).n) === 0, "pending bank setup issues no checks");
+    assert(pending.bank_ready === false, "new accounts do not inherit bank readiness");
+    const forged = await cmd({ ...setup, id: pending.id, revision: pending.revision, next_number: 230, layout: pending.layout, bank_ready: true });
+    assert(forged.bank_ready === false, "account commands cannot enable server-managed banking");
+    // Fixture-only activation; all rows and transitions are rolled back.
+    await client.query("update dmcrm_check_accounts set bank_ready=true where id=$1", [pending.id]);
+    const ready = await one("select * from dmcrm_check_accounts where id=$1", [pending.id]);
+    const readySetup = { ...setup, id: ready.id, name: ready.name, last4: ready.last4, next_number: ready.next_number, revision: ready.revision, layout: ready.layout };
+    await rejects(() => cmd({ ...readySetup, last4: "1111" }), "check_bank_account_locked");
+    const savedReady = await cmd({ ...readySetup, name: "Configured verification account" });
+    assert(savedReady.bank_ready && savedReady.last4 === ready.last4, "normal account edits preserve configured banking");
+    const blankCreate = { ...create, id: randomUUID(), account_id: ready.id, check_number: ready.next_number };
+    let blank = await cmd(blankCreate);
+    assert(blank.account_last4 === ready.last4 && blank.check_number === 230, "configured bottom-stock check snapshots its account suffix");
+    assert((await one("select next_number from dmcrm_check_accounts where id=$1", [ready.id])).next_number === 231, "configured bottom stock advances its next number");
+    assert((await cmd(blankCreate)).id === blank.id, "configured bottom stock preserves retry deduplication");
+    await rejects(() => cmd({ ...blankCreate, id: randomUUID() }), "check_number_changed");
+    const blankPdf = { action: "pdf", id: blank.id, revision: blank.revision, stock_confirmed: true, reason: "" };
+    // Loss of readiness must block both generation and printing confirmation.
+    await client.query("update dmcrm_check_accounts set bank_ready=false where id=$1", [ready.id]);
+    await rejects(() => cmd(blankPdf), "check_bank_details_pending");
+    await rejects(() => cmd({ action: "mark_printed", id: blank.id, revision: blank.revision }), "check_bank_details_pending");
+    await client.query("update dmcrm_check_accounts set bank_ready=true where id=$1", [ready.id]);
+    blank = await cmd(blankPdf);
+    assert(blank.pdf_count === 1 && blank.status === "prepared", "configured bottom stock prepares a PDF without claiming printing");
+    await rejects(() => cmd({ ...blankPdf, revision: blank.revision }), "check_reprint_reason");
+    blank = await cmd({ ...blankPdf, revision: blank.revision, reason: "Canceled print; no copy issued" });
+    blank = await cmd({ action: "mark_printed", id: blank.id, revision: blank.revision });
+    assert(blank.status === "printed", "configured bottom-stock printing needs explicit confirmation");
+    // Voiding remains possible even if banking configuration becomes unavailable.
+    await client.query("update dmcrm_check_accounts set bank_ready=false where id=$1", [ready.id]);
+    blank = await cmd({ action: "void", id: blank.id, revision: blank.revision, reason: "Spoiled verification sheet" });
+    assert(blank.status === "voided", "bottom stock can be voided while bank setup is unavailable");
+    await rejects(() => cmd({ ...blankPdf, revision: blank.revision, reason: "Cannot reprint voided" }), "check_voided");
+    const accountEvents = await one("select bool_and(not (details::text ~ 'account_number|routing_number')) clean from dmcrm_check_events where account_id=$1", [ready.id]);
+    assert(accountEvents.clean, "bank account events contain no full banking fields");
   } finally { await client.query("rollback to savepoint company_checks_verification"); }
 }

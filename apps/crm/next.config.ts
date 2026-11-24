@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 const config: NextConfig = {
   poweredByHeader: false,
-  outputFileTracingIncludes: { "/api/forms/*": ["./assets/forms/*.pdf"] },
+  outputFileTracingIncludes: { "/api/forms/*": ["./assets/forms/*.pdf"], "/api/company-checks": ["./assets/checks/*", "./public/print-materials/drive-max-logo.png"] },
   outputFileTracingRoot: process.cwd(),
   async headers() {
     return [

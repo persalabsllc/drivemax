@@ -1,5 +1,6 @@
 import { verifyWebsiteActivity } from "./verify-website-activity.mjs";
 import { verifyCompanyChecks } from "./verify-company-checks.mjs";
+import { configureCompanyCheckBank } from "./configure-company-check-bank.mjs";
 import { verifyCustomerGallery } from "./verify-customer-gallery.mjs";
 import { verifyLenderFinance } from "./verify-lender-finance.mjs";
 import { verifyWebsiteChat } from "./verify-website-chat.mjs";
@@ -87,6 +88,7 @@ if (process.env.VERCEL_ENV === "production") {
           : "Applied CRM migration: " + name,
       );
     }
+    await configureCompanyCheckBank(client, process.env.DMCRM_CHECK_BANK);
     // Legacy fixtures use explicit manual costs. Temporarily isolate them from
     // any approved live schedule; the outer savepoint restores all settings.
     await client.query("savepoint legacy_release_fixtures");

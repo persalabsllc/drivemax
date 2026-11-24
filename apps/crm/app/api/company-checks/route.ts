@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { canPrintCompanyChecks, checkCommandSchema, checkErrors, formatCheckNumber, isBlankCheckStock, type CheckAccount, type CompanyCheck } from "../../../lib/company-checks";
 import { buildCompanyCheckPdf, sampleCheck } from "../../../lib/company-check-pdf";
+import { checkBank, checkMicrFont } from "../../../lib/company-check-bank";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,11 +27,11 @@ export async function GET(request: Request) {
     if (/^\d{1,9}$/.test(q)) query = query.eq("check_number", Number(q));
     else if (q) query = query.ilike("payee", "%" + q.replace(/[\\%_]/g, "\\$&") + "%");
     const [accounts, checks] = await Promise.all([
-      db().from("dmcrm_check_accounts").select("id,name,last4,next_number,layout,revision").eq("org_id", s.org_id).order("created_at"),
+      db().from("dmcrm_check_accounts").select("id,name,last4,next_number,layout,revision,bank_ready").eq("org_id", s.org_id).order("created_at"),
       query.order("created_at", { ascending: false }).order("id").range(page * 25, page * 25 + 24),
     ]);
     if (accounts.error || checks.error) return json({ error: "The check register could not be loaded. Try refreshing." }, 503);
-    return json({ accounts: accounts.data, checks: checks.data, total: checks.count ?? 0 });
+    return json({ accounts: accounts.data.map((a) => ({ ...a, bank_ready: !!checkBank(s.org_id, a) })), checks: checks.data, total: checks.count ?? 0 });
   } catch {
     return json({ error: "Company checks are temporarily unavailable. Try again." }, 503);
   }
@@ -55,7 +56,8 @@ export async function POST(request: Request) {
       const account = result.data as CheckAccount | null;
       if (!account) return json({ error: checkErrors.check_account_missing }, 404);
       try {
-        const bytes = await buildCompanyCheckPdf({ ...command.details, check_number: account.next_number, account_name: account.name, account_last4: account.last4 }, account.layout, true, await checkLogo());
+        const bank = isBlankCheckStock(account.layout) ? checkBank(s.org_id, account) : null;
+        const bytes = await buildCompanyCheckPdf({ ...command.details, check_number: account.next_number, account_name: account.name, account_last4: account.last4 }, account.layout, true, await checkLogo(), bank ? { ...bank, font: await checkMicrFont() } : undefined);
         return pdfResponse(bytes, account.next_number, { "X-Check-Preview": "true" });
       } catch (e) { return json({ error: e instanceof Error ? e.message : "Unable to preview this check." }, 400); }
     }
@@ -78,10 +80,12 @@ export async function POST(request: Request) {
       if (accountResult.error) return json({ error: "Unable to load check alignment." }, 503);
       const account = accountResult.data as CheckAccount | null;
       if (!account) return json({ error: checkErrors.check_account_missing }, 404);
-      if (isBlankCheckStock(account.layout)) return json({ error: checkErrors.check_bank_details_pending }, 409);
+      const bank = isBlankCheckStock(account.layout) ? checkBank(s.org_id, account) : null;
+      if (isBlankCheckStock(account.layout) && !bank) return json({ error: checkErrors.check_bank_details_pending }, 409);
+      if (check && bank && check.account_last4 !== account.last4) return json({ error: checkErrors.check_bank_account_locked }, 409);
       const printable = check ?? (command.action === "create" ? { ...command.details, check_number: command.check_number, account_name: account.name, account_last4: account.last4 } : null);
       if (!printable) return json({ error: checkErrors.check_missing }, 404);
-      try { pdf = await buildCompanyCheckPdf(printable, account.layout); }
+      try { pdf = await buildCompanyCheckPdf(printable, account.layout, false, isBlankCheckStock(account.layout) ? await checkLogo() : undefined, bank ? { ...bank, font: await checkMicrFont() } : undefined); }
       catch (e) { return json({ error: e instanceof Error ? e.message : "Unable to prepare this check." }, 400); }
     }
     const { data, error } = await db().rpc("dmcrm_check_command", { p_org: s.org_id, p_actor: s.user_id, p_data: command });
@@ -92,7 +96,7 @@ export async function POST(request: Request) {
     if (command.action === "pdf" && pdf) return pdfResponse(pdf, data.check_number, {
       "X-Check-Revision": String(data.revision), "X-Check-Pdf-Count": String(data.pdf_count),
     });
-    return json(data);
+    return json(command.action === "save_account" ? { ...data, bank_ready: !!checkBank(s.org_id, data) } : data);
   } catch (e) {
     return json({ error: e instanceof SyntaxError ? "Invalid request." : "The check could not be saved. Refresh the register before retrying." }, e instanceof SyntaxError ? 400 : 503);
   }

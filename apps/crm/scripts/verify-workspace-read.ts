@@ -1,5 +1,8 @@
 import { managementTables, deskingTables } from "../lib/workspace-permissions";
 import { createClient } from "@supabase/supabase-js";
+import { readFile } from "node:fs/promises";
+import { configuredCheckBank } from "../lib/company-check-bank-config";
+import { buildCompanyCheckPdf, sampleCheck } from "../lib/company-check-pdf";
 import { pricingConfigSchema, protectionCost } from "../lib/protection-pricing";
 import {
   readWorkspaceRecords,
@@ -47,7 +50,7 @@ async function main() {
     // Verify the same scoped reads after PostgREST receives the migration.
     for (const table of ["dmcrm_check_accounts", "dmcrm_checks"]) {
       for (let attempt = 0; attempt < 11; attempt++) {
-        const result = await d.from(table).select(table === "dmcrm_checks" ? "id,reference,category,payment_details" : "id,layout,next_number", { head: true, count: "exact" }).eq("org_id", staff.org_id).limit(1);
+        const result = await d.from(table).select(table === "dmcrm_checks" ? "id,reference,category,payment_details" : "id,layout,next_number,bank_ready", { head: true, count: "exact" }).eq("org_id", staff.org_id).limit(1);
         if (!result.error) break;
         if (!["PGRST205", "PGRST204"].includes(result.error.code) || attempt === 10) throw new Error("Company check register REST verification failed");
         await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -64,6 +67,15 @@ async function main() {
       throw new Error("Company check command REST verification failed: " + (commandProbe.error?.code ?? "no error") + " / " + (commandProbe.error?.message ?? "unexpected response"));
     }
     console.log("Verified company check register and command API readiness without issuing checks.");
+    const configuredAccount = await d.from("dmcrm_check_accounts")
+      .select("id,name,last4,next_number,layout,revision,bank_ready")
+      .eq("org_id", staff.org_id).eq("id", "d5a1c100-0000-4000-8000-000000000230").single();
+    const a = configuredAccount.data;
+    const bank = a && configuredCheckBank(process.env.DMCRM_CHECK_BANK, staff.org_id, a);
+    if (configuredAccount.error || !a || !bank) throw Error("Company check bank configuration is unavailable or does not match the configured account.");
+    await buildCompanyCheckPdf({ ...sampleCheck, check_number: a.next_number, account_name: a.name, account_last4: a.last4 }, a.layout, true,
+      await readFile("public/print-materials/drive-max-logo.png"), { ...bank, font: await readFile("assets/checks/micr.ttf") });
+    console.log("Verified protected check banking and MICR PDF rendering without saving a payment or advancing its number.");
     for (const role of ["owner", "finance", "sales"] as const) {
       let records: Awaited<ReturnType<typeof readWorkspaceRecords>> | undefined;
       for (let attempt = 0; attempt < 11; attempt++) {

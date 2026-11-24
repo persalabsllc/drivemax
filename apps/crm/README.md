@@ -73,6 +73,14 @@ The initial workspace contains no real customer data. Existing website leads and
 - Text and email threads persist across purchases, distinguish drafts/manual logs/delivery states, and support saved quote references. Drafts have revision checks and creator/manager edit permissions. Customer PDFs use an explicit allowlist that excludes costs, ACV and commission data; `/api/quotes/[id]/pdf` independently authenticates and scopes the quote/customer.
 - Accounting has sold-deal profit, current inventory valuation/aging, F&I product profit, trade ACV/allowance, commission sheets, wholesale trade profit and unwind history. Reports support date ranges, salesperson/recipient filters, CSV and print. Internal deal recaps are printable from profiles and report rows. Accounting/trade actions require owner/manager access; Finance Managers and salespeople receive no accounting snapshots, commission rows or financial report tables.
 
+### Customer card payments
+
+Staff open **Payments** in the CRM, select the stock number, and enter the payer, purpose, and USD amount. The CRM records the signed-in employee's ID. The customer enters their card in Stripe's embedded payment form. The CRM verifies the captured amount with Stripe before opening the Drive Max receipt for printing. Staff can return to the payment register to check a pending payment or reprint its receipt.
+
+Set `STRIPE_SECRET_KEY` and `STRIPE_PUBLISHABLE_KEY` from the same Drive Max Stripe account and mode on the **drive-max-crm** Vercel project and redeploy. Use a matching sandbox pair for test payments. The receipt identifies them as tests.
+
+For automatic reconciliation after the browser closes, register `https://crm.drivemaxusedcars.com/api/payments/webhook` as a Stripe event destination in the same mode. Subscribe to `payment_intent.succeeded`, `payment_intent.processing`, `payment_intent.payment_failed`, and `payment_intent.canceled`. Set its endpoint signing secret as `STRIPE_WEBHOOK_SECRET` on the CRM project and redeploy. The register can also check a payment directly with Stripe.
+
 ### Company check printing
 
 Owners have **Accounting → Company checks**. The default template is now VersaCheck ValueChex Form #1002: US Letter, two stubs above a 3.5-inch bottom check, perforations at 4 and 7.5 inches. It prints the existing Drive Max logo, legal name, 6210 Old US Hwy 70 W / New Bern NC 28562 / 252-541-0040, and Bank of America's Twin Rivers branch at 3131 M L King Jr Blvd / New Bern NC 28562. The empty Drive Max register is initialized with Bank of America and next number **00230**; existing accounts and sequences are preserved. Numbers display with a minimum of five digits.

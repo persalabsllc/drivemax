@@ -61,6 +61,7 @@ import {
   TrendingUp,
   RefreshCw,
   Calculator,
+  CreditCard,
 } from "lucide-react";
 import {
   type Workspace,
@@ -113,6 +114,7 @@ import type { AttentionItem } from "../lib/attention";
 import { TaskAction, MessageComposer, type Compose } from "./Communications";
 import { CustomerSearch } from "./CustomerSearch";
 import { Accounting } from "./Accounting";
+import { Payments } from "./Payments";
 import { TradeIntake } from "./TradeIntake";
 import { seedSalesWorkspace } from "../lib/sales-work-demo";
 import { seedOperations } from "../lib/operations-demo";
@@ -138,6 +140,7 @@ type View =
   | "Appraisals"
   | "Trade-ins"
   | "Money owed"
+  | "Payments"
   | "Accounting"
   | "Conversations"
   | "Customer gallery"
@@ -161,6 +164,7 @@ const nav = [
   { name: "Appraisals", icon: Car },
   { name: "Title Clerk", icon: ShieldCheck },
   { name: "Document Vault", icon: FolderLock },
+  { name: "Payments", icon: CreditCard },
   { name: "Money owed", icon: Calculator },
   { name: "Accounting", icon: TrendingUp },
   { name: "Sales reports", icon: Target },
@@ -237,6 +241,8 @@ export default function CRM({
       setSelectedOpp(params.get("opportunity"));
       setProfileTab("Activity");
     } else if (params.get("view") === "work") setView("Work Today");
+    else if (params.get("view") === "payments" && canAccessView(initial.member.role, "Payments"))
+      setView("Payments");
     else if (params.get("view") === "reports" && canManage(initial.member.role))
       setView("Management reports");
     else if (
@@ -312,6 +318,13 @@ export default function CRM({
     ws.customers.find((c) => c.id === id);
   function navigate(v: View) {
     if (!canAccessView(ws.member.role, v)) return;
+    const location = new URL(window.location.href);
+    if (v === "Payments" || location.searchParams.get("view") === "payments") {
+      if (v === "Payments") location.searchParams.set("view", "payments");
+      else location.searchParams.delete("view");
+      location.searchParams.delete("payment");
+      window.history.replaceState(window.history.state, "", location);
+    }
     setQuickQuoteOpen(false);
     setPrintData(null);
     setStage("all");
@@ -805,6 +818,8 @@ export default function CRM({
                         "Receive, prepare, and route every trade to retail or wholesale.",
                       "Money owed":
                         "Expected funds, recorded receipts, and every outstanding balance.",
+                      Payments:
+                        "Collect a card payment and print a customer receipt.",
                       Accounting:
                         "Your inventory investment, deal profit, and team earnings.",
                       Conversations:
@@ -838,6 +853,7 @@ export default function CRM({
                   view !== "Management reports" &&
                   view !== "F&I Products" &&
                   view !== "Service" &&
+                  view !== "Payments" &&
                   (view !== "Inventory" || canManage(ws.member.role)) && (
                     <button
                       className={view === "Desking" ? "btn" : "btn primary"}
@@ -1192,6 +1208,7 @@ export default function CRM({
             {view === "Accounting" && canManage(ws.member.role) && (
               <Accounting ws={ws} run={run} busy={busy} demo={demo} />
             )}
+            {view === "Payments" && <Payments ws={ws} demo={demo} />}
             {view === "Trade-ins" && canManage(ws.member.role) && (
               <TradeIntake
                 ws={ws}

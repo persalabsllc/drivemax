@@ -12,11 +12,22 @@ export const bankConfigSchema = z.object({
 export type CheckBankConfig = z.infer<typeof bankConfigSchema>;
 
 // Fail closed without exposing configuration values in errors or register responses.
-export function configuredCheckBank(raw: string | undefined, orgId: string, account: { id: string; last4: string; bank_ready?: boolean }): CheckBankConfig | null {
-  try {
-    const parsed = bankConfigSchema.safeParse(JSON.parse(raw || "null"));
-    if (!parsed.success || !account.bank_ready) return null;
-    const bank = parsed.data;
-    return bank.org_id === orgId && bank.account_id === account.id && bank.account.endsWith(account.last4) && account.last4.length === 4 ? bank : null;
-  } catch { return null; }
+export function configuredCheckBank(
+  primary: string | undefined,
+  orgId: string,
+  account: { id: string; last4: string; bank_ready?: boolean },
+  ...additional: (string | undefined)[]
+): CheckBankConfig | null {
+  if (!account.bank_ready || !/^\d{4}$/.test(account.last4)) return null;
+  let match: CheckBankConfig | null = null;
+  for (const raw of [primary, ...additional]) {
+    if (!raw) continue;
+    let candidate;
+    try { candidate = JSON.parse(raw); } catch { continue; }
+    if (candidate?.org_id !== orgId || candidate?.account_id !== account.id) continue;
+    const parsed = bankConfigSchema.safeParse(candidate);
+    if (match || !parsed.success || !parsed.data.account.endsWith(account.last4)) return null;
+    match = parsed.data;
+  }
+  return match;
 }

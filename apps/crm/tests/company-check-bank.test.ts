@@ -43,6 +43,24 @@ test("bank configuration preserves leading zeros and is scoped to ready account 
   assert.equal(bankConfigSchema.parse(config).account, "000123456789");
 });
 
+test("bank selection uses the saved account ID even when two accounts share their last four digits", () => {
+  const second = { ...config, account_id: otherId, account: "900000006789" };
+  const secondRaw = JSON.stringify(second);
+  assert.deepEqual(configuredCheckBank(raw, org, account, secondRaw), config);
+  assert.deepEqual(configuredCheckBank(raw, org, { ...account, id: otherId }, secondRaw), second);
+  assert.equal(configuredCheckBank(raw, org, { ...account, id: otherId }, undefined), null);
+  assert.equal(configuredCheckBank(raw, org, { ...account, id: otherId, bank_ready: false }, secondRaw), null);
+});
+
+test("conflicting configurations fail closed for the affected account", () => {
+  for (const conflict of [config, { ...config, account: "900000006789" }, { ...config, account: "1234" }, { ...config, routing: "invalid" }]) {
+    assert.equal(configuredCheckBank(raw, org, account, JSON.stringify(conflict)), null);
+    assert.equal(configuredCheckBank(JSON.stringify(conflict), org, account, raw), null);
+  }
+  assert.deepEqual(configuredCheckBank(raw, org, account, "{broken"), config);
+  assert.deepEqual(configuredCheckBank(raw, org, account, JSON.stringify({ ...config, org_id: otherId })), config);
+});
+
 test("invalid configuration fails closed, including malformed JSON and invalid routing checksums", () => {
   for (const input of [undefined, "", "null", "{broken", "[]", "true"]) {
     assert.equal(configuredCheckBank(input, org, account), null);
@@ -134,4 +152,19 @@ test("live blank-stock output rejects missing or invalid banking and mismatched 
   await assert.rejects(buildCompanyCheckPdf(check, blankBottomCheckLayout, false, logo, { ...bank, routing: "021000022" }), /pending/);
   await assert.rejects(buildCompanyCheckPdf({ ...check, account_last4: "9999" }, blankBottomCheckLayout, false, logo, bank), /configured/);
   await assert.rejects(buildCompanyCheckPdf(check, blankBottomCheckLayout, false, logo, { ...bank, font: new Uint8Array() }));
+});
+
+test("purchasing preview and printable PDF both use the selected account's MICR", async () => {
+  const purchasing = { ...config, account_id: otherId, account: "000987654321" };
+  const selected = { id: otherId, bank_ready: true, last4: "4321" };
+  const resolved = configuredCheckBank(raw, org, selected, JSON.stringify(purchasing));
+  assert.ok(resolved);
+  const { logo, bank } = await assets();
+  const purchasingCheck = { ...check, account_name: "Purchasing test", account_last4: selected.last4 };
+  for (const preview of [true, false]) {
+    const bytes = await buildCompanyCheckPdf(purchasingCheck, blankBottomCheckLayout, preview, logo, { ...resolved, font: bank.font });
+    const items = (await printedText(bytes)).map((item) => item.str);
+    assert.ok(items.includes(purchasing.account + "C"));
+    assert.ok(!items.includes(config.account + "C"));
+  }
 });

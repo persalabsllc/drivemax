@@ -67,15 +67,19 @@ async function main() {
       throw new Error("Company check command REST verification failed: " + (commandProbe.error?.code ?? "no error") + " / " + (commandProbe.error?.message ?? "unexpected response"));
     }
     console.log("Verified company check register and command API readiness without issuing checks.");
-    const configuredAccount = await d.from("dmcrm_check_accounts")
+    const checkAccountIds = ["d5a1c100-0000-4000-8000-000000000230", "d5a1c100-0000-4000-8000-000000007677"];
+    const { data: checkAccounts, error: checkAccountsError } = await d.from("dmcrm_check_accounts")
       .select("id,name,last4,next_number,layout,revision,bank_ready")
-      .eq("org_id", staff.org_id).eq("id", "d5a1c100-0000-4000-8000-000000000230").single();
-    const a = configuredAccount.data;
-    const bank = a && configuredCheckBank(process.env.DMCRM_CHECK_BANK, staff.org_id, a);
-    if (configuredAccount.error || !a || !bank) throw Error("Company check bank configuration is unavailable or does not match the configured account.");
-    await buildCompanyCheckPdf({ ...sampleCheck, check_number: a.next_number, account_name: a.name, account_last4: a.last4 }, a.layout, true,
-      await readFile("public/print-materials/drive-max-logo.png"), { ...bank, font: await readFile("assets/checks/micr.ttf") });
-    console.log("Verified protected check banking and MICR PDF rendering without saving a payment or advancing its number.");
+      .eq("org_id", staff.org_id).in("id", checkAccountIds);
+    if (checkAccountsError || checkAccounts?.length !== checkAccountIds.length) throw Error("A company check account is unavailable.");
+    const [logo, font] = await Promise.all([readFile("public/print-materials/drive-max-logo.png"), readFile("assets/checks/micr.ttf")]);
+    for (const account of checkAccounts) {
+      const bank = configuredCheckBank(process.env.DMCRM_CHECK_BANK, staff.org_id, account, process.env.DMCRM_CHECK_BANK_PURCHASING);
+      if (!bank) throw Error("Company check bank configuration does not match the selected account.");
+      await buildCompanyCheckPdf({ ...sampleCheck, check_number: account.next_number, account_name: account.name, account_last4: account.last4 },
+        account.layout, true, logo, { ...bank, font });
+    }
+    console.log("Verified both company check accounts and rendered their check previews without issuing a payment or advancing either sequence.");
     for (const role of ["owner", "finance", "sales"] as const) {
       let records: Awaited<ReturnType<typeof readWorkspaceRecords>> | undefined;
       for (let attempt = 0; attempt < 11; attempt++) {

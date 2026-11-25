@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
 import { verifyCompanyChecks } from "../scripts/verify-company-checks.mjs";
 import { configureCompanyCheckBank } from "../scripts/configure-company-check-bank.mjs";
+import type { CheckAccount, CompanyCheck } from "../lib/company-checks";
 
 const org = "d5a1c100-0000-4000-8000-000000000001";
 const owner = "d5a1c100-0000-4000-8000-000000000099";
@@ -92,6 +93,60 @@ test("bank setup refuses to change an account that already has checks", async ()
       values('d5a1c100-0000-4000-8000-000000000889','${org}','${account}','Existing account','1111',230,'Fictional Payee',100,'2026-11-23','${owner}');`);
     await db.exec(await bankMigration());
     await assert.rejects(configureCompanyCheckBank(db, fakeConfig), /check_bank_account_locked/);
+  } finally { await db.close(); }
+});
+
+test("purchasing checks have independent numbering, retain the stock alignment and reprint against the saved account", async () => {
+  const db = await fixture();
+  const purchasingId = "d5a1c100-0000-4000-8000-000000007677";
+  const purchasingConfig = JSON.stringify({ org_id: org, account_id: purchasingId, routing: "011000015", account: "123457677" });
+  const accountRow = async (id: string) => (await db.query<CheckAccount>("select * from dmcrm_check_accounts where id=$1", [id])).rows[0];
+  const command = async (data: object) => (await db.query<{ result: CompanyCheck }>(
+    "select dmcrm_check_command($1,$2,$3::jsonb) as result", [org, owner, JSON.stringify(data)]
+  )).rows[0].result;
+  const issue = (accountId: string, payee: string) => command({
+    action: "create", id: crypto.randomUUID(), account_id: accountId, check_number: 230,
+    details: { payee, amount_cents: 100, check_date: "2026-11-24", memo: "", address: "" },
+  });
+  try {
+    await db.exec(await bankMigration());
+    await configureCompanyCheckBank(db, fakeConfig);
+    await db.query("update dmcrm_check_accounts set layout=jsonb_set(layout,'{fields,payee,x}','2.5'::jsonb) where id=$1", [account]);
+    const existing = await issue(account, "Existing payee");
+    const primary = await accountRow(account);
+    assert.equal(primary.next_number, 231);
+
+    const migration = await readFile(new URL("../db/050_purchasing_check_account.sql", import.meta.url), "utf8");
+    await db.exec(migration);
+    await assert.rejects(configureCompanyCheckBank(db, fakeConfig, purchasingId), /check_bank_account_locked/);
+    const conflictingConfig = JSON.stringify({ ...JSON.parse(purchasingConfig), account: "123451111" });
+    await assert.rejects(configureCompanyCheckBank(db, conflictingConfig, purchasingId), /check_bank_account_locked/);
+    assert.equal((await accountRow(purchasingId)).bank_ready, false);
+    await configureCompanyCheckBank(db, purchasingConfig, purchasingId);
+    const purchasing = await accountRow(purchasingId);
+    assert.equal(purchasing.name, "Purchasing 7677");
+    assert.equal(purchasing.last4, "7677");
+    assert.equal(purchasing.bank_ready, true);
+    assert.equal(purchasing.next_number, 230);
+    assert.deepEqual(purchasing.layout, primary.layout);
+    assert.deepEqual(await accountRow(account), primary);
+
+    const purchase = await issue(purchasingId, "Vehicle wholesaler");
+    assert.equal(purchase.check_number, existing.check_number);
+    assert.equal(purchase.account_name, purchasing.name);
+    assert.equal((await accountRow(purchasingId)).next_number, 231);
+    for (const [saved, fundedBy] of [[existing, primary], [purchase, purchasing]] as const) {
+      const pdf = { action: "pdf", id: saved.id, stock_confirmed: true };
+      const printed = await command({ ...pdf, revision: saved.revision, reason: "" });
+      const reprinted = await command({ ...pdf, revision: printed.revision, reason: "Printer jam" });
+      assert.equal(reprinted.pdf_count, 2);
+      assert.equal(reprinted.account_id, fundedBy.id);
+      assert.equal(reprinted.account_last4, fundedBy.last4);
+    }
+    assert.deepEqual(await accountRow(account), primary);
+    await db.exec(migration);
+    await configureCompanyCheckBank(db, purchasingConfig, purchasingId);
+    assert.equal((await accountRow(purchasingId)).next_number, 231);
   } finally { await db.close(); }
 });
 

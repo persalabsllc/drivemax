@@ -89,6 +89,7 @@ if (process.env.VERCEL_ENV === "production") {
       );
     }
     await configureCompanyCheckBank(client, process.env.DMCRM_CHECK_BANK);
+    await configureCompanyCheckBank(client, process.env.DMCRM_CHECK_BANK_PURCHASING, "d5a1c100-0000-4000-8000-000000007677");
     // Legacy fixtures use explicit manual costs. Temporarily isolate them from
     // any approved live schedule; the outer savepoint restores all settings.
     await client.query("savepoint legacy_release_fixtures");

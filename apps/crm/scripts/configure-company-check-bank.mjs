@@ -11,7 +11,7 @@ const configSchema = z.object({
 
 // Call within the migration transaction. Repeated builds preserve numbering,
 // alignment and revision; conflicting accounts require explicit reconciliation.
-export async function configureCompanyCheckBank(client, rawConfig) {
+export async function configureCompanyCheckBank(client, rawConfig, expectedAccountId) {
   if (!rawConfig) return;
   let config;
   try {
@@ -19,6 +19,7 @@ export async function configureCompanyCheckBank(client, rawConfig) {
   } catch {
     throw new Error("Invalid company check banking configuration.");
   }
+  if (expectedAccountId && config.account_id !== expectedAccountId) throw new Error("check_bank_account_locked");
   const { rows: accounts } = await client.query(
     "select * from public.dmcrm_check_accounts where id=$1 for update", [config.account_id],
   );
@@ -26,6 +27,7 @@ export async function configureCompanyCheckBank(client, rawConfig) {
   if (!account) return;
   if (account.org_id !== config.org_id) throw new Error("check_bank_account_locked");
   const last4 = config.account.slice(-4);
+  if (account.last4 && account.last4 !== last4) throw new Error("check_bank_account_locked");
   if (account.bank_ready && account.last4 === last4) return;
   if (account.layout?.stock !== "blank_bottom_1002") throw new Error("check_bank_account_locked");
   const { rows: checks } = await client.query(
